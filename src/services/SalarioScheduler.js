@@ -1,9 +1,8 @@
 const cron = require('node-cron');
 const Transacao = require('../models/Transacao');
-const Categoria = require('../models/Categoria');
-const Conta = require('../models/Conta');
-const Carteira = require('../models/Carteira');
+const categoriaHelpers = require('../utils/categoriaHelpers');
 const { formatarMoeda } = require('../utils/stringHelpers');
+const SaldoService = require('./SaldoService');
 const logger = require('../utils/logger');
 
 // Serviço responsável por agendar e processar salários automaticamente
@@ -42,7 +41,7 @@ class SalarioScheduler {
       const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
       // Busca a categoria "Salário"
-      const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
+      const categoriaSalario = await categoriaHelpers.buscarSalario();
 
       if (!categoriaSalario) {
         logger.warn('Categoria Salario nao encontrada', 'SalarioScheduler');
@@ -94,29 +93,8 @@ class SalarioScheduler {
             continue;
           }
 
-          if (salario.fonteSaldo === 'carteira') {
-            await Carteira.updateOne(
-              { usuario: salario.usuario._id },
-              { $inc: { saldo: Number(salario.valor) } },
-              { upsert: true }
-            );
-          } else {
-            // Atualiza o saldo da conta
-            const conta = salario.conta
-              ? await Conta.findById(salario.conta._id)
-              : null;
-
-            if (!conta) {
-              logger.warn(
-                `Salario ${salario._id} sem conta valida para processamento`,
-                'SalarioScheduler'
-              );
-              continue;
-            }
-
-            conta.saldo += salario.valor;
-            await conta.save();
-          }
+          // usar SaldoService para manter o mesmo comportamento que outros
+          await SaldoService.aplicarMovimento(salario, salario.usuario._id);
 
           // Atualiza a data de último processamento
           salario.dataUltimoProcessamento = hoje;

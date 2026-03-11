@@ -1,10 +1,10 @@
 #btnProjecao {
   margin-top: 15px;
-    background: var(--rosa);
+  background: var(--rosa);
 }
 
 #btnProjecao:hover {
-    background: var(--rosa-claro);
+  background: var(--rosa-claro);
 }
 
 #modalProjecao .modal-content p {

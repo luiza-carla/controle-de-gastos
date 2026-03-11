@@ -2,7 +2,6 @@ import { apiFetch } from './config.js';
 import {
   abrirModal,
   fecharModal,
-  abrirModalErro,
   mostrarErroInline,
   limparErroInline,
   garantirErroInline,
@@ -205,7 +204,10 @@ window.deletarConta = async (id) => {
         fecharModal();
         listarContas();
       } catch (err) {
-        abrirModalErro(err.message);
+        mostrarNotificacao(
+          'Erro ao excluir conta: ' + (err.message || 'erro'),
+          'erro'
+        );
       }
     },
   });
@@ -227,6 +229,13 @@ export async function popularSelectContas(selectId = 'conta') {
 
   select.innerHTML = `<option value="" ${placeholderAttrs}>${placeholderTexto}</option>`;
 
+  populateSelect(
+    select,
+    contas,
+    (conta) => conta._id,
+    (conta) => formatarItemComTipo(conta)
+  );
+
   if (selectId === 'conta' || selectId === 'contaSalario') {
     select.innerHTML += criarOpcao(
       VALOR_CARTEIRA,
@@ -234,12 +243,18 @@ export async function popularSelectContas(selectId = 'conta') {
     );
   }
 
-  populateSelect(
-    select,
-    contas,
-    (conta) => conta._id,
-    (conta) => formatarItemComTipo(conta)
-  );
+  if (selectId === 'conta' || selectId === 'contaSalario') {
+    let etiquetaCarteira = 'Carteira (dinheiro físico)';
+    try {
+      const carteira = await apiFetch('/carteira');
+      if (carteira && typeof carteira.saldo !== 'undefined') {
+        etiquetaCarteira += ` - R$ ${formatarValor(carteira.saldo)}`;
+      }
+    } catch {
+    }
+    const opt = select.querySelector(`option[value="${VALOR_CARTEIRA}"]`);
+    if (opt) opt.textContent = etiquetaCarteira;
+  }
 }
 
 // Abre modal de transferência de conta para conta ou carteira
@@ -286,13 +301,14 @@ window.transferirDaConta = async (contaOrigemId) => {
       const destino = $('modalContaDestino')?.value;
       const valor = parseFloat($('modalValorTransferenciaConta')?.value);
 
+      limparErroInline();
       if (!destino || !valor || valor <= 0) {
-        abrirModalErro('Preencha todos os campos com valores válidos');
+        mostrarErroInline('Preencha todos os campos com valores válidos');
         return;
       }
 
       if (valor > contaOrigem.saldo) {
-        abrirModalErro('Saldo insuficiente na conta');
+        mostrarErroInline('Saldo insuficiente na conta');
         return;
       }
 
@@ -321,7 +337,7 @@ window.transferirDaConta = async (contaOrigemId) => {
         fecharModal();
         await atualizarSaldosTela();
       } catch (err) {
-        abrirModalErro(err.message);
+        mostrarErroInline(err.message);
       }
     },
   });

@@ -2,6 +2,7 @@ const Conta = require('../models/Conta');
 const Transacao = require('../models/Transacao');
 const HistoricoService = require('./HistoricoService');
 const { criarErro } = require('../utils/errorHelpers');
+const logger = require('../utils/logger');
 
 const MENSAGEM_CONTA_EM_USO =
   'Não é possível apagar a conta pois existem transações ou salários associados.';
@@ -95,9 +96,27 @@ class ContaService {
     const transCount = await Transacao.countDocuments({
       conta: id,
       usuario: usuarioId,
+      fonteSaldo: 'conta',
     });
 
     if (transCount > 0) {
+      // log para facilitar depuração em ambientes de desenvolvimento
+      if (process.env.NODE_ENV !== 'production') {
+        const exemplos = await Transacao.find({
+          conta: id,
+          usuario: usuarioId,
+          fonteSaldo: 'conta',
+        })
+          .limit(5)
+          .select('_id titulo categoria');
+        logger?.info(
+          `Conta ${id} está bloqueada por ${transCount} transacao(ões): ${JSON.stringify(
+            exemplos
+          )}`,
+          'ContaService'
+        );
+      }
+
       throw criarErro(400, MENSAGEM_CONTA_EM_USO);
     }
 

@@ -3,7 +3,6 @@ import { limparCategoriaSelecionada } from './categoria.js';
 import {
   abrirModal,
   fecharModal,
-  abrirModalErro,
   mostrarErroInline,
   limparErroInline,
   garantirErroInline,
@@ -16,12 +15,8 @@ import {
 import {
   formatarValor,
   capitalizar,
-  criarCardsHTML,
   criarBotoesAcao,
-  calcularTotalItens,
   $,
-  setHTMLById,
-  setTextById,
   escaparHtml,
   criarBadgeCategoria,
   inicializarTags,
@@ -30,6 +25,12 @@ import {
   resetarTagsFormulario,
   setupCategoriaAutocomplete,
   criarPaginacao,
+  // filtros
+  filtrarPorCategoria,
+  renderizarListagemFiltrada,
+  inicializarFiltroCategoriaGenerico,
+  aplicarFiltroCategoriaGenerico,
+  limparFiltroCategoriaGenerico,
 } from './helpers/index.js';
 
 // Array para armazenar tags temporárias do formulário
@@ -43,6 +44,9 @@ const FORM_MSG_ERRO_ID = 'formMensagemErroListaDesejo';
 
 const stateDesejos = {
   itens: [],
+  filtroCategoriaId: '',
+  filtroInicializado: false,
+  categoriaAutocompleteFiltro: null,
 };
 
 const paginacaoDesejos = criarPaginacao({
@@ -141,22 +145,72 @@ export async function listarDesejos() {
   const container = $('listaDesejos');
   if (!container) return;
 
-  const desejos = await carregarDesejos();
-  stateDesejos.itens = desejos || [];
+  try {
+    await inicializarFiltroCategoriaDesejo();
 
-  const total = calcularTotalItens(stateDesejos.itens);
+    const desejos = await carregarDesejos();
+    stateDesejos.itens = desejos || [];
 
-  setTextById('totalDesejos', `R$ ${formatarValor(total)}`);
-  renderizarPaginaDesejos();
+    renderizarPaginaDesejos();
+  } catch (erro) {
+    mostrarNotificacao(erro.message || 'Erro ao carregar desejos', 'erro');
+  }
 }
 
 function renderizarPaginaDesejos() {
-  const { skip, limit } = paginacaoDesejos.getParams();
-  const totalItens = stateDesejos.itens.length;
-  const itensPagina = stateDesejos.itens.slice(skip, skip + limit);
+  renderizarListagemFiltrada(
+    'listaDesejos',
+    stateDesejos.itens,
+    () =>
+      filtrarPorCategoria(stateDesejos.itens, stateDesejos.filtroCategoriaId),
+    criarCardDesejo,
+    paginacaoDesejos,
+    'totalDesejos'
+  );
+}
 
-  setHTMLById('listaDesejos', criarCardsHTML(itensPagina, criarCardDesejo));
-  paginacaoDesejos.setTotal(totalItens);
+function aplicarFiltroCategoriaDesejo() {
+  aplicarFiltroCategoriaGenerico(
+    stateDesejos,
+    'filtroCategoriaDesejo',
+    renderizarPaginaDesejos,
+    paginacaoDesejos
+  );
+}
+
+function limparFiltroCategoriaDesejo() {
+  limparFiltroCategoriaGenerico(
+    stateDesejos,
+    paginacaoDesejos,
+    renderizarPaginaDesejos
+  );
+}
+
+async function inicializarFiltroCategoriaDesejo() {
+  document
+    .getElementById('btnLimparFiltroCategoriaDesejo')
+    ?.addEventListener('click', limparFiltroCategoriaDesejo);
+
+  if (stateDesejos.filtroInicializado) return;
+
+  const inputBusca = document.getElementById('filtroBuscaCategoriaDesejo');
+  const inputHidden = document.getElementById('filtroCategoriaDesejo');
+  const dropdown = document.getElementById('filtroDropdownCategoriaDesejo');
+
+  if (!inputBusca || !inputHidden || !dropdown) return;
+
+  await inicializarFiltroCategoriaGenerico({
+    inputBuscaId: 'filtroBuscaCategoriaDesejo',
+    inputHiddenId: 'filtroCategoriaDesejo',
+    dropdownId: 'filtroDropdownCategoriaDesejo',
+    btnLimparId: 'btnLimparFiltroCategoriaDesejo',
+    urlCategorias: URL_CATEGORIAS,
+    stateObj: stateDesejos,
+    aplicarFiltroFn: aplicarFiltroCategoriaDesejo,
+    limparFiltroFn: limparFiltroCategoriaDesejo,
+  });
+
+  stateDesejos.filtroInicializado = true;
 }
 
 // Cria HTML de um card de desejo para exibicao na lista
@@ -344,6 +398,16 @@ window.realizarDesejo = async (id) => {
 
   if (!desejo) return;
 
+  let labelCarteira = 'Carteira (dinheiro físico)';
+  try {
+    const carteira = await apiFetch('/carteira');
+    if (carteira && typeof carteira.saldo !== 'undefined') {
+      labelCarteira += ` - R$ ${formatarValor(carteira.saldo)}`;
+    }
+  } catch {
+    // ignore failure
+  }
+
   const opcoesConta = contas
     .map((c) => `<option value="${c._id}">${escaparHtml(c.nome)}</option>`)
     .join('');
@@ -359,7 +423,7 @@ window.realizarDesejo = async (id) => {
         <label>Conta ou carteira</label>
         <select id="modalContaDesejo" required>
           <option value="" selected disabled>Selecione a origem</option>
-          <option value="carteira">Carteira (dinheiro físico)</option>
+          <option value="carteira">${labelCarteira}</option>
           ${opcoesConta}
         </select>
       </div>
@@ -403,6 +467,7 @@ window.realizarDesejo = async (id) => {
         return;
       }
 
+
       try {
         // Realiza desejo em endpoint único (cria transação + remove desejo)
         await apiFetch(`${URL_LISTA_DESEJOS}/${id}/realizar`, {
@@ -437,7 +502,7 @@ window.deletarDesejo = async (id) => {
         fecharModal();
         listarDesejos();
       } catch (err) {
-        abrirModalErro(err.message);
+        mostrarNotificacao(err.message || 'Erro ao deletar desejo', 'erro');
       }
     },
   });

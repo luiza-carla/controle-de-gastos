@@ -9,11 +9,14 @@ const { criarErro, fallbackComErro } = require('../utils/errorHelpers');
 const {
   salarioJaProcessadoNoMes,
   extrairDestinoSaldo,
+  extrairContaId,
 } = require('../utils/salarioHelpers');
 const {
   formatarDescricaoHistoricoPadrao,
 } = require('../utils/historicoDescricao');
 
+// helpers de population reutilizados entre módulos
+const { transacao: populateTransacao } = require('../utils/populateHelpers');
 class HistoricoService {
   static _anexarDescricaoEObjeto(historico, objeto = null) {
     return {
@@ -120,10 +123,7 @@ class HistoricoService {
 
     try {
       if (entidade === 'transacao' || entidade === 'salario') {
-        return await Transacao.findById(entidadeId)
-          .populate('conta', 'nome tipo')
-          .populate('categoria', 'nome cor tipo')
-          .lean();
+        return await populateTransacao(Transacao.findById(entidadeId)).lean();
       }
 
       switch (entidade) {
@@ -132,9 +132,10 @@ class HistoricoService {
         case 'carteira':
           return await Carteira.findById(entidadeId).lean();
         case 'listaDesejo':
-          return await ListaDesejo.findById(entidadeId)
-            .populate('categoria', 'nome cor tipo')
-            .lean();
+          return await populateTransacao(
+            ListaDesejo.findById(entidadeId)
+              .populate('categoria', 'nome cor tipo')
+          ).lean();
         default:
           return null;
       }
@@ -161,6 +162,10 @@ class HistoricoService {
 
     if (filtros.acao) {
       query.acao = filtros.acao;
+    }
+
+    if (filtros.desfeito !== undefined && filtros.desfeito !== '') {
+      query.desfeito = filtros.desfeito === 'true' || filtros.desfeito === true;
     }
 
     const limit = filtros.limit || 50;
@@ -364,6 +369,15 @@ class HistoricoService {
     // Reverte a ação; erros sobem para o middleware global de erro
     await this._reverterAcao(historico);
 
+    if (historico.entidade === 'transacao') {
+      await this._ajustarSaldoAoReverterTransacao(
+        historico.acao,
+        usuarioId,
+        historico.dadosAnteriores,
+        historico.dadosNovos
+      );
+    }
+
     // Marca como desfeito
     historico.desfeito = true;
     historico.desfeitoEm = new Date();
@@ -410,14 +424,77 @@ class HistoricoService {
     }
   }
 
-  // Reverte ação de transação
+  // Reverte ação de transação (apenas restaura o documento)
+  // também valida que a conta associada ainda existe antes de efetuar
+  // a restauração, evitando transações "ócas" que aparecem sem conta
+  // no front-end.
   static async _reverterTransacao(acao, entidadeId, dadosAnteriores) {
+    // para edição e exclusão, checar se o documento anterior
+    // fazia referência a uma conta e, em caso afirmativo, se essa conta
+    // ainda está presente no banco.
+    if (acao === 'delecao' || acao === 'edicao') {
+      const contaRef = dadosAnteriores?.conta;
+      const contaId = extrairContaId(contaRef);
+      if (contaId) {
+        const contaExiste = await Conta.exists({ _id: contaId });
+        if (!contaExiste) {
+          throw criarErro(
+            400,
+            'Não é possível desfazer transação porque a conta associada foi removida'
+          );
+        }
+      }
+    }
+
     await this._reverterCrudBasico(
       Transacao,
       acao,
       entidadeId,
       dadosAnteriores
     );
+  }
+
+  // Ajusta saldos de conta/carteira conforme os dados de transação
+  // antes e depois da ação. Usado apenas durante desfazer().
+  static async _ajustarSaldoAoReverterTransacao(
+    acao,
+    usuarioId,
+    dadosAnteriores,
+    dadosNovos
+  ) {
+    // helper local para calcular delta e aplicar
+    const aplicarDelta = async (transacao, sinal = 1) => {
+      if (!transacao || transacao.status !== 'pago') return;
+      const valor = Number(transacao.valor || 0);
+      if (!valor) return;
+      const mult = transacao.tipo === 'entrada' ? 1 : -1;
+      const delta = mult * valor * sinal;
+
+      if (transacao.fonteSaldo === 'carteira') {
+        await this._ajustarSaldoCarteira(usuarioId, delta);
+      } else if (transacao.conta) {
+        await this._ajustarSaldoConta(usuarioId, transacao.conta, delta);
+      }
+    };
+
+    switch (acao) {
+      case 'criacao':
+        // desfaz criação: remove movimento aplicado originalmente
+        await aplicarDelta(dadosNovos, -1);
+        break;
+      case 'edicao':
+        // desfaz edição: primeiro reverte o movimento novo, depois reaplica o
+        // antigo
+        await aplicarDelta(dadosNovos, -1);
+        await aplicarDelta(dadosAnteriores, 1);
+        break;
+      case 'delecao':
+        // desfaz exclusão: reaplica o movimento que havia sido retirado
+        await aplicarDelta(dadosAnteriores, 1);
+        break;
+      default:
+        break;
+    }
   }
 
   // Reverte ação de conta
@@ -508,8 +585,24 @@ class HistoricoService {
         );
         await Transacao.findByIdAndDelete(entidadeId);
         break;
-      case 'edicao':
+      case 'edicao': {
         this._garantirDadosAnteriores(dadosAnteriores);
+
+        // antes de voltar para o estado anterior, verifica se ainda é
+        // válido (por exemplo, conta de destino não foi removida)
+        const destinoAnt = extrairDestinoSaldo(dadosAnteriores);
+        if (destinoAnt.tipo === 'conta') {
+          const contaExiste = await Conta.exists({
+            _id: destinoAnt.contaId,
+            usuario: usuarioId,
+          });
+          if (!contaExiste) {
+            throw criarErro(
+              400,
+              'Não é possível desfazer edição do salário porque a conta de destino foi removida'
+            );
+          }
+        }
 
         // Inverte os deltas aplicados na edição e volta o documento para o estado anterior.
         await this._aplicarDeltaSalario(
@@ -527,8 +620,26 @@ class HistoricoService {
 
         await Transacao.findByIdAndUpdate(entidadeId, dadosAnteriores);
         break;
-      case 'delecao':
+      }
+      case 'delecao': {
         this._garantirDadosAnteriores(dadosAnteriores);
+
+        // Se o salário tinha destino em conta, certifica de que a conta
+        // ainda exista antes de recriar o registro. Caso contrário, permitir
+        // o undo resultaria em transação órfã e em inconsistência de saldo.
+        const destino = extrairDestinoSaldo(dadosAnteriores);
+        if (destino.tipo === 'conta') {
+          const contaExiste = await Conta.exists({
+            _id: destino.contaId,
+            usuario: usuarioId,
+          });
+          if (!contaExiste) {
+            throw criarErro(
+              400,
+              'Não é possível desfazer exclusão do salário porque a conta de destino foi removida'
+            );
+          }
+        }
 
         await Transacao.create(dadosAnteriores);
         await this._aplicarDeltaSalario(
@@ -538,6 +649,7 @@ class HistoricoService {
           dataReferencia
         );
         break;
+      }
       default:
         throw criarErro(400, `Ação não suportada para salário: ${acao}`);
     }

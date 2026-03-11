@@ -7,10 +7,7 @@
     <link rel="stylesheet" href="../css/base.css" />
     <link rel="stylesheet" href="../css/transacoes.css" />
 
-    <link
-      rel="stylesheet"
-      href="/vendor/fontawesome/css/all.min.css"
-    />
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
   </head>
 
   <body>
@@ -35,6 +32,35 @@
 
         <h3><i class="fa-solid fa-list"></i> Transações</h3>
 
+        <div class="filters-section">
+          <div class="filter-group">
+            <label for="filtroBuscaCategoriaTransacao">Categoria:</label>
+            <div class="categoria-autocomplete">
+              <input
+                type="text"
+                id="filtroBuscaCategoriaTransacao"
+                placeholder="Buscar ou selecionar categoria..."
+                autocomplete="off"
+              />
+              <input type="hidden" id="filtroCategoriaTransacao" />
+              <div
+                id="filtroDropdownCategoriaTransacao"
+                class="dropdown-categorias"
+              ></div>
+            </div>
+          </div>
+
+          <div class="filtro-actions">
+            <button
+              id="btnLimparFiltroCategoriaTransacao"
+              type="button"
+              class="btn-rosa"
+            >
+              Limpar
+            </button>
+          </div>
+        </div>
+
         <div id="resumoTransacoes" class="resumo-listagem">
           <span>Total estimado:</span>
           <strong id="totalTransacoes" class="resumo-listagem-valor"
@@ -44,7 +70,11 @@
 
         <div id="transacoes"></div>
 
-        <div id="paginationTransacoes" class="pagination-listagem" style="display: none">
+        <div
+          id="paginationTransacoes"
+          class="pagination-listagem"
+          style="display: none"
+        >
           <button id="btnAnteriorTransacoes" type="button" disabled>
             Anterior
           </button>

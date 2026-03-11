@@ -413,7 +413,7 @@ async function seedDatabase(options = {}) {
 
     await garantirCategoriasPadrao();
     const categorias = await Categoria.find({ ativa: true });
-    const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
+    const categoriaSalario = await require('./categoriaHelpers').buscarSalario();
 
     const usuarioTeste = await obterOuAtualizarUsuarioTeste({
       nomeUsuarioTeste,

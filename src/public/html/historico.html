@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -6,10 +6,7 @@
     <title>Histórico - Controle de Gastos</title>
     <link rel="stylesheet" href="../css/base.css" />
     <link rel="stylesheet" href="../css/historico.css" />
-    <link
-      rel="stylesheet"
-      href="/vendor/fontawesome/css/all.min.css"
-    />
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
   </head>
   <body>
     <div id="notification-container"></div>
@@ -25,7 +22,10 @@
 
         <div class="aviso-historico">
           <i class="fas fa-info-circle"></i>
-          <span>O histórico é automaticamente apagado a cada 30 dias para otimizar o banco de dados.</span>
+          <span
+            >O histórico é automaticamente apagado a cada 30 dias para otimizar
+            o banco de dados.</span
+          >
         </div>
 
         <section class="filters-section">
@@ -53,12 +53,16 @@
             </select>
           </div>
 
-          <button id="btn-aplicar-filtros">
-            Aplicar Filtros
-          </button>
-          <button id="btn-limpar-filtros">
-            Limpar
-          </button>
+          <div class="filter-group">
+            <label for="filtro-status">Status:</label>
+            <select id="filtro-status">
+              <option value="">Todos</option>
+              <option value="false">Ativos</option>
+              <option value="true">Desfeitos</option>
+            </select>
+          </div>
+
+          <button id="btn-limpar-filtros">Limpar</button>
         </section>
 
         <section class="historico-section">
@@ -73,9 +77,7 @@
           </div>
 
           <div id="pagination" class="pagination" style="display: none">
-            <button id="btn-anterior" disabled>
-              Anterior
-            </button>
+            <button id="btn-anterior" disabled>Anterior</button>
             <span id="page-info">Página 1</span>
             <button id="btn-proximo">Próximo</button>
           </div>

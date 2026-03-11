@@ -22,6 +22,14 @@ export async function apiFetch(url, options = {}) {
 
   // Valida resposta
   if (!res.ok) {
+    // Se não autorizado, redireciona para login automaticamente
+    if (res.status === 401) {
+      // limpa token só por segurança
+      localStorage.removeItem('token');
+      window.location.href = '/html/login.html';
+      throw new Error('Não autorizado');
+    }
+
     const text = await res.text();
     try {
       // Tenta parsear JSON com mensagem de erro

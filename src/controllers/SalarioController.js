@@ -1,10 +1,10 @@
 const Transacao = require('../models/Transacao');
-const Categoria = require('../models/Categoria');
-const Conta = require('../models/Conta');
-const Carteira = require('../models/Carteira');
 const HistoricoService = require('../services/HistoricoService');
+const SaldoService = require('../services/SaldoService');
 const { formatarMoeda } = require('../utils/stringHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
+const categoriaHelpers = require('../utils/categoriaHelpers');
+const { salario: populateSalario } = require('../utils/populateHelpers');
 const {
   salarioJaProcessadoNoMes,
   extrairContaId,
@@ -20,10 +20,8 @@ function montarDescricaoHistoricoSalario(acao, salario) {
   return `${descricaoBase}: ${salario.titulo} - ${formatarMoeda(salario.valor)}`;
 }
 
-function aplicarPopulacaoSalario(query) {
-  return query.populate('conta', 'nome tipo').populate('categoria', 'nome');
-}
-
+// (população de relações usada por vários módulos) utilizei helper externo
+// que exporta a mesma configuração de populate.
 class SalarioController {
   constructor() {
     this.listar = this.listar.bind(this);
@@ -32,14 +30,9 @@ class SalarioController {
     this.deletar = this.deletar.bind(this);
   }
 
-  // Busca categoria Salário
-  async buscarCategoriaSalario() {
-    return Categoria.findOne({ nome: 'Salário' });
-  }
-
   // Retorna categoria Salário ou responde erro 400
   async buscarCategoriaSalarioOuResponder(res) {
-    const categoriaSalario = await this.buscarCategoriaSalario();
+    const categoriaSalario = await categoriaHelpers.buscarSalario();
 
     if (!categoriaSalario) {
       res
@@ -94,45 +87,17 @@ class SalarioController {
     };
   }
 
-  // Aplica variações de saldo em múltiplas contas
-  async aplicarDeltaContas(deltas, usuarioId) {
-    const entradas = Object.entries(deltas).filter(([, valor]) => valor !== 0);
-
-    for (const [contaId, delta] of entradas) {
-      const contaIdNormalizado = extrairContaId(contaId);
-      if (!contaIdNormalizado) {
-        continue;
-      }
-
-      await Conta.updateOne(
-        { _id: contaIdNormalizado, usuario: usuarioId },
-        { $inc: { saldo: Number(delta) } }
-      );
-    }
-  }
-
-  // Aplica variação de saldo na carteira do usuário
-  async aplicarDeltaCarteira(delta, usuarioId) {
-    if (!delta) {
-      return;
-    }
-
-    await Carteira.updateOne(
-      { usuario: usuarioId },
-      { $inc: { saldo: Number(delta) } },
-      { upsert: true }
-    );
-  }
+  // as alterações de saldo agora são centralizadas em SaldoService
 
   // Lista todos os salários do usuário
   async listar(req, res) {
-    const categoriaSalario = await this.buscarCategoriaSalario();
+    const categoriaSalario = await categoriaHelpers.buscarSalario();
 
     if (!categoriaSalario) {
       return res.json([]);
     }
 
-    const salarios = await aplicarPopulacaoSalario(
+    const salarios = await populateSalario(
       Transacao.find({
         usuario: req.user.id,
         categoria: categoriaSalario._id,
@@ -166,14 +131,14 @@ class SalarioController {
       const destino = extrairDestinoSaldo(salario);
 
       if (destino.tipo === 'conta') {
-        await this.aplicarDeltaContas(
+        await SaldoService.aplicarDeltaContas(
           { [destino.contaId]: salario.valor },
           req.user.id
         );
       }
 
       if (destino.tipo === 'carteira') {
-        await this.aplicarDeltaCarteira(salario.valor, req.user.id);
+        await SaldoService.aplicarDeltaCarteira(salario.valor, req.user.id);
       }
 
       await Transacao.updateOne(
@@ -182,7 +147,7 @@ class SalarioController {
       );
     }
 
-    const salarioPopulado = await aplicarPopulacaoSalario(
+    const salarioPopulado = await populateSalario(
       Transacao.findById(salario._id)
     );
 
@@ -228,7 +193,7 @@ class SalarioController {
       payloadAtualizacao.fonteSaldo = destinoSaldo.fonteSaldo;
     }
 
-    const salarioPopulado = await aplicarPopulacaoSalario(
+    const salarioPopulado = await populateSalario(
       Transacao.findOneAndUpdate(
         {
           _id: req.params.id,
@@ -273,8 +238,8 @@ class SalarioController {
       }
     }
 
-    await this.aplicarDeltaContas(deltasConta, req.user.id);
-    await this.aplicarDeltaCarteira(deltaCarteira, req.user.id);
+    await SaldoService.aplicarDeltaContas(deltasConta, req.user.id);
+    await SaldoService.aplicarDeltaCarteira(deltaCarteira, req.user.id);
 
     await Transacao.updateOne(
       { _id: salarioPopulado._id },
@@ -284,7 +249,7 @@ class SalarioController {
       }
     );
 
-    const salarioAtualizado = await aplicarPopulacaoSalario(
+    const salarioAtualizado = await populateSalario(
       Transacao.findById(salarioPopulado._id)
     );
 
@@ -320,14 +285,14 @@ class SalarioController {
     const destino = extrairDestinoSaldo(salario);
     if (salarioJaProcessadoNoMes(salario)) {
       if (destino.tipo === 'conta') {
-        await this.aplicarDeltaContas(
+        await SaldoService.aplicarDeltaContas(
           { [destino.contaId]: -salario.valor },
           req.user.id
         );
       }
 
       if (destino.tipo === 'carteira') {
-        await this.aplicarDeltaCarteira(-salario.valor, req.user.id);
+        await SaldoService.aplicarDeltaCarteira(-salario.valor, req.user.id);
       }
     }
 

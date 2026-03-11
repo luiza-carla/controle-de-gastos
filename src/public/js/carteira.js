@@ -1,5 +1,10 @@
 import { apiFetch } from './config.js';
-import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
+import {
+  abrirModal,
+  fecharModal,
+  mostrarErroInline,
+  limparErroInline,
+} from './modalEditar.js';
 import { formatarValor, capitalizar, escaparHtml, $ } from './helpers/index.js';
 import { mostrarNotificacao } from './notification.js';
 
@@ -31,6 +36,7 @@ window.exibirCarteira = exibirCarteira;
 
 // Adiciona dinheiro à carteira
 window.adicionarDinheiro = async () => {
+  limparErroInline();
   abrirModal({
     titulo: 'Adicionar dinheiro',
     conteudoHTML: `
@@ -43,7 +49,7 @@ window.adicionarDinheiro = async () => {
       const valor = parseFloat($('modalValorDinheiro')?.value);
 
       if (!valor || valor <= 0) {
-        abrirModalErro('Valor inválido');
+        mostrarErroInline('Valor inválido');
         return;
       }
 
@@ -56,7 +62,7 @@ window.adicionarDinheiro = async () => {
         fecharModal();
         await exibirCarteira();
       } catch (err) {
-        abrirModalErro(err.message);
+        mostrarErroInline(err.message);
       }
     },
   });
@@ -66,6 +72,7 @@ window.adicionarDinheiro = async () => {
 window.removerDinheiro = async () => {
   const carteira = await obterCarteira();
 
+  limparErroInline();
   abrirModal({
     titulo: 'Remover dinheiro',
     conteudoHTML: `
@@ -81,12 +88,12 @@ window.removerDinheiro = async () => {
       const valor = parseFloat($('modalValorRemover')?.value);
 
       if (!valor || valor <= 0) {
-        abrirModalErro('Valor inválido');
+        mostrarErroInline('Valor inválido');
         return;
       }
 
       if (valor > carteira.saldo) {
-        abrirModalErro('Saldo insuficiente na carteira');
+        mostrarErroInline('Saldo insuficiente na carteira');
         return;
       }
 
@@ -99,7 +106,7 @@ window.removerDinheiro = async () => {
         fecharModal();
         await exibirCarteira();
       } catch (err) {
-        abrirModalErro(err.message);
+        mostrarErroInline(err.message);
       }
     },
   });
@@ -111,7 +118,10 @@ window.abrirTransferencia = async () => {
   const contas = await apiFetch('/contas');
 
   if (!contas || contas.length === 0) {
-    abrirModalErro('Você precisa ter pelo menos uma conta para transferir');
+    mostrarNotificacao(
+      'Você precisa ter pelo menos uma conta para transferir',
+      'erro'
+    );
     return;
   }
 
@@ -145,12 +155,12 @@ window.abrirTransferencia = async () => {
       const valor = parseFloat($('modalValorTransferencia')?.value);
 
       if (!contaId || !valor || valor <= 0) {
-        abrirModalErro('Preencha o campo com um valor válido');
+        mostrarErroInline('Preencha o campo com um valor válido');
         return;
       }
 
       if (valor > carteira.saldo) {
-        abrirModalErro('Saldo insuficiente na carteira');
+        mostrarErroInline('Saldo insuficiente na carteira');
         return;
       }
 
@@ -170,7 +180,7 @@ window.abrirTransferencia = async () => {
           await window.listarContas();
         }
       } catch (err) {
-        abrirModalErro(err.message);
+        mostrarErroInline(err.message);
       }
     },
   });

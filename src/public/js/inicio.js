@@ -61,19 +61,24 @@ async function abrirProjecao() {
 }
 
 // Carrega listeners quando DOM estiver pronto
+// Somente ativa funcionalidades relacionadas ao resumo se o elemento
+// que exibe o saldo final estiver presente na página. dessa forma não
+// disparamos requisições desnecessárias em telas públicas (login/registro).
 document.addEventListener('DOMContentLoaded', () => {
-  carregarResumo();
+  if ($('saldoFinal')) {
+    carregarResumo();
 
-  const btn = $('btnProjecao');
-  const fechar = $('fecharModal');
+    const btn = $('btnProjecao');
+    const fechar = $('fecharModal');
 
-  if (btn) {
-    btn.addEventListener('click', abrirProjecao);
-  }
+    if (btn) {
+      btn.addEventListener('click', abrirProjecao);
+    }
 
-  if (fechar) {
-    fechar.addEventListener('click', () => {
-      hideElement($('modalProjecao'));
-    });
+    if (fechar) {
+      fechar.addEventListener('click', () => {
+        hideElement($('modalProjecao'));
+      });
+    }
   }
 });

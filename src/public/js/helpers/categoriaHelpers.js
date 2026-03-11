@@ -22,6 +22,11 @@ export function setupCategoriaAutocomplete(
   const inputHidden = $(inputHiddenId);
   const dropdown = $(dropdownId);
 
+  // Se nenhum dos elementos existe, é provável que o script tenha sido
+  // carregado numa página que não contém o autocomplete — sair silenciosamente.
+  if (!inputBusca && !inputHidden && !dropdown) return;
+
+  // Se pelo menos um elemento existe mas está faltando outro, avisar.
   if (!inputBusca || !inputHidden || !dropdown) {
     warn(
       `Categoria autocomplete não inicializado: ${inputId}`,
@@ -94,13 +99,13 @@ export function setupCategoriaAutocomplete(
     mostrarDropdown(categoriasFiltradas);
   };
 
-  // Focus mostra dropdown
+  // Focus mostra dropdown mesmo se já houver algo digitado/selecionado
   inputBusca.addEventListener('focus', () => {
-    filtrar(inputBusca.value || '');
+    filtrar('');
   });
 
   inputBusca.addEventListener('click', () => {
-    filtrar(inputBusca.value || '');
+    filtrar('');
   });
 
   // Input filtra

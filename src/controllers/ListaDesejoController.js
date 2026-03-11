@@ -1,8 +1,7 @@
 const ListaDesejo = require('../models/ListaDesejo');
 const Transacao = require('../models/Transacao');
-const Conta = require('../models/Conta');
 const HistoricoService = require('../services/HistoricoService');
-const CarteiraService = require('../services/CarteiraService');
+const SaldoService = require('../services/SaldoService');
 const { formatarMoeda } = require('../utils/stringHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
 const { criarErro } = require('../utils/errorHelpers');
@@ -13,6 +12,9 @@ const PROJECAO_CATEGORIA = 'nome cor tipo';
 function popularCategoria(query) {
   return query.populate('categoria', PROJECAO_CATEGORIA);
 }
+
+// reuso de populate para transações
+const { transacao: populateTransacao } = require('../utils/populateHelpers');
 
 function buscarItemDoUsuario(itemId, usuarioId) {
   return popularCategoria(
@@ -40,46 +42,6 @@ function montarUpdateData(body) {
 function montarDescricaoHistorico(acao, titulo) {
   const descricaoBase = HistoricoService.formatarDescricao(acao, 'listaDesejo');
   return `${descricaoBase}: ${titulo}`;
-}
-
-async function validarSaldoDisponivel({
-  usuarioId,
-  contaId,
-  fonteSaldo,
-  valor,
-}) {
-  if (fonteSaldo === 'carteira') {
-    const carteira = await CarteiraService.obterOuCriar(usuarioId);
-    if (valor > Number(carteira.saldo || 0)) {
-      throw criarErro(400, 'Saldo insuficiente na carteira');
-    }
-    return;
-  }
-
-  const conta = await Conta.findOne({
-    _id: contaId,
-    usuario: usuarioId,
-  });
-
-  if (!conta) {
-    throw criarErro(404, 'Conta não encontrada');
-  }
-
-  if (valor > Number(conta.saldo || 0)) {
-    throw criarErro(400, 'Saldo insuficiente na conta');
-  }
-}
-
-async function debitarSaldo({ usuarioId, contaId, fonteSaldo, valor }) {
-  if (fonteSaldo === 'carteira') {
-    await CarteiraService.adicionarSaldo(usuarioId, -valor);
-    return;
-  }
-
-  await Conta.updateOne(
-    { _id: contaId, usuario: usuarioId },
-    { $inc: { saldo: -valor } }
-  );
 }
 
 class ListaDesejoController {
@@ -196,7 +158,7 @@ class ListaDesejoController {
     }
 
     if (statusFinal === 'pago') {
-      await validarSaldoDisponivel({
+      await SaldoService.validarSaldoDisponivel({
         usuarioId: req.user.id,
         contaId: conta,
         fonteSaldo,
@@ -224,12 +186,16 @@ class ListaDesejoController {
     });
 
     if (statusFinal === 'pago') {
-      await debitarSaldo({
-        usuarioId: req.user.id,
-        contaId: conta,
-        fonteSaldo,
-        valor: valorFinal,
-      });
+      await SaldoService.aplicarMovimento(
+        {
+          conta: conta,
+          fonteSaldo,
+          valor: valorFinal,
+          tipo: 'saida',
+          status: 'pago',
+        },
+        req.user.id
+      );
     }
 
     await ListaDesejo.findByIdAndDelete(item._id);
@@ -247,9 +213,9 @@ class ListaDesejoController {
       },
     });
 
-    const transacaoCompleta = await Transacao.findById(novaTransacao._id)
-      .populate('conta', 'nome tipo')
-      .populate('categoria', 'nome cor tipo');
+    const transacaoCompleta = await populateTransacao(
+      Transacao.findById(novaTransacao._id)
+    );
 
     res.status(201).json({
       mensagem: 'Desejo realizado com sucesso',

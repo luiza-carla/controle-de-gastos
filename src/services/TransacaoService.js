@@ -12,11 +12,14 @@ class TransacaoService {
 
   // Lista todas as transações do usuário com dados relacionados
   async listar(usuarioId) {
-    return Transacao.find({ usuario: usuarioId })
+    // reutiliza helper central para manter consistência
+    const query = Transacao.find({ usuario: usuarioId })
       .sort({ data: -1, createdAt: -1 })
-      .populate('conta', 'nome tipo')
-      .populate('categoria', 'nome tipo cor')
       .select('-__v');
+    const {
+      transacao: populateTransacao,
+    } = require('../utils/populateHelpers');
+    return populateTransacao(query);
   }
 
   // Atualiza transação existente

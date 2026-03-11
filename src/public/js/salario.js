@@ -2,7 +2,6 @@ import { apiFetch } from './config.js';
 import {
   abrirModal,
   fecharModal,
-  abrirModalErro,
   mostrarErroInline,
   limparErroInline,
   garantirErroInline,
@@ -216,7 +215,7 @@ window.deletarSalario = async (id) => {
         await atualizarVisoesRelacionadas();
       } catch (err) {
         fecharModal();
-        abrirModalErro(err.message);
+        mostrarNotificacao(err.message || 'Erro ao deletar salário', 'erro');
       }
     },
   });

@@ -8,10 +8,7 @@
     <link rel="stylesheet" href="../css/transacoes.css" />
     <link rel="stylesheet" href="../css/listaDesejos.css" />
 
-    <link
-      rel="stylesheet"
-      href="/vendor/fontawesome/css/all.min.css"
-    />
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
   </head>
 
   <body>
@@ -34,6 +31,35 @@
 
         <h3><i class="fa-solid fa-list"></i> Desejos</h3>
 
+        <div class="filters-section">
+          <div class="filter-group">
+            <label for="filtroBuscaCategoriaDesejo">Categoria:</label>
+            <div class="categoria-autocomplete">
+              <input
+                type="text"
+                id="filtroBuscaCategoriaDesejo"
+                placeholder="Buscar ou selecionar categoria..."
+                autocomplete="off"
+              />
+              <input type="hidden" id="filtroCategoriaDesejo" />
+              <div
+                id="filtroDropdownCategoriaDesejo"
+                class="dropdown-categorias"
+              ></div>
+            </div>
+          </div>
+
+          <div class="filtro-actions">
+            <button
+              id="btnLimparFiltroCategoriaDesejo"
+              type="button"
+              class="btn-rosa"
+            >
+              Limpar
+            </button>
+          </div>
+        </div>
+
         <div id="resumoDesejos" class="resumo-listagem">
           <span>Total estimado:</span>
           <strong id="totalDesejos" class="resumo-listagem-valor"
@@ -43,7 +69,11 @@
 
         <div id="listaDesejos"></div>
 
-        <div id="paginationDesejos" class="pagination-listagem" style="display: none">
+        <div
+          id="paginationDesejos"
+          class="pagination-listagem"
+          style="display: none"
+        >
           <button id="btnAnteriorDesejos" type="button" disabled>
             Anterior
           </button>

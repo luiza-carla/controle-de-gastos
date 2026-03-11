@@ -3,7 +3,6 @@ import { limparCategoriaSelecionada } from './categoria.js';
 import {
   abrirModal,
   fecharModal,
-  abrirModalErro,
   mostrarErroInline,
   limparErroInline,
   garantirErroInline,
@@ -17,14 +16,10 @@ import {
   formatarValor,
   formatarData,
   capitalizar,
-  criarCardsHTML,
   criarBotoesAcao,
-  calcularTotalItens,
   showElement,
   hideElement,
   $,
-  setHTMLById,
-  setTextById,
   escaparHtml,
   criarBadgeCategoria,
   inicializarTags,
@@ -33,19 +28,24 @@ import {
   resetarTagsFormulario,
   setupCategoriaAutocomplete,
   criarPaginacao,
+  // filtro/pagina
+  filtrarPorCategoria,
+  renderizarListagemFiltrada,
+  inicializarFiltroCategoriaGenerico,
+  aplicarFiltroCategoriaGenerico,
+  limparFiltroCategoriaGenerico,
 } from './helpers/index.js';
 
-// Armazena tags temporarias do formulario
-let tags = [];
-
-const URL_TRANSACOES = `${window.location.origin}/transacoes`;
-const URL_CATEGORIAS = `${window.location.origin}/categorias`;
 const FORM_ERRO_ID = 'formErroInlineTransacao';
 const FORM_MSG_ERRO_ID = 'formMensagemErroTransacao';
 
 const stateTransacoes = {
   itens: [],
+  filtroCategoriaId: '', // id selecionado no filtro de categoria
+  filtroInicializado: false,
+  categoriaAutocompleteFiltro: null,
 };
+let tags = [];
 
 const paginacaoTransacoes = criarPaginacao({
   containerId: 'paginationTransacoes',
@@ -58,8 +58,12 @@ const paginacaoTransacoes = criarPaginacao({
   },
 });
 
+const URL_TRANSACOES = `${window.location.origin}/transacoes`;
+const URL_CATEGORIAS = `${window.location.origin}/categorias`;
+const URL_CONTAS = `${window.location.origin}/contas`;
+
 function mostrarErroApi(erro, mensagemPadrao) {
-  abrirModalErro(erro.message || mensagemPadrao);
+  mostrarNotificacao(erro.message || mensagemPadrao, 'erro');
 }
 
 async function carregarTransacoes() {
@@ -192,31 +196,88 @@ export async function criarTransacao(formId = 'formTransacao') {
 }
 
 // Lista transacoes do usuario na tela
+function renderizarPaginaTransacoes() {
+  const fnTotal = (t) =>
+    t.tipo === 'saida' ? -Number(t.valor || 0) : Number(t.valor || 0);
+
+  renderizarListagemFiltrada(
+    'transacoes',
+    stateTransacoes.itens,
+    () =>
+      filtrarPorCategoria(
+        stateTransacoes.itens,
+        stateTransacoes.filtroCategoriaId
+      ),
+    criarCardTransacao,
+    paginacaoTransacoes,
+    'totalTransacoes',
+    fnTotal
+  );
+}
+
+function aplicarFiltroCategoria() {
+  aplicarFiltroCategoriaGenerico(
+    stateTransacoes,
+    'filtroCategoriaTransacao',
+    renderizarPaginaTransacoes,
+    paginacaoTransacoes
+  );
+}
+
+function limparFiltroCategoria() {
+  limparFiltroCategoriaGenerico(
+    stateTransacoes,
+    paginacaoTransacoes,
+    renderizarPaginaTransacoes
+  );
+}
 export async function listarTransacoes() {
   const container = $('transacoes');
   // Gera HTML de um card de transacao
   if (!container) return;
 
-  const transacoes = await carregarTransacoes();
-  stateTransacoes.itens = transacoes || [];
+  try {
+    await inicializarFiltroCategoria();
 
-  const total = calcularTotalItens(stateTransacoes.itens, (t) =>
-    t.tipo === 'saida' ? -Number(t.valor || 0) : Number(t.valor || 0)
+    const transacoes = await carregarTransacoes();
+    stateTransacoes.itens = transacoes || [];
+
+    renderizarPaginaTransacoes();
+  } catch (erro) {
+    // se houver erro (tipicamente não autorizado), mostra notificação
+    mostrarNotificacao(erro.message || 'Erro ao carregar transações', 'erro');
+  }
+}
+
+async function inicializarFiltroCategoria() {
+  $('btnLimparFiltroCategoriaTransacao')?.addEventListener(
+    'click',
+    limparFiltroCategoria
   );
+  if (stateTransacoes.filtroInicializado) {
+    return;
+  }
 
-  setTextById('totalTransacoes', `R$ ${formatarValor(total)}`);
-  renderizarPaginaTransacoes();
+  const inputBusca = $('filtroBuscaCategoriaTransacao');
+  const inputHidden = $('filtroCategoriaTransacao');
+  const dropdown = $('filtroDropdownCategoriaTransacao');
+
+  if (!inputBusca || !inputHidden || !dropdown) {
+    return;
+  }
+  await inicializarFiltroCategoriaGenerico({
+    inputBuscaId: 'filtroBuscaCategoriaTransacao',
+    inputHiddenId: 'filtroCategoriaTransacao',
+    dropdownId: 'filtroDropdownCategoriaTransacao',
+    btnLimparId: 'btnLimparFiltroCategoriaTransacao',
+    urlCategorias: URL_CATEGORIAS,
+    stateObj: stateTransacoes,
+    aplicarFiltroFn: aplicarFiltroCategoria,
+    limparFiltroFn: limparFiltroCategoria,
+  });
+
+  stateTransacoes.filtroInicializado = true;
 }
-
-function renderizarPaginaTransacoes() {
-  const { skip, limit } = paginacaoTransacoes.getParams();
-  const totalItens = stateTransacoes.itens.length;
-  const itensPagina = stateTransacoes.itens.slice(skip, skip + limit);
-
-  setHTMLById('transacoes', criarCardsHTML(itensPagina, criarCardTransacao));
-  paginacaoTransacoes.setTotal(totalItens);
-}
-
 function criarCardTransacao(t) {
   const tipoClasse =
     t.tipo === 'entrada' ? 'transacao-entrada' : 'transacao-saida';
@@ -349,7 +410,7 @@ function criarCardTransacao(t) {
 window.editarTransacao = async (id) => {
   const transacao = (await carregarTransacoes()).find((t) => t._id === id);
   const categorias = await apiFetch(URL_CATEGORIAS);
-  const contas = await apiFetch('/contas');
+  const contas = await apiFetch(URL_CONTAS);
 
   if (!transacao) return;
 

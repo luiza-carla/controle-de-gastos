@@ -7,6 +7,7 @@ class HistoricoController {
     const filtros = {
       entidade: req.query.entidade,
       acao: req.query.acao,
+      desfeito: req.query.desfeito,
       limit: parseQueryInt(req.query.limit, 50),
       skip: parseQueryInt(req.query.skip, 0),
     };

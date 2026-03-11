@@ -22,6 +22,7 @@ let state = {
   filtros: {
     entidade: '',
     acao: '',
+    desfeito: '',
   },
 };
 
@@ -47,6 +48,14 @@ function inicializarEventos() {
   onEventById('btn-limpar-filtros', 'click', limparFiltros);
   paginacaoHistorico.init();
 
+  // Filtro automático ao mudar qualquer select
+  ['filtro-entidade', 'filtro-acao', 'filtro-status'].forEach((id) => {
+    const el = $(id);
+    if (el) {
+      el.addEventListener('change', aplicarFiltros);
+    }
+  });
+
   // Delegação para botões de desfazer adicionados dinamicamente
   onEventById('historico-lista', 'click', async (event) => {
     const btn = event.target.closest('.btn-desfazer[data-historico-id]');
@@ -68,7 +77,7 @@ async function carregarHistorico() {
   try {
     mostrarLoading(true);
 
-    const { entidade, acao } = state.filtros;
+    const { entidade, acao, desfeito } = state.filtros;
     const { skip, limit } = paginacaoHistorico.getParams();
 
     const params = new URLSearchParams({
@@ -78,6 +87,7 @@ async function carregarHistorico() {
 
     if (entidade) params.append('entidade', entidade);
     if (acao) params.append('acao', acao);
+    if (desfeito !== '') params.append('desfeito', desfeito);
 
     const resultado = await apiFetch(
       `${window.location.origin}/historico?${params}`
@@ -772,9 +782,11 @@ function traduzirAcao(acao) {
 function aplicarFiltros() {
   const filtroEntidade = $('filtro-entidade');
   const filtroAcao = $('filtro-acao');
+  const filtroStatus = $('filtro-status');
 
   state.filtros.entidade = filtroEntidade?.value || '';
   state.filtros.acao = filtroAcao?.value || '';
+  state.filtros.desfeito = filtroStatus?.value || '';
   paginacaoHistorico.resetar();
   carregarHistorico();
 }
@@ -782,11 +794,13 @@ function aplicarFiltros() {
 function limparFiltros() {
   const filtroEntidade = $('filtro-entidade');
   const filtroAcao = $('filtro-acao');
+  const filtroStatus = $('filtro-status');
 
   if (filtroEntidade) filtroEntidade.value = '';
   if (filtroAcao) filtroAcao.value = '';
+  if (filtroStatus) filtroStatus.value = '';
 
-  state.filtros = { entidade: '', acao: '' };
+  state.filtros = { entidade: '', acao: '', desfeito: '' };
   paginacaoHistorico.resetar();
   carregarHistorico();
 }

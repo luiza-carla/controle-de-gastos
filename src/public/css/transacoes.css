@@ -155,6 +155,71 @@
   font-size: 18px;
 }
 
+.filters-section {
+  margin-top: 14px;
+  background: var(--cinza-claro);
+  border: 1px solid var(--cinza-linha);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: var(--cinza-2);
+  font-size: 13px;
+}
+
+.filter-group input {
+  width: 100%;
+}
+
+.filtro-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.filtro-actions button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#btnAplicarFiltroCategoriaTransacao,
+#btnAplicarFiltroCategoriaDesejo {
+  background: var(--rosa);
+  color: var(--cinza-1);
+}
+
+#btnAplicarFiltroCategoriaTransacao:hover,
+#btnAplicarFiltroCategoriaDesejo:hover {
+  background: var(--rosa-claro);
+}
+
+.btn-rosa {
+  background: var(--rosa);
+  color: var(--cinza-1);
+}
+.btn-rosa:hover {
+  background: var(--rosa-claro);
+}
+
 .pagination-listagem {
   display: flex;
   justify-content: center;
@@ -408,5 +473,13 @@
 @media (max-width: 1200px) {
   #transacoes {
     column-count: 1;
+  }
+
+  .filtro-actions {
+    width: 100%;
+  }
+
+  .filtro-actions button {
+    flex: 1;
   }
 }

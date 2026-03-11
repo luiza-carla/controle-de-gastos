@@ -1,7 +1,7 @@
 const Transacao = require('../models/Transacao');
-const Categoria = require('../models/Categoria');
 const Conta = require('../models/Conta');
 const Carteira = require('../models/Carteira');
+const categoriaHelpers = require('../utils/categoriaHelpers');
 const {
   somarCampo,
   totaisTransacoes,
@@ -9,11 +9,6 @@ const {
 } = require('../utils/resumoHelpers');
 
 class ResumoService {
-  // Busca a categoria de salário cadastrada no sistema
-  async buscarCategoriaSalario() {
-    return Categoria.findOne({ nome: 'Salário' });
-  }
-
   // Busca salários ativos do usuário com base na categoria de salário
   async buscarSalariosAtivos(usuarioId, categoriaSalario) {
     if (!categoriaSalario) return [];
@@ -97,7 +92,7 @@ class ResumoService {
       999
     );
 
-    const categoriaSalario = await this.buscarCategoriaSalario();
+    const categoriaSalario = await categoriaHelpers.buscarSalario();
     const salarios = await this.buscarSalariosAtivos(
       usuarioId,
       categoriaSalario
@@ -175,7 +170,7 @@ class ResumoService {
       0
     );
 
-    const categoriaSalario = await this.buscarCategoriaSalario();
+    const categoriaSalario = await categoriaHelpers.buscarSalario();
     const salarios = await this.buscarSalariosAtivos(
       usuarioId,
       categoriaSalario
