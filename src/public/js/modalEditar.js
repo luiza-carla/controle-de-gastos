@@ -55,11 +55,11 @@ export function abrirModalErro(mensagem) {
 
   setHTMLById(
     'modalTitulo',
-    '<i class="fa-solid fa-circle-xmark" style="color: var(--vermelho-escuro);"></i> Erro'
+    '<i class="fa-solid fa-circle-xmark" style="color: var(--btn-danger);"></i> Erro'
   );
   setHTMLById(
     'modalConteudo',
-    `<p style="margin: 0; padding: 10px 0; color: var(--cinza-texto); line-height: 1.6;">${mensagem}</p>`
+    `<p style="margin: 0; padding: 10px 0; color: var(--text-secondary); line-height: 1.6;">${mensagem}</p>`
   );
 
   definirFooterModal('erro');

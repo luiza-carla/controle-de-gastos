@@ -132,10 +132,9 @@ class HistoricoService {
         case 'carteira':
           return await Carteira.findById(entidadeId).lean();
         case 'listaDesejo':
-          return await populateTransacao(
-            ListaDesejo.findById(entidadeId)
-              .populate('categoria', 'nome cor tipo')
-          ).lean();
+          return await ListaDesejo.findById(entidadeId)
+            .populate('categoria', 'nome cor tipo')
+            .lean();
         default:
           return null;
       }

@@ -14,38 +14,61 @@
         <h2>Resumo Financeiro</h2>
 
         <div class="resumo-financeiro">
-          <p>
-            <span><i class="fa-solid fa-coins"></i> Saldo</span>
-            <b>R$ <span id="saldo">0,00</span></b>
-          </p>
+          <div class="card" id="cardSaldo">
+            <h3><i class="fa-solid fa-coins"></i> Saldo atual</h3>
+            <details id="boxSaldoAtual">
+              <summary>
+                <span>Visualizar detalhes</span>
+                <span class="valor-container"><b>R$ <span id="saldoAtual">0,00</span></b></span>
+              </summary>
+              <ul id="detSaldoAtualLista"></ul>
+            </details>
+          </div>
 
-          <p>
-            <span><i class="fa-solid fa-money-bill-wave"></i> Salários</span>
-            <b>R$ <span id="totalSalarios">0,00</span></b>
-          </p>
+          <div class="card" id="cardEntradas">
+            <h3><i class="fa-solid fa-arrow-up"></i> Entradas</h3>
+            <details id="boxEntradas">
+              <summary>
+                <span>Visualizar detalhes</span>
+                <span class="valor-container"><b>R$ <span id="totalEntradas">0,00</span></b></span>
+              </summary>
+              <table class="resumo-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Categoria</th>
+                    <th>Nome</th>
+                    <th>Valor</th>
+                  </tr>
+                </thead>
+                <tbody id="detEntradasLista"></tbody>
+              </table>
+            </details>
+          </div>
 
-          <p>
-            <span><i class="fa-solid fa-university"></i> Saldo nas contas</span>
-            <b>R$ <span id="saldoContas">0,00</span></b>
-          </p>
-
-          <p>
-            <span><i class="fa-solid fa-wallet"></i> Saldo na carteira</span>
-            <b>R$ <span id="saldoCarteira">0,00</span></b>
-          </p>
-
-          <p>
-            <span><i class="fa-solid fa-arrow-up"></i> Total de entradas</span>
-            <b>R$ <span id="totalEntradas">0,00</span></b>
-          </p>
-
-          <p>
-            <span><i class="fa-solid fa-arrow-down"></i> Total de saídas</span>
-            <b>R$ <span id="totalSaidas">0,00</span></b>
-          </p>
+          <div class="card" id="cardSaidas">
+            <h3><i class="fa-solid fa-arrow-down"></i> Saídas</h3>
+            <details id="boxSaidas">
+              <summary>
+                <span>Visualizar detalhes</span>
+                <span class="valor-container"><b>R$ <span id="totalSaidas">0,00</span></b></span>
+              </summary>
+              <table class="resumo-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Categoria</th>
+                    <th>Nome</th>
+                    <th>Valor</th>
+                  </tr>
+                </thead>
+                <tbody id="detSaidasLista"></tbody>
+              </table>
+            </details>
+          </div>
 
           <p style="font-size: 18px">
-            <b>Saldo total: R$ <span id="saldoFinal">0,00</span></b>
+            <b>Saldo calculado: R$ <span id="saldoCalculado">0,00</span></b>
           </p>
 
           <button id="btnProjecao">Ver projeção com pendentes</button>

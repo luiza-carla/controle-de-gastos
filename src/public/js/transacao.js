@@ -6,6 +6,7 @@ import {
   mostrarErroInline,
   limparErroInline,
   garantirErroInline,
+  abrirModalErro,
 } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
@@ -35,7 +36,6 @@ import {
   aplicarFiltroCategoriaGenerico,
   limparFiltroCategoriaGenerico,
 } from './helpers/index.js';
-
 const FORM_ERRO_ID = 'formErroInlineTransacao';
 const FORM_MSG_ERRO_ID = 'formMensagemErroTransacao';
 
@@ -135,7 +135,7 @@ export async function criarTransacao(formId = 'formTransacao') {
       !conta ||
       !categoria
     ) {
-      mostrarErroInline(
+      abrirModalErro(
         'Por favor, preencha todos os campos obrigatórios',
         FORM_ERRO_ID,
         FORM_MSG_ERRO_ID
@@ -302,7 +302,7 @@ function criarCardTransacao(t) {
       ? 'Carteira (dinheiro físico)'
       : t.conta?.nome || 'Sem conta';
   const categoria = criarBadgeCategoria(t.categoria);
-  const corCategoria = t.categoria?.cor || '#95a5a6';
+  const corCategoria = t.categoria?.cor || 'var(--gray-700)';
 
   const tags = gerarTags(t.tags);
   const dataCriacao = formatarData(t.createdAt || t.data);
@@ -388,13 +388,13 @@ function criarCardTransacao(t) {
       <div class="transacao-acoes">
         ${criarBotoesAcao([
           {
-            classe: 'btn-editar',
+            classe: 'secondary',
             onclick: `editarTransacao('${t._id}')`,
             icone: 'fa-pen',
             title: 'Editar',
           },
           {
-            classe: 'btn-deletar',
+            classe: 'danger',
             onclick: `deletarTransacao('${t._id}')`,
             icone: 'fa-trash',
             title: 'Deletar',
@@ -486,7 +486,7 @@ window.editarTransacao = async (id) => {
         <div id="modalTagsContainer" class="tag-editor-container"></div>
         <div class="tag-editor-input-row">
           <input type="text" id="modalTagInput" class="tag-editor-input" placeholder="Adicionar tag">
-          <button type="button" id="modalBtnAddTag" class="btn-tag-add">
+          <button type="button" id="modalBtnAddTag" class="btn btn-tag-add">
             <i class="fa-solid fa-plus"></i>
           </button>
         </div>

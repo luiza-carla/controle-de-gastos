@@ -24,33 +24,33 @@
 }
 
 .notificacao-sucesso {
-  background-color: var(--notificacao-sucesso-bg);
-  color: var(--notificacao-sucesso-texto);
-  border: 1px solid var(--notificacao-sucesso-borda);
+  background-color: var(--alert-success-bg);
+  color: var(--alert-success-text);
+  border: 1px solid var(--alert-success-border);
 }
 
 .notificacao-sucesso i {
-  color: var(--notificacao-sucesso-icone);
+  color: var(--alert-success-icon);
 }
 
 .notificacao-erro {
-  background-color: var(--notificacao-erro-bg);
-  color: var(--notificacao-erro-texto);
-  border: 1px solid var(--notificacao-erro-borda);
+  background-color: var(--alert-error-bg);
+  color: var(--alert-error-text);
+  border: 1px solid var(--alert-error-border);
 }
 
 .notificacao-erro i {
-  color: var(--notificacao-erro-icone);
+  color: var(--alert-error-icon);
 }
 
 .notificacao-aviso {
-  background-color: var(--notificacao-aviso-bg);
-  color: var(--notificacao-aviso-texto);
-  border: 1px solid var(--notificacao-aviso-borda);
+  background-color: var(--alert-warning-bg);
+  color: var(--alert-warning-text);
+  border: 1px solid var(--alert-warning-border);
 }
 
 .notificacao-aviso i {
-  color: var(--notificacao-aviso-icone);
+  color: var(--alert-warning-icon);
 }
 
 @keyframes slideIn {

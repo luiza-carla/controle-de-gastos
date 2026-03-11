@@ -3,7 +3,7 @@ import { escaparHtml, setDisabledById, $, clearElement } from './index.js';
 // Cria badge visual de categoria com cor personalizada
 export function criarBadgeCategoria(categoria) {
   const nome = categoria?.nome || 'Sem categoria';
-  const cor = categoria?.cor || '#95a5a6';
+  const cor = categoria?.cor || 'var(--gray-700)';
 
   return `<span class="categoria-badge" style="--categoria-cor:${cor};">${escaparHtml(nome)}</span>`;
 }

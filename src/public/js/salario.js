@@ -5,6 +5,7 @@ import {
   mostrarErroInline,
   limparErroInline,
   garantirErroInline,
+  abrirModalErro,
 } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
@@ -82,7 +83,7 @@ async function atualizarVisoesRelacionadas() {
     await listarContas();
   }
 
-  if ($('saldoFinal')) {
+  if ($('saldoAtual') || $('saldoCalculado')) {
     await carregarResumo();
   }
 }
@@ -109,7 +110,7 @@ export function criarSalario(formId = 'formSalario', callback) {
     const conta = $('contaSalario')?.value;
 
     if (!Number(valor) || !diaRecebimento) {
-      mostrarErroInline(
+      abrirModalErro(
         'Por favor, preencha todos os campos obrigatórios',
         FORM_ERRO_ID,
         FORM_MSG_ERRO_ID
@@ -181,12 +182,12 @@ export async function listarSalarios() {
         <div class="acoes-salario">
           ${criarBotoesAcao([
             {
-              classe: 'btn-editar',
+              classe: 'secondary',
               onclick: `editarSalario('${s._id}', ${s.valor}, ${diaRecebimento}, '${destinoSaldo}')`,
               icone: 'fa-pen',
             },
             {
-              classe: 'btn-deletar',
+              classe: 'danger',
               onclick: `deletarSalario('${s._id}')`,
               icone: 'fa-trash',
             },

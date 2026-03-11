@@ -6,28 +6,7 @@
 }
 
 #listaDesejos .transacao-card.transacao-saida {
-  background: var(--branco);
-}
-
-.btn-realizar {
-  background: var(--verde);
-  color: var(--branco);
-  border: none;
-  padding: 10px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-}
-
-.btn-realizar:hover {
-  background: var(--verde-forte);
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+  background: var(--color-white);
 }
 
 @media (max-width: 1200px) {

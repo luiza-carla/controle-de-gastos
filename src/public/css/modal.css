@@ -9,7 +9,7 @@
 }
 
 .modal-box {
-  background: var(--branco);
+  background: var(--color-white);
   padding: 25px;
   border-radius: 10px;
   width: 400px;
@@ -52,54 +52,54 @@
 }
 
 #modalCancelar {
-  background: var(--vermelho-escuro);
-  color: var(--branco);
+  background: var(--btn-danger);
+  color: var(--color-white);
 }
 
 #modalCancelar:hover {
-  background: var(--vermelho-hover);
+  background: var(--btn-danger-hover);
 }
 
 #modalSalvar {
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--brand-secondary);
+  color: var(--color-white);
 }
 
 #modalSalvar:hover {
-  background: var(--verde-forte);
+  background: var(--btn-confirm);
 }
 
 .btn-danger {
-  background: var(--vermelho-escuro);
-  color: var(--branco);
+  background: var(--btn-danger);
+  color: var(--color-white);
 }
 
 .btn-danger:hover {
-  background: var(--vermelho-hover);
+  background: var(--btn-danger-hover);
 }
 
 #modalConfirmar {
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--brand-secondary);
+  color: var(--color-white);
 }
 
 #modalConfirmar:hover {
-  background: var(--verde-forte);
+  background: var(--btn-confirm);
 }
 
 #modalFooterErro .btn-danger {
-  background: var(--vermelho-escuro);
+  background: var(--btn-danger);
 }
 
 #modalFooterErro .btn-danger:hover {
-  background: var(--vermelho-hover);
+  background: var(--btn-danger-hover);
 }
 
 .modal-erro-inline {
   display: none;
   padding: 12px;
-  background-color: var(--vermelho-claro);
-  border-left: 4px solid var(--vermelho-escuro);
+  background-color: var(--alert-error-bg);
+  border-left: 4px solid var(--btn-danger);
   margin-bottom: 12px;
   border-radius: 4px;
 }
@@ -110,6 +110,6 @@
 
 .modal-mensagem-erro {
   margin: 0;
-  color: var(--vermelho-escuro);
+  color: var(--btn-danger);
   font-size: 14px;
 }

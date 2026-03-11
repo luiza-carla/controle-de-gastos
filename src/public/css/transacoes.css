@@ -20,8 +20,8 @@
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--branco);
-  border: 1px solid var(--cinza-borda);
+  background: var(--color-white);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   max-height: 200px;
   overflow-y: auto;
@@ -38,7 +38,7 @@
 .categoria-item {
   padding: 10px 12px;
   cursor: pointer;
-  border-bottom: 1px solid var(--cinza-linha);
+  border-bottom: 1px solid var(--divider);
   transition: background 0.2s;
   display: flex;
   align-items: center;
@@ -62,12 +62,12 @@
 }
 
 .categoria-item:hover {
-  background: var(--cinza-claro);
+  background: var(--gray-50);
 }
 
 .categoria-item.selected {
-  background: var(--rosa);
-  color: var(--cinza-1);
+  background: var(--brand-primary);
+  color: var(--gray-900);
 }
 
 #tagsArea {
@@ -79,14 +79,6 @@
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 10px;
-}
-
-.tag {
-  background: var(--rosa);
-  color: var(--cinza-1);
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-size: 12px;
 }
 
 .tag-input-area {
@@ -118,25 +110,10 @@
   margin-right: 8px;
   cursor: pointer;
   padding: 4px 8px;
-  background: #eee;
+  background: var(--gray-100);
   border-radius: 6px;
   display: inline-block;
   font-size: 13px;
-}
-
-.btn-tag-add {
-  padding: 8px 12px;
-  border-radius: 6px;
-  background: var(--rosa);
-  color: var(--cinza-1);
-  border: none;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 12px;
-}
-
-.btn-tag-add:hover {
-  filter: brightness(0.95);
 }
 
 .resumo-listagem {
@@ -144,21 +121,21 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: var(--cinza-claro);
+  background: var(--gray-50);
   border-radius: 10px;
   margin-top: 12px;
-  color: var(--cinza-texto);
+  color: var(--text-secondary);
 }
 
 .resumo-listagem-valor {
-  color: var(--verde);
+  color: var(--brand-secondary);
   font-size: 18px;
 }
 
 .filters-section {
   margin-top: 14px;
-  background: var(--cinza-claro);
-  border: 1px solid var(--cinza-linha);
+  background: var(--gray-50);
+  border: 1px solid var(--divider);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -177,7 +154,7 @@
 
 .filter-group label {
   font-weight: 600;
-  color: var(--cinza-2);
+  color: var(--gray-700);
   font-size: 13px;
 }
 
@@ -191,34 +168,6 @@
   gap: 8px;
 }
 
-.filtro-actions button {
-  border: none;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-#btnAplicarFiltroCategoriaTransacao,
-#btnAplicarFiltroCategoriaDesejo {
-  background: var(--rosa);
-  color: var(--cinza-1);
-}
-
-#btnAplicarFiltroCategoriaTransacao:hover,
-#btnAplicarFiltroCategoriaDesejo:hover {
-  background: var(--rosa-claro);
-}
-
-.btn-rosa {
-  background: var(--rosa);
-  color: var(--cinza-1);
-}
-.btn-rosa:hover {
-  background: var(--rosa-claro);
-}
 
 .pagination-listagem {
   display: flex;
@@ -227,61 +176,45 @@
   gap: 10px;
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid var(--cinza-linha);
+  border-top: 1px solid var(--divider);
 }
 
 .pagination-listagem span {
   font-size: 13px;
-  color: var(--cinza-texto);
+  color: var(--text-secondary);
   min-width: 120px;
   text-align: center;
 }
 
-.pagination-listagem button {
-  border: none;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: var(--rosa);
-  color: var(--cinza-1);
-}
-
-.pagination-listagem button:hover:not(:disabled) {
-  background: var(--rosa-claro);
-}
-
-.pagination-listagem button:disabled {
-  background: var(--cinza-4);
-  color: var(--cinza-texto-claro);
+.pagination-listagem .btn:disabled {
+  background: var(--gray-100);
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
 .transacao-card {
-  background: var(--branco);
+  background: var(--color-white);
   border-radius: 12px;
   padding: 18px;
   margin-bottom: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid var(--cor-categoria, var(--cinza-claro));
+  border-left: 4px solid var(--cor-categoria, var(--gray-50));
   transition: all 0.3s ease;
 }
 
 .transacao-card.transacao-entrada {
   background: linear-gradient(
     180deg,
-    rgba(132, 176, 130, 0.12) 0%,
-    var(--branco) 30%
+    var(--brand-secondary-12) 0%,
+    var(--color-white) 30%
   );
 }
 
 .transacao-card.transacao-saida {
   background: linear-gradient(
     180deg,
-    rgba(217, 83, 79, 0.12) 0%,
-    var(--branco) 30%
+    var(--red-500-12) 0%,
+    var(--color-white) 30%
   );
 }
 
@@ -296,13 +229,13 @@
   align-items: center;
   margin-bottom: 14px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--cinza-claro);
+  border-bottom: 1px solid var(--gray-50);
 }
 
 .transacao-titulo {
   font-weight: 700;
   font-size: 18px;
-  color: var(--cinza-texto);
+  color: var(--text-secondary);
   flex: 1;
 }
 
@@ -314,11 +247,11 @@
 }
 
 .transacao-valor.transacao-entrada {
-  color: var(--verde);
+  color: var(--brand-secondary);
 }
 
 .transacao-valor.transacao-saida {
-  color: var(--vermelho);
+  color: var(--btn-danger);
 }
 
 .transacao-corpo {
@@ -341,14 +274,14 @@
 .info-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--cinza-texto-claro);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .info-valor {
   font-size: 14px;
-  color: var(--cinza-texto);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -370,21 +303,21 @@
 }
 
 .tipo-chip-entrada {
-  color: var(--verde-escuro);
-  background: rgba(132, 176, 130, 0.2);
-  border-color: rgba(132, 176, 130, 0.45);
+  color: var(--brand-secondary);
+  background: var(--brand-secondary-20);
+  border-color: var(--brand-secondary-45);
 }
 
 .tipo-chip-saida {
-  color: var(--vermelho-vinho);
+  color: var(--btn-danger);
   background: rgba(217, 83, 79, 0.18);
   border-color: rgba(217, 83, 79, 0.42);
 }
 
 .tipo-chip-despesa {
-  color: var(--cinza-texto);
-  background: var(--cinza-chip-bg);
-  border-color: var(--cinza-chip-borda);
+  color: var(--text-secondary);
+  background: var(--chip-bg);
+  border-color: var(--chip-border);
 }
 
 .categoria-badge {
@@ -395,8 +328,8 @@
   border-radius: 999px;
   font-weight: 600;
   font-size: 12px;
-  background: var(--branco);
-  color: var(--cinza-texto);
+  background: var(--color-white);
+  color: var(--text-secondary);
   border: 1px solid var(--categoria-cor);
 }
 
@@ -421,42 +354,9 @@
   justify-content: flex-end;
   gap: 10px;
   padding-top: 12px;
-  border-top: 1px solid var(--cinza-claro);
+  border-top: 1px solid var(--gray-50);
 }
 
-.btn-editar,
-.btn-deletar {
-  border: none;
-  padding: 10px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 500;
-}
-
-.btn-editar {
-  background: var(--rosa);
-  color: var(--cinza-1);
-}
-
-.btn-editar:hover {
-  background: var(--rosa-claro);
-  transform: scale(1.05);
-}
-
-.btn-deletar {
-  background: var(--vermelho);
-  color: var(--branco);
-}
-
-.btn-deletar:hover {
-  background: var(--vermelho-hover);
-  transform: scale(1.05);
-}
 
 #transacoes {
   column-count: 2;

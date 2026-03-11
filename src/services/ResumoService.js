@@ -71,6 +71,11 @@ class ResumoService {
   }
 
   // Gera resumo financeiro atual do usuário
+  // retorna apenas as propriedades usadas na tela de resumo:
+  //   - saldoAtual: soma de todas as contas e da carteira
+  //   - entradas: total de entradas do mês
+  //   - saidas: total de saídas do mês
+  //   - saldoCalculado: saldoAtual + entradas - saidas
   async gerarResumo(usuarioId) {
     const hoje = new Date();
     const inicioMes = new Date(
@@ -92,19 +97,32 @@ class ResumoService {
       999
     );
 
-    const categoriaSalario = await categoriaHelpers.buscarSalario();
-    const salarios = await this.buscarSalariosAtivos(
-      usuarioId,
-      categoriaSalario
-    );
-
+    // somente precisamos das contas e da carteira para o resumo simplificado
     const contas = await Conta.find({ usuario: usuarioId });
     const carteira = await Carteira.findOne({
       usuario: usuarioId,
       ativa: true,
     });
 
-    // Busca transações do mês EXCLUINDO salários (para não duplicar)
+    const saldoContas = somarCampo(contas, 'saldo');
+    const saldoCarteira = carteira?.saldo || 0;
+
+    // Saldo atual é a soma de todas as contas e da carteira
+    const saldoAtual = saldoContas + saldoCarteira;
+
+    // prepara detalhamento de saldos
+    const detalhesSaldo = contas.map((c) => ({
+      nome: c.nome,
+      valor: Number(c.saldo || 0),
+    }));
+    if (carteira) {
+      detalhesSaldo.push({
+        nome: 'Carteira',
+        valor: Number(carteira.saldo || 0),
+      });
+    }
+
+    // Transações do mês (não faz distinção de categoria)
     const filtroTransacoes = {
       usuario: usuarioId,
       ativa: true,
@@ -115,72 +133,60 @@ class ResumoService {
       },
     };
 
-    const filtroTransacoesSemSalario = this.adicionarExclusaoCategoriaSalario(
-      filtroTransacoes,
-      categoriaSalario
+    // incluir nome da categoria para exibição
+    const transacoesMes = await Transacao.find(filtroTransacoes).populate(
+      'categoria',
+      'nome'
     );
 
-    const transacoesMes = await Transacao.find(filtroTransacoesSemSalario);
-
-    // Calcula salários devidos até hoje
-    const salariosDevidosAteHoje = this.calcularSalariosDevidosAteHoje(
-      salarios,
-      hoje
-    );
-
-    // Calcula quanto dos salários devidos já foi processado neste mês
-    const salariosProcessadosNoMes = this.calcularSalariosProcessadosNoMes(
-      salarios,
-      inicioMes
-    );
-
-    const salariosPendentesLancamento = Math.max(
-      0,
-      salariosDevidosAteHoje - salariosProcessadosNoMes
-    );
-    const saldoContas = somarCampo(contas, 'saldo');
-    const saldoCarteira = carteira?.saldo || 0;
-
-    // Calcula entradas e saídas do mês (SEM incluir salários)
+    // Entradas e saídas do mês
     const { entradas, saidas } = totaisTransacoes(transacoesMes);
 
-    // Saldo = contas + carteira + salários pendentes de processamento
-    const saldo = saldoContas + saldoCarteira + salariosPendentesLancamento;
+    // detalhamento de entradas e saídas usando título da transação
+    const detalhesEntradas = transacoesMes
+      .filter((t) => t.tipo === 'entrada')
+      .map((t) => ({
+        data: t.data,
+        categoria: t.categoria ? t.categoria.nome : '',
+        nome: t.titulo,
+        valor: Number(t.valor || 0),
+      }));
+    const detalhesSaidas = transacoesMes
+      .filter((t) => t.tipo === 'saida')
+      .map((t) => ({
+        data: t.data,
+        categoria: t.categoria ? t.categoria.nome : '',
+        nome: t.titulo,
+        valor: Number(t.valor || 0),
+      }));
+
+    // ordenar valores menores para maiores
+    detalhesSaldo.sort((a, b) => a.valor - b.valor);
+    detalhesEntradas.sort((a, b) => a.valor - b.valor);
+    detalhesSaidas.sort((a, b) => a.valor - b.valor);
+
+    // Saldo calculado = saldo atual + entradas - saídas
+    const saldoCalculado = saldoAtual + entradas - saidas;
 
     return {
-      saldo,
-      salarios: salariosDevidosAteHoje,
-      saldoContas,
-      saldoCarteira,
+      saldoAtual,
       entradas,
       saidas,
+      saldoCalculado,
+      detalhesSaldo,
+      detalhesEntradas,
+      detalhesSaidas,
     };
   }
 
   // Gera projeção financeira considerando transações pendentes
   async gerarProjecao(usuarioId) {
-    const hoje = new Date();
-    const inicioMes = new Date(
-      hoje.getFullYear(),
-      hoje.getMonth(),
-      1,
-      0,
-      0,
-      0,
-      0
-    );
+    // reutiliza o resumo para obter o saldo calculado do mês atual;
+    // essa é a base usada na tela de resumo e deve ser exibida na projeção.
+    const resumo = await this.gerarResumo(usuarioId);
+    const saldoAtual = resumo.saldoCalculado;
 
     const categoriaSalario = await categoriaHelpers.buscarSalario();
-    const salarios = await this.buscarSalariosAtivos(
-      usuarioId,
-      categoriaSalario
-    );
-
-    const contas = await Conta.find({ usuario: usuarioId });
-    const carteira = await Carteira.findOne({
-      usuario: usuarioId,
-      ativa: true,
-    });
 
     // Busca pendentes EXCLUINDO salários (salários têm tratamento separado)
     const filtroPendentes = {
@@ -195,37 +201,16 @@ class ResumoService {
     );
 
     const pendentes = await Transacao.find(filtroPendentesSemSalario);
-
-    const salariosDevidosAteHoje = this.calcularSalariosDevidosAteHoje(
-      salarios,
-      hoje
-    );
-
-    // Calcula quanto dos salários devidos já foi processado neste mês
-    const salariosProcessadosNoMes = this.calcularSalariosProcessadosNoMes(
-      salarios,
-      inicioMes
-    );
-
-    const salariosPendentesLancamento = Math.max(
-      0,
-      salariosDevidosAteHoje - salariosProcessadosNoMes
-    );
-
-    const saldoContas = somarCampo(contas, 'saldo');
-    const saldoCarteira = carteira?.saldo || 0;
     const saidasPendentes = somaSaidas(pendentes);
 
-    // O saldo atual inclui contas + carteira + salários pendentes
-    const saldoAtual =
-      saldoContas + saldoCarteira + salariosPendentesLancamento;
     const saldoProjetado = saldoAtual - saidasPendentes;
 
     return {
       saldoAtual,
       saldoProjetado,
-      saldoCarteira,
       saidasPendentes,
+      saldoCarteira: resumo.saldoCarteira || 0,
+      // salariosPendentesLancamento: undefined, // disponível se necessário
     };
   }
 }

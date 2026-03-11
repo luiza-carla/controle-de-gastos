@@ -6,6 +6,7 @@ import {
   mostrarErroInline,
   limparErroInline,
   garantirErroInline,
+  abrirModalErro,
 } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
@@ -91,7 +92,7 @@ export async function criarDesejo(formId = 'formListaDesejo') {
 
     // Valida que categoria foi selecionada (campo obrigatório)
     if (!tituloDesejo || !valor) {
-      mostrarErroInline(
+      abrirModalErro(
         'Por favor, preencha todos os campos obrigatórios',
         FORM_ERRO_ID,
         FORM_MSG_ERRO_ID
@@ -220,7 +221,7 @@ function criarCardDesejo(d) {
     : '';
   const valorFormatado = formatarValor(d.valor);
   const categoria = criarBadgeCategoria(d.categoria);
-  const corCategoria = d.categoria?.cor || '#95a5a6';
+  const corCategoria = d.categoria?.cor || 'var(--gray-700)';
   const tagsHtml = gerarTags(d.tags);
 
   return `
@@ -253,20 +254,20 @@ function criarCardDesejo(d) {
       <div class="transacao-acoes">
         ${criarBotoesAcao([
           {
-            classe: 'btn-realizar',
+            classe: 'success',
             onclick: `realizarDesejo('${d._id}')`,
             icone: 'fa-circle-check',
             title: 'Realizar compra',
             texto: 'Realizar',
           },
           {
-            classe: 'btn-editar',
+            classe: 'secondary',
             onclick: `editarDesejo('${d._id}')`,
             icone: 'fa-pen',
             title: 'Editar',
           },
           {
-            classe: 'btn-deletar',
+            classe: 'danger',
             onclick: `deletarDesejo('${d._id}')`,
             icone: 'fa-trash',
             title: 'Deletar',
@@ -320,7 +321,7 @@ window.editarDesejo = async (id) => {
         <div id="modalTagsContainerDesejo" class="tag-editor-container"></div>
         <div class="tag-editor-input-row">
           <input type="text" id="modalTagInputDesejo" class="tag-editor-input" placeholder="Adicionar tag">
-          <button type="button" id="modalBtnAddTagDesejo" class="btn-tag-add">
+          <button type="button" id="modalBtnAddTagDesejo" class="btn btn-tag-add">
             <i class="fa-solid fa-plus"></i>
           </button>
         </div>
@@ -416,7 +417,7 @@ window.realizarDesejo = async (id) => {
   abrirModal({
     titulo: 'Realizar compra',
     conteudoHTML: `
-      <p style="margin-bottom: 16px; color: #666;">
+      <p style="margin-bottom: 16px; color: var(--text-secondary);">
         Transformar <strong>${escaparHtml(desejo.titulo)}</strong> em uma transacao real.
       </p>
       <div class="form-group">

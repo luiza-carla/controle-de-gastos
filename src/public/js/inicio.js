@@ -7,6 +7,7 @@ import {
   showElement,
   hideElement,
   $,
+  escaparHtml,
 } from './helpers/index.js';
 import { mostrarNotificacao } from './notification.js';
 
@@ -15,13 +16,15 @@ export async function carregarResumo() {
   try {
     const dados = await apiFetch(window.location.origin + '/resumo');
 
-    setTextById('saldo', formatarValor(dados.saldo));
-    setTextById('totalSalarios', formatarValor(dados.salarios));
-    setTextById('saldoContas', formatarValor(dados.saldoContas));
-    setTextById('saldoCarteira', formatarValor(dados.saldoCarteira || 0));
+    setTextById('saldoAtual', formatarValor(dados.saldoAtual));
     setTextById('totalEntradas', formatarValor(dados.entradas));
     setTextById('totalSaidas', formatarValor(dados.saidas));
-    setTextById('saldoFinal', formatarValor(dados.saldoFinal ?? dados.saldo));
+    setTextById('saldoCalculado', formatarValor(dados.saldoCalculado));
+
+    // preenche listas/detalhes dentro dos collapses
+    preencherLista('detSaldoAtualLista', dados.detalhesSaldo);
+    preencherTabelaMovimentos('detEntradasLista', dados.detalhesEntradas);
+    preencherTabelaMovimentos('detSaidasLista', dados.detalhesSaidas);
   } catch {
     mostrarNotificacao('Erro ao carregar resumo', 'erro');
   }
@@ -61,11 +64,44 @@ async function abrirProjecao() {
 }
 
 // Carrega listeners quando DOM estiver pronto
-// Somente ativa funcionalidades relacionadas ao resumo se o elemento
-// que exibe o saldo final estiver presente na página. dessa forma não
-// disparamos requisições desnecessárias em telas públicas (login/registro).
+// Somente ativa funcionalidades relacionadas ao resumo se algum dos
+// elementos principais estiver presente na página; assim evitamos
+// requisições desnecessárias em telas públicas (login/registro).
+
+function preencherLista(id, itens = []) {
+  const ul = $(id);
+  if (!ul) return;
+  ul.innerHTML = itens
+    .map(
+      (item) =>
+        `<li><span>${escaparHtml(item.nome)}</span><span>R$ ${formatarValor(
+          item.valor
+        )}</span></li>`
+    )
+    .join('');
+}
+
+// constroi linhas de uma tabela de movimentos (data, categoria, nome, valor)
+function preencherTabelaMovimentos(tbodyId, itens = []) {
+  const tbody = $(tbodyId);
+  if (!tbody) return;
+  tbody.innerHTML = itens
+    .map((item) => {
+      const data = item.data ? new Date(item.data).toLocaleDateString() : '';
+      return `
+        <tr>
+          <td>${escaparHtml(data)}</td>
+          <td>${escaparHtml(item.categoria)}</td>
+          <td>${escaparHtml(item.nome)}</td>
+          <td>R$ ${formatarValor(item.valor)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  if ($('saldoFinal')) {
+  if ($('saldoAtual') || $('saldoCalculado')) {
     carregarResumo();
 
     const btn = $('btnProjecao');

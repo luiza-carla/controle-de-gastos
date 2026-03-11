@@ -21,7 +21,7 @@
 
         <div class="card card-atalho-adicionar">
           <button
-            class="btn-salvar"
+            class="btn btn-primary"
             onclick="window.location.href = '/html/adicionar-transacao.html'"
           >
             <i class="fa-solid fa-plus"></i> Adicionar nova transação
@@ -54,7 +54,7 @@
             <button
               id="btnLimparFiltroCategoriaTransacao"
               type="button"
-              class="btn-rosa"
+              class="btn btn-secondary"
             >
               Limpar
             </button>
@@ -75,11 +75,11 @@
           class="pagination-listagem"
           style="display: none"
         >
-          <button id="btnAnteriorTransacoes" type="button" disabled>
+          <button id="btnAnteriorTransacoes" type="button" class="btn btn-secondary" disabled>
             Anterior
           </button>
           <span id="pageInfoTransacoes">Página 1</span>
-          <button id="btnProximoTransacoes" type="button">Próximo</button>
+          <button id="btnProximoTransacoes" type="button" class="btn btn-secondary">Próximo</button>
         </div>
       </div>
     </main>

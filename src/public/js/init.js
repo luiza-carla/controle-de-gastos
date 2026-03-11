@@ -69,7 +69,7 @@ import { $ } from './helpers/index.js';
 
 // Inicializa resumo financeiro
 (async function () {
-  if ($('saldoFinal')) {
+  if ($('saldoAtual') || $('saldoCalculado')) {
     await carregarResumo();
   }
 })();

@@ -1,17 +1,17 @@
 #btnProjecao {
   margin-top: 15px;
-  background: var(--rosa);
+  background: var(--brand-primary);
 }
 
 #btnProjecao:hover {
-  background: var(--rosa-claro);
+  background: var(--brand-primary);
 }
 
 #modalProjecao .modal-content p {
   display: flex;
   justify-content: space-between;
 
-  background: #fafafa;
+  background: var(--gray-50);
 
   padding: 12px 14px;
 
@@ -21,27 +21,38 @@
 }
 
 #projSaldoAtual {
-  color: #2d232e;
+  color: var(--gray-900);
 }
 
 #projSaidasPendentes {
-  color: var(--vermelho);
+  color: var(--btn-danger);
 }
 
 #projSaldoFinal {
-  color: var(--cinza-1);
+  color: var(--gray-900);
   font-weight: 700;
   font-size: 20px;
 }
 
 #projSaldoFinal.saldo-projetado-negativo {
-  color: var(--vermelho);
+  color: var(--btn-danger);
 }
 
 #projSaldoFinal.saldo-projetado-zero {
-  color: var(--cinza-1);
+  color: var(--gray-900);
 }
 
 #projSaldoFinal.saldo-projetado-positivo {
-  color: var(--verde);
+  color: var(--brand-secondary);
+}
+
+.resumo-financeiro .card details ul li:hover,
+.resumo-financeiro .card details table.resumo-table tbody tr:hover {
+  background: var(--gray-50);
+  font-weight: 600;
+}
+
+.resumo-financeiro .card details ul li,
+.resumo-financeiro .card details table.resumo-table tbody tr {
+  transition: background 0.2s, font-weight 0.2s;
 }

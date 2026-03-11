@@ -105,13 +105,17 @@ export function criarOptionsHTML(items, valueFn, textFn, optionAtual = null) {
 // Cria botões de ação para cards (editar, deletar, etc)
 export function criarBotoesAcao(acoes) {
   return acoes
-    .map(
-      (acao) => `
-    <button class="${acao.classe}" onclick="${acao.onclick}"${acao.title ? ` title="${acao.title}"` : ''}>
+    .map((acao) => {
+      let variant = acao.classe || '';
+      if (variant && !variant.startsWith('btn-')) {
+        variant = `btn-${variant}`;
+      }
+      return `
+    <button class="btn ${variant}" onclick="${acao.onclick}"${acao.title ? ` title="${acao.title}"` : ''}>
       <i class="fa-solid ${acao.icone}"></i>${acao.texto ? ` ${acao.texto}` : ''}
     </button>
-  `
-    )
+  `;
+    })
     .join('');
 }
 

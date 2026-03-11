@@ -5,6 +5,7 @@ import {
   mostrarErroInline,
   limparErroInline,
   garantirErroInline,
+  abrirModalErro,
 } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
@@ -24,7 +25,6 @@ import {
   $,
   setHTMLById,
 } from './helpers/index.js';
-
 const VALOR_CARTEIRA = 'carteira';
 const FORM_ERRO_ID = 'formErroInlineConta';
 const FORM_MSG_ERRO_ID = 'formMensagemErroConta';
@@ -51,17 +51,17 @@ export async function listarContas() {
     const gerarCard = (c) => {
       const botoesAcao = criarBotoesAcao([
         {
-          classe: 'btn-editar',
+          classe: 'secondary',
           onclick: `editarConta('${c._id}')`,
           icone: 'fa-pen',
         },
         {
-          classe: 'btn-transferir-conta',
+          classe: 'muted',
           onclick: `transferirDaConta('${c._id}')`,
           icone: 'fa-exchange',
         },
         {
-          classe: 'btn-deletar',
+          classe: 'danger',
           onclick: `deletarConta('${c._id}')`,
           icone: 'fa-trash',
         },
@@ -102,7 +102,7 @@ export async function criarConta(formId, callback) {
     const tipoConta = form.tipo.value;
 
     if (!nomeConta || !tipoConta) {
-      mostrarErroInline(
+      abrirModalErro(
         'Por favor, preencha todos os campos obrigatórios',
         FORM_ERRO_ID,
         FORM_MSG_ERRO_ID
@@ -294,7 +294,7 @@ window.transferirDaConta = async (contaOrigemId) => {
         <input type="number" id="modalValorTransferenciaConta" step="0.01" min="0" required>
       </div>
       <div class="form-group">
-        <small style="color: var(--cinza-texto);">Saldo disponível: R$ ${formatarValor(contaOrigem.saldo)}</small>
+        <small style="color: var(--text-secondary);">Saldo disponível: R$ ${formatarValor(contaOrigem.saldo)}</small>
       </div>
     `,
     onSalvar: async () => {

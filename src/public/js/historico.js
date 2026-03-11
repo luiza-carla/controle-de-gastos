@@ -56,18 +56,21 @@ function inicializarEventos() {
     }
   });
 
-  // Delegação para botões de desfazer adicionados dinamicamente
+  // Delegação para botões de desfazer e toggles adicionados dinamicamente
   onEventById('historico-lista', 'click', async (event) => {
-    const btn = event.target.closest('.btn-desfazer[data-historico-id]');
-    if (btn) {
-      await desfazerAcao(btn.dataset.historicoId);
-      return;
-    }
-
-    // Toggle de dropdown de alterações
+    // toggle sempre deve ser tratado antes do botão de desfazer, porque o
+    // elemento pai (row) carrega `data-historico-id` e acabaria interceptando
+    // o clique.
     const toggleBtn = event.target.closest('.alteracoes-toggle');
     if (toggleBtn) {
       toggleDropdownAlteracoes(toggleBtn);
+      return;
+    }
+
+    const btn = event.target.closest('[data-historico-id]');
+    if (btn) {
+      await desfazerAcao(btn.dataset.historicoId);
+      return;
     }
   });
 }
@@ -143,7 +146,7 @@ function criarItemHistorico(historico) {
   const acaoLabel = traduzirAcao(historico.acao);
 
   const btnDesfazer = !historico.desfeito
-    ? `<button class="btn-desfazer" data-historico-id="${historicoId}">
+    ? `<button class="btn btn-success" data-historico-id="${historicoId}">
          <i class="fa-solid fa-rotate-left"></i> Desfazer
        </button>`
     : '<span class="badge-desfeito">Desfeito</span>';
@@ -223,6 +226,9 @@ const FORMATADORES_OBJETO = {
 
 // Renderiza o bloco de "Antes/Depois" apenas para ações de edição.
 function gerarDetalhesEdicao(historico) {
+  // somente histórico de edição exibe o botão, mas sempre mostramos o toggle
+  // mesmo que não haja diferenças detectáveis; isso garante que o usuário
+  // possa abrir/inspecionar mesmo quando o algoritmo não encontrou campos.
   if (historico.acao !== 'edicao') {
     return '';
   }
@@ -232,13 +238,17 @@ function gerarDetalhesEdicao(historico) {
     historico.dadosNovos
   );
 
-  if (alteracoes.length === 0) {
-    return '';
-  }
+  const quantidadeAlteracoes = alteracoes.length;
+  const textoAlteracoes =
+    quantidadeAlteracoes === 1
+      ? '1 campo alterado'
+      : `${quantidadeAlteracoes} campos alterados`;
 
-  const itensHtml = alteracoes
-    .map((alteracao) => {
-      return `
+  let itensHtml;
+  if (quantidadeAlteracoes > 0) {
+    itensHtml = alteracoes
+      .map((alteracao) => {
+        return `
         <div class="alteracao-item">
           <div class="alteracao-campo">${escaparHtml(alteracao.campo)}</div>
           <div class="alteracao-valores">
@@ -247,14 +257,15 @@ function gerarDetalhesEdicao(historico) {
           </div>
         </div>
       `;
-    })
-    .join('');
-
-  const quantidadeAlteracoes = alteracoes.length;
-  const textoAlteracoes =
-    quantidadeAlteracoes === 1
-      ? '1 campo alterado'
-      : `${quantidadeAlteracoes} campos alterados`;
+      })
+      .join('');
+  } else {
+    itensHtml = `
+      <div class="alteracao-item">
+        <em>Nenhuma alteração visível</em>
+      </div>
+    `;
+  }
 
   return `
     <div class="historico-alteracoes">

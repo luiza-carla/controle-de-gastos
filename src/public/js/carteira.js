@@ -81,7 +81,7 @@ window.removerDinheiro = async () => {
         <input type="number" id="modalValorRemover" step="0.01" min="0" required>
       </div>
       <div class="form-group">
-        <small style="color: var(--cinza-texto);">Saldo disponível: R$ ${formatarValor(carteira.saldo)}</small>
+        <small style="color: var(--text-secondary);">Saldo disponível: R$ ${formatarValor(carteira.saldo)}</small>
       </div>
     `,
     onSalvar: async () => {
@@ -147,7 +147,7 @@ window.abrirTransferencia = async () => {
         <input type="number" id="modalValorTransferencia" step="0.01" min="0" required>
       </div>
       <div class="form-group">
-        <small style="color: var(--cinza-texto);">Saldo disponível: R$ ${formatarValor(carteira.saldo)}</small>
+        <small style="color: var(--text-secondary);">Saldo disponível: R$ ${formatarValor(carteira.saldo)}</small>
       </div>
     `,
     onSalvar: async () => {

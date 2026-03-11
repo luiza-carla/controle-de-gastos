@@ -8,8 +8,8 @@
 
 /* Card de conta */
 .conta-card {
-  background: var(--cinza-claro);
-  border: 1px solid var(--cinza-linha);
+  background: var(--gray-50);
+  border: 1px solid var(--divider);
   border-radius: 10px;
   padding: 16px;
   display: flex;
@@ -29,22 +29,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--cinza-1);
+  color: var(--gray-900);
 }
 
 .conta-nome i {
-  color: var(--verde-azul);
+  color: var(--brand-secondary);
 }
 
 .conta-tipo {
   font-size: 13px;
-  color: var(--cinza-texto);
+  color: var(--text-secondary);
 }
 
 .conta-saldo {
   font-size: 20px;
   font-weight: 700;
-  color: var(--verde);
+  color: var(--brand-secondary);
   margin: 8px 0;
 }
 
@@ -54,57 +54,11 @@
   margin-top: 8px;
 }
 
-.btn-editar,
-.btn-deletar,
-.btn-transferir-conta {
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-weight: 500;
-  flex: 1;
-}
-
-.btn-editar {
-  background: var(--rosa);
-  color: var(--cinza-1);
-}
-
-.btn-editar:hover {
-  background: var(--rosa-claro);
-  transform: scale(1.05);
-}
-
-.btn-deletar {
-  background: var(--vermelho);
-  color: var(--branco);
-}
-
-.btn-deletar:hover {
-  background: var(--vermelho-hover);
-  transform: scale(1.05);
-}
-
-.btn-transferir-conta {
-  background: var(--cinza-2);
-  color: var(--branco);
-}
-
-.btn-transferir-conta:hover {
-  background: var(--cinza-3);
-  transform: scale(1.05);
-}
 
 /* Card de carteira */
 .carteira-card {
-  background: var(--cinza-claro);
-  border: 1px solid var(--cinza-linha);
+  background: var(--gray-50);
+  border: 1px solid var(--divider);
   border-radius: 10px;
   padding: 16px;
   margin-top: 15px;
@@ -118,7 +72,7 @@
 .carteira-saldo {
   font-size: 24px;
   font-weight: 700;
-  color: var(--verde);
+  color: var(--brand-secondary);
 }
 
 .carteira-acoes {
@@ -126,41 +80,6 @@
   gap: 8px;
 }
 
-.btn-adicionar,
-.btn-transferir {
-  border: none;
-  padding: 10px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-  flex: 1;
-}
-
-.btn-adicionar {
-  background: var(--rosa);
-  color: var(--cinza-1);
-}
-
-.btn-adicionar:hover {
-  background: var(--rosa-claro);
-  transform: scale(1.05);
-}
-
-.btn-transferir {
-  background: var(--cinza-2);
-  color: var(--branco);
-}
-
-.btn-transferir:hover {
-  background: var(--cinza-3);
-  transform: scale(1.05);
-}
 
 /* Responsivo */
 @media (max-width: 768px) {

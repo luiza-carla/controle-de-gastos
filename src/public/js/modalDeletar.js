@@ -18,11 +18,11 @@ export function abrirModalConfirmacao({ titulo, mensagem, onConfirmar }) {
   // Atualiza titulo e conteudo do modal
   setHTMLById(
     'modalTitulo',
-    `<i class="fa-solid fa-triangle-exclamation" style="color: var(--vermelho-escuro);"></i> ${titulo}`
+    `<i class="fa-solid fa-triangle-exclamation" style="color: var(--btn-danger);"></i> ${titulo}`
   );
   setHTMLById(
     'modalConteudo',
-    `<p style="margin: 0; padding: 10px 0; color: #666;">${mensagem}</p>`
+    `<p style="margin: 0; padding: 10px 0; color: var(--text-secondary);">${mensagem}</p>`
   );
 
   // Define callback de confirmacao
