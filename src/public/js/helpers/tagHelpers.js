@@ -1,11 +1,39 @@
 import { escaparHtml, setDisabledById, $, clearElement } from './index.js';
 
 // Cria badge visual de categoria com cor personalizada
-export function criarBadgeCategoria(categoria) {
+// Se uma subcategoria for fornecida, também gera um badge para ela usando
+// a mesma cor da categoria pai. Assim o front exibe os dois como badges
+// alinhados e coloridos igualmente.
+export function criarBadgeCategoria(categoria, subcategoria) {
   const nome = categoria?.nome || 'Sem categoria';
   const cor = categoria?.cor || 'var(--gray-700)';
 
-  return `<span class="categoria-badge" style="--categoria-cor:${cor};">${escaparHtml(nome)}</span>`;
+  let html = `<span class="categoria-badge" style="--categoria-cor:${cor};">${escaparHtml(nome)}</span>`;
+
+  if (subcategoria && subcategoria.nome) {
+    // badge secundário para subcategoria; mantém a mesma cor e dá um
+    // pequeno espaçamento à esquerda para separar dos badges de categoria
+    html += ` <span class="categoria-badge subcategoria-badge" style="--categoria-cor:${cor};">${escaparHtml(subcategoria.nome)}</span>`;
+  }
+
+  return html;
+}
+
+// Retorna badges separados para categoria e subcategoria.
+export function criarBadgesCategoriaSubcategoriaSeparados(
+  categoria,
+  subcategoria
+) {
+  const categoriaBadge = criarBadgeCategoria(categoria);
+
+  const subcategoriaBadge =
+    subcategoria && subcategoria.nome
+      ? `<span class="categoria-badge subcategoria-badge" style="--categoria-cor:${categoria?.cor || 'var(--gray-700)'};">${escaparHtml(
+          subcategoria.nome
+        )}</span>`
+      : '';
+
+  return { categoriaBadge, subcategoriaBadge };
 }
 
 // Atualiza a visualização das tags selecionadas no formulário

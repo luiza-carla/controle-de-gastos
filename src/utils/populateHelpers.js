@@ -3,13 +3,12 @@
 function transacao(query) {
   return query
     .populate('conta', 'nome tipo')
-    .populate('categoria', 'nome tipo cor');
+    .populate('categoria', 'nome tipo cor')
+    .populate('subcategoria', 'nome');
 }
 
 function salario(query) {
-  return query
-    .populate('conta', 'nome tipo')
-    .populate('categoria', 'nome');
+  return query.populate('conta', 'nome tipo').populate('categoria', 'nome');
 }
 
 module.exports = {

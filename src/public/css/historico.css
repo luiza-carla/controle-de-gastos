@@ -293,7 +293,6 @@
   color: var(--text-secondary);
 }
 
-
 .loading,
 .empty-state {
   text-align: center;
@@ -368,8 +367,7 @@
   text-align: center;
 }
 
-
-  .pagination .btn:disabled {
+.pagination .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;

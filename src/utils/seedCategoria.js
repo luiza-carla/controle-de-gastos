@@ -1,73 +1,189 @@
 const Categoria = require('../models/Categoria');
+const Subcategoria = require('../models/Subcategoria');
 const logger = require('./logger');
 
 // Função para garantir que categorias padrão existem no banco
 async function garantirCategoriasPadrao() {
   const categorias = [
-    { nome: 'Salário', cor: '#2ecc71' },
-
-    { nome: 'Freelance', cor: '#27ae60' },
-    { nome: 'Comissão', cor: '#1abc9c' },
-    { nome: 'Bônus', cor: '#16a085' },
-    { nome: 'Venda', cor: '#27ae60' },
-    { nome: 'Investimento', cor: '#2ecc71' },
-    { nome: 'Presente', cor: '#58d68d' },
-    { nome: 'Reembolso', cor: '#52be80' },
-
-    { nome: 'Aluguel', cor: '#e74c3c' },
-    { nome: 'Financiamento', cor: '#c0392b' },
-    { nome: 'Condomínio', cor: '#cd6155' },
-    { nome: 'Conta', cor: '#ec7063' },
-
-    { nome: 'Mercado', cor: '#d35400' },
-    { nome: 'Restaurante', cor: '#e67e22' },
-    { nome: 'Delivery', cor: '#eb984e' },
-
-    { nome: 'Combustível', cor: '#f39c12' },
-    { nome: 'Transporte público', cor: '#f5b041' },
-    { nome: 'Transporte por aplicativo', cor: '#f8c471' },
-    { nome: 'Veículo', cor: '#d68910' },
-
-    { nome: 'Plano de saúde', cor: '#c0392b' },
-    { nome: 'Medicamento', cor: '#e74c3c' },
-    { nome: 'Consulta', cor: '#ec7063' },
-    { nome: 'Academia', cor: '#f1948a' },
-
-    { nome: 'Faculdade', cor: '#8e44ad' },
-    { nome: 'Curso', cor: '#9b59b6' },
-    { nome: 'Livro', cor: '#a569bd' },
-
-    { nome: 'Cinema', cor: '#3498db' },
-    { nome: 'Streaming', cor: '#5dade2' },
-    { nome: 'Viagem', cor: '#2e86c1' },
-    { nome: 'Show/evento', cor: '#1f618d' },
-
-    { nome: 'Roupa', cor: '#af7ac5' },
-    { nome: 'Eletrônico', cor: '#bb8fce' },
-    { nome: 'Compra online', cor: '#d2b4de' },
-    { nome: 'Salão de beleza', cor: '#884ea0' },
-
-    { nome: 'Cartão de crédito', cor: '#6c3483' },
-    { nome: 'Empréstimos', cor: '#5b2c6f' },
-    { nome: 'Juros', cor: '#4a235a' },
-    { nome: 'Impostos', cor: '#7b241c' },
-
-    { nome: 'Doação', cor: '#d98880' },
-    { nome: 'Imprevisto', cor: '#7f8c8d' },
-    { nome: 'Outros', cor: '#95a5a6' },
+    {
+      nome: 'Renda',
+      cor: '#2ecc71',
+      subcategorias: [
+        'Salário',
+        'Freelance',
+        'Comissão',
+        'Bônus',
+        'Venda',
+        'Investimentos',
+        'Presente recebido',
+        'Reembolso',
+      ],
+    },
+    {
+      nome: 'Moradia',
+      cor: '#e74c3c',
+      subcategorias: [
+        'Aluguel',
+        'Financiamento',
+        'Condomínio',
+        'Conta de luz',
+        'Conta de água',
+        'Conta de gás',
+        'Internet',
+        'Manutenção da casa',
+        'Móveis',
+        'Decoração',
+      ],
+    },
+    {
+      nome: 'Alimentação',
+      cor: '#f39c12',
+      subcategorias: [
+        'Mercado',
+        'Restaurante',
+        'Delivery',
+        'Padaria',
+        'Café',
+        'Lanche',
+      ],
+    },
+    {
+      nome: 'Transporte',
+      cor: '#2980b9',
+      subcategorias: [
+        'Combustível',
+        'Transporte público',
+        'Transporte por aplicativo',
+        'Estacionamento',
+        'Manutenção do veículo',
+        'Seguro do veículo',
+        'Pedágio',
+      ],
+    },
+    {
+      nome: 'Saúde',
+      cor: '#e84393',
+      subcategorias: [
+        'Plano de saúde',
+        'Consulta médica',
+        'Exames',
+        'Medicamentos',
+        'Academia',
+        'Terapia',
+        'Odontologia',
+      ],
+    },
+    {
+      nome: 'Educação',
+      cor: '#8e44ad',
+      subcategorias: [
+        'Faculdade',
+        'Curso',
+        'Livro',
+        'Material de estudo',
+        'Idiomas',
+      ],
+    },
+    {
+      nome: 'Lazer e entretenimento',
+      cor: '#00bcd4',
+      subcategorias: [
+        'Cinema',
+        'Streaming',
+        'Jogos',
+        'Viagem',
+        'Passeios',
+        'Shows / eventos',
+        'Hobbies',
+      ],
+    },
+    {
+      nome: 'Compras',
+      cor: '#ff9800',
+      subcategorias: [
+        'Roupa',
+        'Calçado',
+        'Acessórios',
+        'Eletrônicos',
+        'Acessórios eletrônicos',
+        'Compra online',
+        'Papelaria',
+      ],
+    },
+    {
+      nome: 'Beleza e cuidados pessoais',
+      cor: '#ff4fa3',
+      subcategorias: [
+        'Maquiagem',
+        'Skincare',
+        'Perfume',
+        'Produtos de cabelo',
+        'Salão de beleza',
+        'Manicure / pedicure',
+        'Estética',
+      ],
+    },
+    {
+      nome: 'Pets',
+      cor: '#16a085',
+      subcategorias: [
+        'Ração',
+        'Veterinário',
+        'Higiene pet',
+        'Brinquedos pet',
+        'Acessórios pet',
+      ],
+    },
+    {
+      nome: 'Finanças',
+      cor: '#34495e',
+      subcategorias: [
+        'Cartão de crédito',
+        'Empréstimos',
+        'Juros',
+        'Tarifas bancárias',
+        'Impostos',
+        'Seguros',
+      ],
+    },
+    {
+      nome: 'Presentes e doações',
+      cor: '#f06292',
+      subcategorias: ['Presente dado', 'Doação', 'Caridade'],
+    },
+    {
+      nome: 'Outros',
+      cor: '#7f8c8d',
+      subcategorias: ['Imprevisto', 'Taxas diversas', 'Outros'],
+    },
   ];
 
-  // Insere categorias no banco (ou atualiza se já existem)
+  const nomesPadrao = categorias.map((c) => c.nome);
+
   for (const cat of categorias) {
-    await Categoria.updateOne(
+    const categoria = await Categoria.findOneAndUpdate(
       { nome: cat.nome },
-      { $setOnInsert: cat },
-      { upsert: true }
+      { $setOnInsert: { nome: cat.nome, cor: cat.cor } },
+      { upsert: true, returnDocument: 'after' }
     );
+
+    // garante subcategorias associadas
+    if (Array.isArray(cat.subcategorias)) {
+      for (const sub of cat.subcategorias) {
+        await Subcategoria.updateOne(
+          { nome: sub, categoria: categoria._id },
+          { $setOnInsert: { nome: sub, categoria: categoria._id } },
+          { upsert: true }
+        );
+      }
+    }
   }
 
-  // Log de confirmação
-  logger.info('Categorias padrao garantidas', 'seedCategoria');
+  // desativa categorias que não estão na lista padrão
+  await Categoria.updateMany({ nome: { $nin: nomesPadrao } }, { ativa: false });
+
+  // log de confirmação
+  // logger.info('Categorias e subcategorias padrao garantidas', 'seedCategoria');
 }
 
 module.exports = garantirCategoriasPadrao;

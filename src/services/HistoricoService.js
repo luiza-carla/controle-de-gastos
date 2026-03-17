@@ -1,5 +1,6 @@
 const Historico = require('../models/Historico');
 const Usuario = require('../models/Usuario');
+const logger = require('../utils/logger');
 const Transacao = require('../models/Transacao');
 const Conta = require('../models/Conta');
 const Carteira = require('../models/Carteira');
@@ -14,6 +15,12 @@ const {
 const {
   formatarDescricaoHistoricoPadrao,
 } = require('../utils/historicoDescricao');
+
+const FONTE_DADOS_PRIORITARIA_POR_ACAO = {
+  criacao: 'dadosNovos',
+  edicao: 'dadosNovos',
+  delecao: 'dadosAnteriores',
+};
 
 // helpers de population reutilizados entre módulos
 const { transacao: populateTransacao } = require('../utils/populateHelpers');
@@ -134,6 +141,7 @@ class HistoricoService {
         case 'listaDesejo':
           return await ListaDesejo.findById(entidadeId)
             .populate('categoria', 'nome cor tipo')
+            .populate('subcategoria', 'nome')
             .lean();
         default:
           return null;
@@ -179,15 +187,99 @@ class HistoricoService {
     // Evita consultas repetidas quando varios historicos apontam para o mesmo objeto.
     const cacheObjetos = new Map();
 
+    // helper interno para transformar IDs em objetos legíveis
+    async function popularIds(obj) {
+      if (!obj || typeof obj !== 'object') return obj;
+
+      // Função utilitária para identificar strings que parecem ObjectId.
+      const isObjectIdString = (value) =>
+        typeof value === 'string' && /^[a-fA-F0-9]{24}$/.test(value);
+
+      const categoriaPopulada =
+        obj.categoria &&
+        typeof obj.categoria === 'object' &&
+        obj.categoria.nome;
+      const categoriaEhId =
+        obj.categoria &&
+        (isObjectIdString(obj.categoria) || obj.categoria.toString);
+
+      if (obj.categoria && !categoriaPopulada && categoriaEhId) {
+        try {
+          const Categoria = require('../models/Categoria');
+          const cat = await Categoria.findById(obj.categoria).select(
+            'nome cor tipo'
+          );
+          if (cat) obj.categoria = cat;
+        } catch {
+          // não crítico
+        }
+      }
+
+      const subcategoriaPopulada =
+        obj.subcategoria &&
+        typeof obj.subcategoria === 'object' &&
+        obj.subcategoria.nome;
+      const subcategoriaEhId =
+        obj.subcategoria &&
+        (isObjectIdString(obj.subcategoria) || obj.subcategoria.toString);
+
+      if (obj.subcategoria && !subcategoriaPopulada && subcategoriaEhId) {
+        try {
+          const Subcategoria = require('../models/Subcategoria');
+          const sub = await Subcategoria.findById(obj.subcategoria).select(
+            'nome'
+          );
+          if (sub) obj.subcategoria = sub;
+        } catch {
+          // não crítico
+        }
+      }
+
+      return obj;
+    }
+
     const historicosComObjetos = await Promise.all(
       historicos.map(async (historico) => {
         const chaveCache = `${historico.entidade}:${historico.entidadeId}`;
 
+        if (historico.dadosNovos) {
+          await popularIds(historico.dadosNovos);
+        }
+        if (historico.dadosAnteriores) {
+          await popularIds(historico.dadosAnteriores);
+        }
+
         if (!cacheObjetos.has(chaveCache)) {
-          const objetoRelacionado = await this._buscarObjetoRelacionado(
-            historico.entidade,
-            historico.entidadeId
-          );
+          let objetoRelacionado;
+          let snapshotObj = null;
+
+          const fontePrioritaria =
+            FONTE_DADOS_PRIORITARIA_POR_ACAO[historico.acao];
+          if (
+            fontePrioritaria &&
+            historico[fontePrioritaria] &&
+            Object.keys(historico[fontePrioritaria]).length
+          ) {
+            snapshotObj = { ...historico[fontePrioritaria] };
+          }
+
+          if (
+            historico.acao === 'delecao' &&
+            historico.dadosAnteriores &&
+            Object.keys(historico.dadosAnteriores).length
+          ) {
+            objetoRelacionado = { ...historico.dadosAnteriores };
+          } else if (snapshotObj) {
+            objetoRelacionado = snapshotObj;
+          } else {
+            objetoRelacionado = await this._buscarObjetoRelacionado(
+              historico.entidade,
+              historico.entidadeId
+            );
+          }
+
+          objetoRelacionado = await popularIds(objetoRelacionado);
+
           cacheObjetos.set(chaveCache, objetoRelacionado);
         }
 
@@ -255,8 +347,59 @@ class HistoricoService {
   }
 
   // Limpa histórico a cada X dias desde a última limpeza (ou criação da conta).
-  static async limparPorCiclo(diasCiclo = 30, diasRetencao = 30) {
-    if (diasCiclo <= 0 || diasRetencao <= 0) {
+  static async calcularDiasRestantesParaLimpeza(diasCiclo = 30) {
+    const agora = new Date();
+
+    const usuarios = await Usuario.find(
+      {},
+      {
+        createdAt: 1,
+        ultimaLimpezaHistorico: 1,
+        primeiraLimpezaHistorico: 1,
+      }
+    ).lean();
+
+    if (!usuarios.length) {
+      return { countElegiveis: 0, minDiasRestantes: null };
+    }
+
+    let countElegiveis = 0;
+    let minDiasRestantes = Infinity;
+
+    const msPorDia = 1000 * 60 * 60 * 24;
+
+    for (const usuario of usuarios) {
+      let referencia;
+      if (usuario.primeiraLimpezaHistorico !== false) {
+        // Primeiro ciclo: referência é a criação da conta.
+        referencia = usuario.createdAt;
+      } else {
+        // Limpeza subsequente: referência é a última limpeza.
+        referencia = usuario.ultimaLimpezaHistorico;
+      }
+
+      if (!referencia) continue;
+
+      const diasPassados = Math.floor(
+        (agora - new Date(referencia)) / msPorDia
+      );
+      const diasRestantes = diasCiclo - diasPassados;
+
+      if (diasRestantes <= 0) {
+        countElegiveis += 1;
+      } else {
+        minDiasRestantes = Math.min(minDiasRestantes, diasRestantes);
+      }
+    }
+
+    return {
+      countElegiveis,
+      minDiasRestantes: minDiasRestantes === Infinity ? null : minDiasRestantes,
+    };
+  }
+
+  static async limparPorCiclo(diasCiclo = 30, diasRetencao = 0) {
+    if (diasCiclo <= 0 || diasRetencao < 0) {
       throw criarErro(
         400,
         'Dias de ciclo e retenção devem ser números positivos'
@@ -268,40 +411,77 @@ class HistoricoService {
     dataLimiteCiclo.setDate(dataLimiteCiclo.getDate() - diasCiclo);
 
     // Busca usuários que precisam de limpeza:
-    // - ultimaLimpezaHistorico existe e passou o ciclo, OU
-    // - ultimaLimpezaHistorico não existe e a conta tem mais de X dias
-    const usuarios = await Usuario.find({
-      $or: [
-        { ultimaLimpezaHistorico: { $lte: dataLimiteCiclo } },
-        {
-          ultimaLimpezaHistorico: null,
-          createdAt: { $lte: dataLimiteCiclo },
-        },
-      ],
-    }).lean();
+    // - primeiraLimpezaHistorico (ou ausente) e conta com mais de X dias, OU
+    // - limpeza normal (primeiraLimpezaHistorico false) e passou X dias desde a última limpeza.
+    const usuariosPrimeira = await Usuario.find(
+      {
+        primeiraLimpezaHistorico: { $ne: false },
+        createdAt: { $lte: dataLimiteCiclo },
+      },
+      { _id: 1 }
+    ).lean();
 
-    if (usuarios.length === 0) {
+    const usuariosCiclo = await Usuario.find(
+      {
+        primeiraLimpezaHistorico: false,
+        ultimaLimpezaHistorico: { $lte: dataLimiteCiclo },
+      },
+      { _id: 1 }
+    ).lean();
+
+    const usuariosPrimeiraLimpezaIds = usuariosPrimeira.map((u) => u._id);
+    const usuariosCicloIds = usuariosCiclo.map((u) => u._id);
+
+    if (!usuariosPrimeiraLimpezaIds.length && !usuariosCicloIds.length) {
       return 0;
     }
 
-    const usuariosIds = usuarios.map((u) => u._id);
+    let totalRemovidos = 0;
 
-    // Apaga históricos com mais de X dias (retenção)
-    const dataLimiteRetencao = new Date();
-    dataLimiteRetencao.setDate(dataLimiteRetencao.getDate() - diasRetencao);
+    // Para a primeira limpeza do usuário: remove TODO o histórico dele.
+    if (usuariosPrimeiraLimpezaIds.length) {
+      const resultado = await Historico.deleteMany({
+        usuario: { $in: usuariosPrimeiraLimpezaIds },
+      });
+      totalRemovidos += resultado.deletedCount;
 
-    const resultado = await Historico.deleteMany({
-      usuario: { $in: usuariosIds },
-      createdAt: { $lt: dataLimiteRetencao },
-    });
+      await Usuario.updateMany(
+        { _id: { $in: usuariosPrimeiraLimpezaIds } },
+        {
+          $set: {
+            primeiraLimpezaHistorico: false,
+            ultimaLimpezaHistorico: hoje,
+          },
+        }
+      );
+    }
 
-    // Atualiza a data da última limpeza para todos os usuários processados
-    await Usuario.updateMany(
-      { _id: { $in: usuariosIds } },
-      { $set: { ultimaLimpezaHistorico: hoje } }
+    // Para limpezas de ciclo subsequentes: respeita retenção (se configurada).
+    if (usuariosCicloIds.length) {
+      const filtro = { usuario: { $in: usuariosCicloIds } };
+      if (diasRetencao > 0) {
+        const dataLimiteRetencao = new Date();
+        dataLimiteRetencao.setDate(dataLimiteRetencao.getDate() - diasRetencao);
+        filtro.createdAt = { $lt: dataLimiteRetencao };
+      }
+
+      const resultado = await Historico.deleteMany(filtro);
+      totalRemovidos += resultado.deletedCount;
+
+      await Usuario.updateMany(
+        { _id: { $in: usuariosCicloIds } },
+        { $set: { ultimaLimpezaHistorico: hoje } }
+      );
+    }
+
+    const totalUsuarios =
+      usuariosPrimeiraLimpezaIds.length + usuariosCicloIds.length;
+    logger.info(
+      `Limpeza concluida: ${totalRemovidos} registro(s) removido(s) em ${totalUsuarios} usuário(s) (primeira: ${usuariosPrimeiraLimpezaIds.length}, ciclo: ${usuariosCicloIds.length})`,
+      'HistoricoCleanup'
     );
 
-    return resultado.deletedCount;
+    return totalRemovidos;
   }
 
   // Formata descrição para transação

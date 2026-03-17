@@ -24,6 +24,12 @@ const ListaDesejoSchema = new mongoose.Schema(
       required: true,
     },
 
+    subcategoria: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subcategoria',
+      required: false,
+    },
+
     tipoDespesa: {
       type: String,
       enum: ['essencial', 'eventual', 'opcional'],

@@ -6,3 +6,4 @@ export * from './tagHelpers.js';
 export * from './pagination.js';
 export * from './logger.js';
 export * from './listagemHelpers.js';
+export * from './subcategoriaHelpers.js';

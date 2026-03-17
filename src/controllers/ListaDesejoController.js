@@ -1,5 +1,9 @@
 const ListaDesejo = require('../models/ListaDesejo');
 const Transacao = require('../models/Transacao');
+const {
+  validarSubcategoriaParaCategoria,
+  processarSubcategoriaAoAtualizar,
+} = require('../utils/subcategoriaUtils');
 const HistoricoService = require('../services/HistoricoService');
 const SaldoService = require('../services/SaldoService');
 const { formatarMoeda } = require('../utils/stringHelpers');
@@ -10,7 +14,9 @@ const MENSAGEM_ITEM_NAO_ENCONTRADO = 'Item da lista de desejos nao encontrado';
 const PROJECAO_CATEGORIA = 'nome cor tipo';
 
 function popularCategoria(query) {
-  return query.populate('categoria', PROJECAO_CATEGORIA);
+  return query
+    .populate('categoria', PROJECAO_CATEGORIA)
+    .populate('subcategoria', 'nome');
 }
 
 // reuso de populate para transações
@@ -26,15 +32,12 @@ function buscarItemDoUsuario(itemId, usuarioId) {
 }
 
 function montarUpdateData(body) {
-  const { titulo, valor, categoria, tipoDespesa, tags } = body;
-  const updateData = {};
+  const updateData = { ...body };
 
-  // Mantém o comportamento atual: só atualiza campos com valor truthy
-  if (titulo) updateData.titulo = titulo;
-  if (valor) updateData.valor = valor;
-  if (categoria) updateData.categoria = categoria;
-  if (tipoDespesa) updateData.tipoDespesa = tipoDespesa;
-  if (tags) updateData.tags = tags;
+  // Se subcategoria foi enviada como string vazia, consideramos como remoção.
+  if ('subcategoria' in updateData && !updateData.subcategoria) {
+    updateData.subcategoria = null;
+  }
 
   return updateData;
 }
@@ -47,13 +50,29 @@ function montarDescricaoHistorico(acao, titulo) {
 class ListaDesejoController {
   // Cria item da lista de desejos
   async criar(req, res) {
-    const { titulo, valor, categoria, tags, tipoDespesa } = req.body;
+    const { titulo, valor, categoria, subcategoria, tags, tipoDespesa } =
+      req.body;
+
+    // se houver subcategoria, validamos que ela pertence à categoria
+    if (subcategoria) {
+      const valido = await validarSubcategoriaParaCategoria(
+        subcategoria,
+        categoria
+      );
+      if (!valido) {
+        throw criarErro(
+          400,
+          'Subcategoria inválida para a categoria selecionada'
+        );
+      }
+    }
 
     const novoItem = await ListaDesejo.create({
       usuario: req.user.id,
       titulo,
       valor,
       categoria,
+      subcategoria: subcategoria || null,
       tags: tags || [],
       tipoDespesa,
     });
@@ -86,12 +105,42 @@ class ListaDesejoController {
   async atualizar(req, res) {
     const itemAntigo = await buscarItemDoUsuario(req.params.id, req.user.id);
 
-    const updateData = montarUpdateData(req.body);
+    let updateData = montarUpdateData(req.body);
+
+    // se precisarmos apagar algum campo, acumulamos em $unset
+    const unsetOps = {};
+
+    // valida subcategoria se informada
+    if (updateData.subcategoria) {
+      const categoriaId = updateData.categoria || itemAntigo.categoria;
+      const valido = await validarSubcategoriaParaCategoria(
+        updateData.subcategoria,
+        categoriaId
+      );
+      if (!valido) {
+        throw criarErro(
+          400,
+          'Subcategoria inválida para a categoria selecionada'
+        );
+      }
+    }
+
+    const { unsetOps: subUnset } = await processarSubcategoriaAoAtualizar({
+      updateData,
+      docAntigo: itemAntigo,
+    });
+
+    Object.assign(unsetOps, subUnset);
+
+    const mongoUpdate = { ...updateData };
+    if (Object.keys(unsetOps).length) {
+      mongoUpdate.$unset = unsetOps;
+    }
 
     const item = await popularCategoria(
       ListaDesejo.findOneAndUpdate(
         { _id: req.params.id, usuario: req.user.id },
-        updateData,
+        mongoUpdate,
         { returnDocument: 'after' }
       )
     );
@@ -174,6 +223,7 @@ class ListaDesejoController {
       valor: valorFinal,
       tipo: 'saida',
       categoria: item.categoria?._id,
+      subcategoria: item.subcategoria?._id || null,
       data: data || Date.now(),
       status: statusFinal,
       recorrencia: 'nenhuma',

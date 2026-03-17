@@ -22,6 +22,11 @@ const UsuarioSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    primeiraLimpezaHistorico: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

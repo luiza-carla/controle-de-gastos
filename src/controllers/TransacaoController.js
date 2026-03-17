@@ -2,6 +2,11 @@ const Transacao = require('../models/Transacao');
 const HistoricoService = require('../services/HistoricoService');
 const SaldoService = require('../services/SaldoService');
 const categoriaHelpers = require('../utils/categoriaHelpers');
+const Subcategoria = require('../models/Subcategoria');
+const {
+  validarSubcategoriaParaCategoria,
+  processarSubcategoriaAoAtualizar,
+} = require('../utils/subcategoriaUtils');
 const { criarErro } = require('../utils/errorHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
 
@@ -60,6 +65,7 @@ class TransacaoController {
       valor,
       tipo,
       categoria,
+      subcategoria,
       data,
       status,
       recorrencia,
@@ -90,6 +96,23 @@ class TransacaoController {
     }
 
     // Cria nova transação no banco
+    // se foi informada subcategoria, garante que ela pertence à categoria
+    if (subcategoria) {
+      const valido = await validarSubcategoriaParaCategoria(
+        subcategoria,
+        categoria
+      );
+      if (!valido) {
+        throw criarErro(
+          400,
+          'Subcategoria inválida para a categoria selecionada'
+        );
+      }
+    }
+
+    const tipoDespesaFinal =
+      tipo === 'saida' ? (tipoDespesa ? tipoDespesa : undefined) : undefined;
+
     const novaTransacao = await Transacao.create({
       usuario: req.user.id,
       // armazenamos null em vez de deixar o campo ausente; isso
@@ -100,6 +123,7 @@ class TransacaoController {
       valor,
       tipo,
       categoria,
+      subcategoria: subcategoria || null,
       data: data || Date.now(),
       status: statusFinal,
       recorrencia: recorrencia || 'nenhuma',
@@ -108,7 +132,7 @@ class TransacaoController {
         parcelaAtual: parcelamento?.parcelaAtual || 1,
       },
       tags: tags || [],
-      tipoDespesa: tipo === 'saida' ? tipoDespesa : undefined,
+      tipoDespesa: tipoDespesaFinal,
     });
 
     // Atualiza saldo da conta se transação foi marcada como paga
@@ -137,17 +161,11 @@ class TransacaoController {
 
   // Lista todas as transações do usuário (excluindo salários)
   async listar(req, res) {
-    // Busca categoria salário para excluir das transações
-    const categoriaSalario = await categoriaHelpers.buscarSalario();
-
-    // Monta filtro para excluir salários das transações
-    const filtro = {
-      usuario: req.user.id,
-    };
-
-    if (categoriaSalario) {
-      filtro.categoria = { $ne: categoriaSalario._id };
-    }
+    const salarioRefs = await categoriaHelpers.buscarSalario();
+    const { filtroExclusao: filtro } = categoriaHelpers.obterFiltrosSalario(
+      salarioRefs,
+      req.user.id
+    );
 
     const transacoes = await populateTransacao(
       Transacao.find(filtro).sort({ data: -1 })
@@ -171,7 +189,30 @@ class TransacaoController {
     // normaliza os dados vindos do cliente
     const updateData = { ...req.body };
 
+    // se precisamos apagar algum campo, acumulamos as operações em $unset
     const unsetOps = {};
+
+    // valida subcategoria caso exista
+    if (updateData.subcategoria) {
+      const categoriaId = updateData.categoria || transacaoAntiga.categoria;
+      const valido = await validarSubcategoriaParaCategoria(
+        updateData.subcategoria,
+        categoriaId
+      );
+      if (!valido) {
+        throw criarErro(
+          400,
+          'Subcategoria inválida para a categoria selecionada'
+        );
+      }
+    }
+
+    const { unsetOps: subUnset } = await processarSubcategoriaAoAtualizar({
+      updateData,
+      docAntigo: transacaoAntiga,
+    });
+
+    Object.assign(unsetOps, subUnset);
 
     if (req.body.conta === 'carteira') {
       updateData.fonteSaldo = 'carteira';
@@ -188,8 +229,15 @@ class TransacaoController {
       updateData
     );
 
-    // Remove tipoDespesa se tipo não for saída
+    // Remove tipoDespesa se tipo não for saída ou se for vazio
     if (updateData.tipo !== 'saida') {
+      delete updateData.tipoDespesa;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(updateData, 'tipoDespesa') &&
+      !updateData.tipoDespesa
+    ) {
       delete updateData.tipoDespesa;
     }
 

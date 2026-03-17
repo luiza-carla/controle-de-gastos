@@ -1,6 +1,6 @@
 // Helper genérico para filtrar itens por categoria
 import { setupCategoriaAutocomplete } from './categoriaHelpers.js';
-import { warn } from './logger.js';
+import * as logger from './logger.js';
 import { apiFetch } from '../config.js';
 export function filtrarPorCategoria(lista, categoriaId) {
   if (!categoriaId) return lista;
@@ -37,7 +37,10 @@ export async function inicializarFiltroCategoriaGenerico({
     categorias = await apiFetch(urlCategorias);
   } catch (e) {
     // já tratado por apiFetch (possível 401 redirecionado) ou aqui
-    warn(`Falha ao obter categorias: ${e.message}`, 'filtroCategoriaHelpers');
+    logger.warn(
+      `Falha ao obter categorias: ${e.message}`,
+      'filtroCategoriaHelpers'
+    );
     return;
   }
 

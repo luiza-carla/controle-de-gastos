@@ -54,5 +54,7 @@
 
 .resumo-financeiro .card details ul li,
 .resumo-financeiro .card details table.resumo-table tbody tr {
-  transition: background 0.2s, font-weight 0.2s;
+  transition:
+    background 0.2s,
+    font-weight 0.2s;
 }

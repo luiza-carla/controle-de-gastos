@@ -19,12 +19,15 @@ import {
   criarBotoesAcao,
   $,
   escaparHtml,
-  criarBadgeCategoria,
+  criarBadgesCategoriaSubcategoriaSeparados,
   inicializarTags,
   gerarTags,
   inicializarEditorTags,
   resetarTagsFormulario,
   setupCategoriaAutocomplete,
+  carregarSubcategorias,
+  setupSubcategoriaAutocomplete,
+  obterSubcategoriaParaEnviar,
   criarPaginacao,
   // filtros
   filtrarPorCategoria,
@@ -69,14 +72,24 @@ function resetarFormularioDesejo(form) {
   resetarTagsFormulario(tags);
   form.reset();
   limparCategoriaSelecionada();
+  if ($('subcategoria')) $('subcategoria').value = '';
 }
 
 // Inicializa e gerencia envio do formulário de criação de desejo
 export async function criarDesejo(formId = 'formListaDesejo') {
   const form = $(formId);
   if (!form) return;
+
+  const inputCategoria = $('buscaCategoria');
+  const inputSubcategoria = $('buscaSubcategoria');
+
   form.noValidate = true;
   garantirErroInline(form, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
+
+  inputCategoria?.addEventListener('input', () => {
+    if (inputSubcategoria) inputSubcategoria.value = '';
+    if ($('subcategoria')) $('subcategoria').value = '';
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -87,6 +100,7 @@ export async function criarDesejo(formId = 'formListaDesejo') {
     const tituloDesejo = form.titulo.value;
 
     const categoria = $('categoria')?.value;
+    const subcategoria = $('subcategoria')?.value;
     const tipoDespesa = $('tipoDespesa')?.value;
     const valor = Number(form.valor.value);
 
@@ -117,6 +131,7 @@ export async function criarDesejo(formId = 'formListaDesejo') {
           titulo: tituloDesejo,
           valor: Number(form.valor.value),
           categoria,
+          subcategoria: obterSubcategoriaParaEnviar('buscaSubcategoria', 'subcategoria'),
           tipoDespesa: tipoDespesa || undefined,
           tags: [...tags],
         }),
@@ -220,7 +235,8 @@ function criarCardDesejo(d) {
     ? capitalizar(d.tipoDespesa)
     : '';
   const valorFormatado = formatarValor(d.valor);
-  const categoria = criarBadgeCategoria(d.categoria);
+  const { categoriaBadge, subcategoriaBadge } =
+    criarBadgesCategoriaSubcategoriaSeparados(d.categoria, d.subcategoria);
   const corCategoria = d.categoria?.cor || 'var(--gray-700)';
   const tagsHtml = gerarTags(d.tags);
 
@@ -235,8 +251,19 @@ function criarCardDesejo(d) {
         <div class="transacao-info-grid">
           <div class="info-linha">
             <span class="info-label">Categoria:</span>
-            <span class="info-valor">${categoria}</span>
+            <span class="info-valor">
+              ${categoriaBadge}
+            </span>
           </div>
+
+          ${
+            subcategoriaBadge
+              ? `<div class="info-linha">
+            <span class="info-label">Subcategoria:</span>
+            <span class="info-valor">${subcategoriaBadge}</span>
+          </div>`
+              : ''
+          }
 
           ${
             tipoDespesaCapitalizado
@@ -307,6 +334,14 @@ window.editarDesejo = async (id) => {
            <div id="modalDropdownCategoriaDesejo" class="dropdown-categorias"></div>
          </div>
       </div>
+      <div class="form-group" id="modalSubcategoriaGroupDesejo" style="display: none">
+        <label>Subcategoria (opcional)</label>
+         <div class="categoria-autocomplete">
+           <input type="text" id="modalBuscaSubcategoriaDesejo" placeholder="Buscar subcategoria..." autocomplete="off">
+           <input type="hidden" id="modalSubcategoriaDesejo">
+           <div id="modalDropdownSubcategoriaDesejo" class="dropdown-categorias"></div>
+         </div>
+      </div>
       <div class="form-group">
         <label>Tipo de Despesa</label>
         <select id="modalTipoDespesa">
@@ -334,6 +369,10 @@ window.editarDesejo = async (id) => {
       const novoValor = Number($('modalValorDesejo')?.value);
       const novaCategoria = $('modalCategoriaDesejo')?.value;
       const novoTipoDespesa = $('modalTipoDespesa')?.value;
+      const subcategoriaParaEnviar = obterSubcategoriaParaEnviar(
+        'modalBuscaSubcategoriaDesejo',
+        'modalSubcategoriaDesejo'
+      );
 
       // Valida campos obrigatórios
       if (!novoTitulo || !novoValor || !novaCategoria) {
@@ -346,6 +385,7 @@ window.editarDesejo = async (id) => {
           titulo: novoTitulo,
           valor: novoValor,
           categoria: novaCategoria,
+          subcategoria: subcategoriaParaEnviar,
           tags: tagsModal,
         };
 
@@ -373,12 +413,36 @@ window.editarDesejo = async (id) => {
     addButtonId: 'modalBtnAddTagDesejo',
   });
 
+  const modalSubGroup = $('modalSubcategoriaGroupDesejo');
+  const atualizarVisibilidadeModal = (lista) => {
+    if (modalSubGroup)
+      modalSubGroup.style.display = lista && lista.length ? '' : 'none';
+  };
+
+  // inicializa autocomplete de categoria para o modal e atualiza subcategoria
   setupCategoriaAutocomplete(
     'modalBuscaCategoriaDesejo',
     'modalCategoriaDesejo',
     'modalDropdownCategoriaDesejo',
-    categorias
+    categorias,
+    async (catId) => {
+      // se alterar a categoria durante a edição, limpamos a subcategoria anterior
+      subcategoriaAutocompleteModal?.limpar?.();
+
+      const subs = await carregarSubcategorias(catId);
+      subcategoriaAutocompleteModal.atualizarOpcoes(subs);
+      atualizarVisibilidadeModal(subs);
+    }
   );
+
+  // subcategoria modal
+  const subcategoriaAutocompleteModal = setupSubcategoriaAutocomplete(
+    'modalBuscaSubcategoriaDesejo',
+    'modalSubcategoriaDesejo',
+    'modalDropdownSubcategoriaDesejo',
+    []
+  );
+  atualizarVisibilidadeModal([]);
 
   if (desejo.categoria) {
     const inputBusca = $('modalBuscaCategoriaDesejo');
@@ -388,6 +452,17 @@ window.editarDesejo = async (id) => {
       inputHidden.value = desejo.categoria._id;
       const cor = desejo.categoria.cor || '';
       inputBusca.style.boxShadow = cor ? `inset 4px 0 0 ${cor}` : '';
+    }
+    const subs = await carregarSubcategorias(desejo.categoria._id);
+    subcategoriaAutocompleteModal.atualizarOpcoes(subs);
+    atualizarVisibilidadeModal(subs);
+    if (desejo.subcategoria) {
+      const inp = $('modalBuscaSubcategoriaDesejo');
+      const hid = $('modalSubcategoriaDesejo');
+      if (inp && hid) {
+        inp.value = desejo.subcategoria.nome;
+        hid.value = desejo.subcategoria._id;
+      }
     }
   }
 };
@@ -467,7 +542,6 @@ window.realizarDesejo = async (id) => {
         mostrarErroInline('Por favor, informe um valor válido');
         return;
       }
-
 
       try {
         // Realiza desejo em endpoint único (cria transação + remove desejo)

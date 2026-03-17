@@ -38,6 +38,5 @@
 
 .salario-dia {
   font-size: 0.85em;
-  color: var(--brand-secondary); /* replaced missing --azul with secondary brand color */
-  font-weight: 500;
+  color: var(--brand-secondary);
 }

@@ -3,6 +3,7 @@ const HistoricoService = require('../services/HistoricoService');
 const SaldoService = require('../services/SaldoService');
 const { formatarMoeda } = require('../utils/stringHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
+const { criarErro } = require('../utils/errorHelpers');
 const categoriaHelpers = require('../utils/categoriaHelpers');
 const { salario: populateSalario } = require('../utils/populateHelpers');
 const {
@@ -30,27 +31,28 @@ class SalarioController {
     this.deletar = this.deletar.bind(this);
   }
 
-  // Retorna categoria Salário ou responde erro 400
-  async buscarCategoriaSalarioOuResponder(res) {
-    const categoriaSalario = await categoriaHelpers.buscarSalario();
+  // Retorna referência à categoria/subcategoria de salário ou responde
+  // erro 400. O objeto retornado tem
+  //   { categoria, subcategoria }.
+  async buscarCategoriaSalarioOuResponder() {
+    const refs = await categoriaHelpers.buscarSalario();
 
-    if (!categoriaSalario) {
-      res
-        .status(400)
-        .json({ mensagem: MENSAGEM_CATEGORIA_SALARIO_NAO_ENCONTRADA });
-      return null;
+    if (!refs || !refs.categoria) {
+      throw criarErro(400, MENSAGEM_CATEGORIA_SALARIO_NAO_ENCONTRADA);
     }
 
-    return categoriaSalario;
+    return refs;
   }
 
-  // Busca salário do usuário por id e categoria
-  async buscarSalarioDoUsuario(id, usuarioId, categoriaId) {
-    return Transacao.findOne({
-      _id: id,
-      usuario: usuarioId,
-      categoria: categoriaId,
-    });
+  // Busca salário do usuário por id e referências de categoria/subcategoria
+  async buscarSalarioDoUsuario(id, usuarioId, refs) {
+    const { filtroUsuario } = categoriaHelpers.obterFiltrosSalario(
+      refs,
+      usuarioId
+    );
+    if (!filtroUsuario) return null;
+
+    return Transacao.findOne({ _id: id, ...filtroUsuario });
   }
 
   // Verifica se salário deve ser processado na data informada
@@ -91,17 +93,16 @@ class SalarioController {
 
   // Lista todos os salários do usuário
   async listar(req, res) {
-    const categoriaSalario = await categoriaHelpers.buscarSalario();
+    const refs = await categoriaHelpers.buscarSalario();
+    const { filtroUsuario: filtroSalario } =
+      categoriaHelpers.obterFiltrosSalario(refs, req.user.id);
 
-    if (!categoriaSalario) {
+    if (!filtroSalario) {
       return res.json([]);
     }
 
     const salarios = await populateSalario(
-      Transacao.find({
-        usuario: req.user.id,
-        categoria: categoriaSalario._id,
-      }).sort({ data: -1, createdAt: -1 })
+      Transacao.find(filtroSalario).sort({ data: -1, createdAt: -1 })
     );
 
     res.json(salarios);
@@ -109,8 +110,8 @@ class SalarioController {
 
   // Cria novo salário recorrente
   async criar(req, res) {
-    const categoriaSalario = await this.buscarCategoriaSalarioOuResponder(res);
-    if (!categoriaSalario) return;
+    const refs = await this.buscarCategoriaSalarioOuResponder();
+    if (!refs) return;
 
     const destinoSaldo = this.normalizarDestinoSaldo(req.body);
 
@@ -120,7 +121,8 @@ class SalarioController {
       ...req.body,
       ...destinoSaldo,
       usuario: req.user.id,
-      categoria: categoriaSalario._id,
+      categoria: refs.categoria._id,
+      subcategoria: refs.subcategoria?._id || null,
       tipo: 'entrada',
       titulo: req.body.titulo || 'Salário',
       status: 'pendente',
@@ -164,13 +166,13 @@ class SalarioController {
 
   // Atualiza salário existente
   async atualizar(req, res) {
-    const categoriaSalario = await this.buscarCategoriaSalarioOuResponder(res);
-    if (!categoriaSalario) return;
+    const refs = await this.buscarCategoriaSalarioOuResponder();
+    if (!refs) return;
 
     const transacaoAntiga = await this.buscarSalarioDoUsuario(
       req.params.id,
       req.user.id,
-      categoriaSalario._id
+      refs
     );
 
     if (!transacaoAntiga) {
@@ -198,7 +200,8 @@ class SalarioController {
         {
           _id: req.params.id,
           usuario: req.user.id,
-          categoria: categoriaSalario._id,
+          categoria: refs.categoria._id,
+          ...(refs.subcategoria ? { subcategoria: refs.subcategoria._id } : {}),
         },
         payloadAtualizacao,
         { returnDocument: 'after' }
@@ -267,13 +270,13 @@ class SalarioController {
 
   // Deleta salário e reverte saldo se necessário
   async deletar(req, res) {
-    const categoriaSalario = await this.buscarCategoriaSalarioOuResponder(res);
-    if (!categoriaSalario) return;
+    const refs = await this.buscarCategoriaSalarioOuResponder();
+    if (!refs) return;
 
     const salario = await this.buscarSalarioDoUsuario(
       req.params.id,
       req.user.id,
-      categoriaSalario._id
+      refs
     );
 
     if (!salario) {

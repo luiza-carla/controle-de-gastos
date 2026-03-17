@@ -10,24 +10,18 @@ const {
 
 class ResumoService {
   // Busca salários ativos do usuário com base na categoria de salário
-  async buscarSalariosAtivos(usuarioId, categoriaSalario) {
-    if (!categoriaSalario) return [];
+  async buscarSalariosAtivos(usuarioId, refs) {
+    const { filtroUsuario: filtroSalario } =
+      categoriaHelpers.obterFiltrosSalario(refs, usuarioId);
 
-    return Transacao.find({
-      usuario: usuarioId,
-      categoria: categoriaSalario._id,
-      ativa: true,
-    });
+    if (!filtroSalario) return [];
+
+    return Transacao.find({ ...filtroSalario, ativa: true });
   }
 
   // Adiciona exclusão da categoria de salário ao filtro quando houver categoria
-  adicionarExclusaoCategoriaSalario(filtro, categoriaSalario) {
-    if (!categoriaSalario) return filtro;
-
-    return {
-      ...filtro,
-      categoria: { $ne: categoriaSalario._id },
-    };
+  adicionarExclusaoCategoriaSalario(filtro, refs) {
+    return categoriaHelpers.adicionarExclusaoCategoriaSalario(filtro, refs);
   }
 
   // Calcula data de vencimento de salário no mês
@@ -186,19 +180,11 @@ class ResumoService {
     const resumo = await this.gerarResumo(usuarioId);
     const saldoAtual = resumo.saldoCalculado;
 
-    const categoriaSalario = await categoriaHelpers.buscarSalario();
+    const refs = await categoriaHelpers.buscarSalario();
 
     // Busca pendentes EXCLUINDO salários (salários têm tratamento separado)
-    const filtroPendentes = {
-      usuario: usuarioId,
-      ativa: true,
-      status: 'pendente',
-    };
-
-    const filtroPendentesSemSalario = this.adicionarExclusaoCategoriaSalario(
-      filtroPendentes,
-      categoriaSalario
-    );
+    const { filtroExclusao: filtroPendentesSemSalario } =
+      categoriaHelpers.obterFiltrosSalario(refs, usuarioId);
 
     const pendentes = await Transacao.find(filtroPendentesSemSalario);
     const saidasPendentes = somaSaidas(pendentes);

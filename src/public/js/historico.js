@@ -13,8 +13,10 @@ import {
   escaparHtml,
   criarCardsHTML,
   criarPaginacao,
+  criarBadgesCategoriaSubcategoriaSeparados,
 } from './helpers/index.js';
 import { mostrarNotificacao } from './notification.js';
+import { abrirModalConfirmacao, fecharModal } from './modalDeletar.js';
 
 // Estado da aplicação
 let state = {
@@ -343,7 +345,6 @@ function formatarObjetoTransacao(transacao) {
     return '<div class="objeto-campo">Objeto não disponível</div>';
   }
 
-  const categoria = obterNomeRelacionado(transacao.categoria);
   const conta = obterNomeRelacionado(transacao.conta);
 
   const campos = [];
@@ -360,7 +361,22 @@ function formatarObjetoTransacao(transacao) {
     );
   }
 
-  campos.push(renderCampoObjeto('Categoria', categoria));
+  // Categoria exibida sempre; subcategoria exibida se existir.
+  if (transacao.categoria) {
+    const { categoriaBadge, subcategoriaBadge } =
+      criarBadgesCategoriaSubcategoriaSeparados(
+        transacao.categoria,
+        transacao.subcategoria
+      );
+
+    campos.push(renderCampoObjeto('Categoria', categoriaBadge, false));
+
+    if (subcategoriaBadge) {
+      campos.push(renderCampoObjeto('Subcategoria', subcategoriaBadge, false));
+    }
+  } else {
+    campos.push(renderCampoObjeto('Categoria', '', false));
+  }
 
   if (transacao.fonteSaldo === 'carteira') {
     campos.push(renderCampoObjeto('Conta', 'Carteira', false));
@@ -417,8 +433,6 @@ function formatarObjetoListaDesejo(item) {
     return '<div class="objeto-campo">Objeto não disponível</div>';
   }
 
-  const categoria = obterNomeRelacionado(item.categoria);
-
   const campos = [];
 
   campos.push(renderCampoObjeto('Título', item.titulo));
@@ -427,7 +441,22 @@ function formatarObjetoListaDesejo(item) {
     campos.push(renderCampoObjeto('Preço', formatarMoeda(item.preco), false));
   }
 
-  campos.push(renderCampoObjeto('Categoria', categoria));
+  // Categoria exibida sempre; subcategoria exibida se existir.
+  if (item.categoria) {
+    const { categoriaBadge, subcategoriaBadge } =
+      criarBadgesCategoriaSubcategoriaSeparados(
+        item.categoria,
+        item.subcategoria
+      );
+
+    campos.push(renderCampoObjeto('Categoria', categoriaBadge, false));
+
+    if (subcategoriaBadge) {
+      campos.push(renderCampoObjeto('Subcategoria', subcategoriaBadge, false));
+    }
+  } else {
+    campos.push(renderCampoObjeto('Categoria', '', false));
+  }
 
   if (
     item.valorEconomizado !== undefined &&
@@ -832,26 +861,29 @@ function mostrarLoading(mostrar) {
 
 // Desfazer ação
 async function desfazerAcao(historicoId) {
-  if (!confirm('Tem certeza que deseja desfazer esta ação?')) {
-    return;
-  }
+  abrirModalConfirmacao({
+    titulo: 'Desfazer ação',
+    mensagem: 'Tem certeza que deseja desfazer esta ação?',
+    onConfirmar: async () => {
+      fecharModal();
+      try {
+        const resultado = await apiFetch(
+          `${window.location.origin}/historico/${historicoId}/desfazer`,
+          {
+            method: 'POST',
+          }
+        );
 
-  try {
-    const resultado = await apiFetch(
-      `${window.location.origin}/historico/${historicoId}/desfazer`,
-      {
-        method: 'POST',
+        mostrarNotificacao(
+          resultado.message || 'Ação desfeita com sucesso',
+          'sucesso'
+        );
+
+        // Recarrega lista e estado visual após reversão.
+        await carregarHistorico();
+      } catch (error) {
+        mostrarNotificacao(error.message || 'Erro ao desfazer ação', 'erro');
       }
-    );
-
-    mostrarNotificacao(
-      resultado.message || 'Ação desfeita com sucesso',
-      'sucesso'
-    );
-
-    // Recarrega lista e estado visual após reversão.
-    await carregarHistorico();
-  } catch (error) {
-    mostrarNotificacao(error.message || 'Erro ao desfazer ação', 'erro');
-  }
+    },
+  });
 }

@@ -22,14 +22,16 @@ import {
   hideElement,
   $,
   escaparHtml,
-  criarBadgeCategoria,
+  criarBadgesCategoriaSubcategoriaSeparados,
   inicializarTags,
   gerarTags,
   inicializarEditorTags,
   resetarTagsFormulario,
   setupCategoriaAutocomplete,
+  carregarSubcategorias,
+  setupSubcategoriaAutocomplete,
+  obterSubcategoriaParaEnviar,
   criarPaginacao,
-  // filtro/pagina
   filtrarPorCategoria,
   renderizarListagemFiltrada,
   inicializarFiltroCategoriaGenerico,
@@ -81,6 +83,8 @@ function resetarFormularioTransacao(
   tipoDespesaSelect.value = '';
   hideElement(parcelasContainer);
   limparCategoriaSelecionada();
+  // também apagar subcategoria
+  if ($('subcategoria')) $('subcategoria').value = '';
 }
 
 // Inicializa envio do formulario de transacao
@@ -90,10 +94,22 @@ export async function criarTransacao(formId = 'formTransacao') {
   const tipoDespesaSelect = $('tipoDespesaContainer')?.querySelector(
     '#tipoDespesa'
   );
+  const inputCategoria = $('buscaCategoria');
+  const inputSubcategoria = $('buscaSubcategoria');
+
   if (form) form.noValidate = true;
   garantirErroInline(form, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
   const recorrenciaSelect = $('recorrencia');
   const parcelasContainer = $('parcelasContainer');
+
+  // garantir limpeza de subcategoria quando a categoria mudar
+  inputCategoria?.addEventListener('input', () => {
+    // tiver alteração manual a categoria perdida, limpa subcategoria
+    if (inputSubcategoria) inputSubcategoria.value = '';
+    $('subcategoria').value = '';
+  });
+
+  // Controla exibicao de campos condicionais
 
   // Controla exibicao de campos condicionais
   tipoSelect?.addEventListener('change', () => {
@@ -124,8 +140,9 @@ export async function criarTransacao(formId = 'formTransacao') {
 
     const conta = $('conta')?.value;
     const categoria = $('categoria')?.value;
+    const subcategoria = obterSubcategoriaParaEnviar('buscaSubcategoria', 'subcategoria');
     const tipoDespesa =
-      tipoSelect.value === 'saida' ? tipoDespesaSelect.value : null;
+      tipoSelect.value === 'saida' ? tipoDespesaSelect.value || null : null;
     const valor = Number(form.valor.value);
 
     if (
@@ -162,6 +179,7 @@ export async function criarTransacao(formId = 'formTransacao') {
           tipoDespesa,
           conta: conta,
           categoria: categoria,
+          subcategoria: subcategoria || undefined,
           status: form.status.value,
           recorrencia: form.recorrencia.value,
           tags: [...tags],
@@ -301,7 +319,9 @@ function criarCardTransacao(t) {
     t.fonteSaldo === 'carteira'
       ? 'Carteira (dinheiro físico)'
       : t.conta?.nome || 'Sem conta';
-  const categoria = criarBadgeCategoria(t.categoria);
+
+  const { categoriaBadge, subcategoriaBadge } =
+    criarBadgesCategoriaSubcategoriaSeparados(t.categoria, t.subcategoria);
   const corCategoria = t.categoria?.cor || 'var(--gray-700)';
 
   const tags = gerarTags(t.tags);
@@ -339,8 +359,19 @@ function criarCardTransacao(t) {
 
           <div class="info-linha">
             <span class="info-label">Categoria:</span>
-            <span class="info-valor">${categoria}</span>
+            <span class="info-valor">
+              ${categoriaBadge}
+            </span>
           </div>
+
+          ${
+            subcategoriaBadge
+              ? `<div class="info-linha">
+            <span class="info-label">Subcategoria:</span>
+            <span class="info-valor">${subcategoriaBadge}</span>
+          </div>`
+              : ''
+          }
 
           <div class="info-linha">
             <span class="info-label">Conta:</span>
@@ -480,8 +511,14 @@ window.editarTransacao = async (id) => {
            <input type="hidden" id="modalCategoriaTransacao" required>
            <div id="modalDropdownCategoriaTransacao" class="dropdown-categorias"></div>
          </div>
-      </div>
-      <div class="form-group">
+      </div>      <div class="form-group" id="modalSubcategoriaGroup">
+        <label>Subcategoria (opcional)</label>
+        <div class="categoria-autocomplete">
+          <input type="text" id="modalBuscaSubcategoriaTransacao" placeholder="Buscar ou selecionar subcategoria..." autocomplete="off">
+          <input type="hidden" id="modalSubcategoriaTransacao">
+          <div id="modalDropdownSubcategoriaTransacao" class="dropdown-categorias"></div>
+        </div>
+      </div>      <div class="form-group">
         <label>Tags</label>
         <div id="modalTagsContainer" class="tag-editor-container"></div>
         <div class="tag-editor-input-row">
@@ -503,6 +540,10 @@ window.editarTransacao = async (id) => {
       const novaConta = $('modalContaTransacao')?.value;
       const novaCategoria = $('modalCategoriaTransacao')?.value;
       const novoTipoDespesa = $('modalTipoDespesa')?.value;
+      const subcategoriaParaEnviar = obterSubcategoriaParaEnviar(
+        'modalBuscaSubcategoriaTransacao',
+        'modalSubcategoriaTransacao'
+      );
 
       if (
         !novoTitulo ||
@@ -523,6 +564,7 @@ window.editarTransacao = async (id) => {
         status: novoStatus,
         conta: novaConta,
         categoria: novaCategoria,
+        subcategoria: subcategoriaParaEnviar,
         tags: tagsModal,
       };
 
@@ -551,12 +593,38 @@ window.editarTransacao = async (id) => {
     addButtonId: 'modalBtnAddTag',
   });
 
+  const modalSubGroup = $('modalSubcategoriaGroup');
+  const atualizarVisibilidadeModal = (lista) => {
+    if (modalSubGroup)
+      modalSubGroup.style.display = lista && lista.length ? '' : 'none';
+  };
+
+  // inicializa autocomplete de categoria para o modal
   setupCategoriaAutocomplete(
     'modalBuscaCategoriaTransacao',
     'modalCategoriaTransacao',
     'modalDropdownCategoriaTransacao',
-    categorias
+    categorias,
+    async (catId) => {
+      // ao escolher nova categoria enquanto edita, limpa eventual seleção de subcategoria
+      subcategoriaAutocompleteModal?.limpar?.();
+
+      // busca subcategorias para a nova categoria
+      const subs = await carregarSubcategorias(catId);
+      subcategoriaAutocompleteModal.atualizarOpcoes(subs);
+      atualizarVisibilidadeModal(subs);
+    }
   );
+
+  // subcategoria autocompleto para o modal (inicialmente vazio)
+  const subcategoriaAutocompleteModal = setupSubcategoriaAutocomplete(
+    'modalBuscaSubcategoriaTransacao',
+    'modalSubcategoriaTransacao',
+    'modalDropdownSubcategoriaTransacao',
+    []
+  );
+  // começa escondido
+  atualizarVisibilidadeModal([]);
 
   if (transacao.categoria) {
     const inputBusca = $('modalBuscaCategoriaTransacao');
@@ -566,6 +634,18 @@ window.editarTransacao = async (id) => {
       inputHidden.value = transacao.categoria._id;
       const cor = transacao.categoria.cor || '';
       inputBusca.style.boxShadow = cor ? `inset 4px 0 0 ${cor}` : '';
+    }
+    // carregar lista de subcategorias existente para pré‑selecionar
+    const subs = await carregarSubcategorias(transacao.categoria._id);
+    subcategoriaAutocompleteModal.atualizarOpcoes(subs);
+    atualizarVisibilidadeModal(subs);
+    if (transacao.subcategoria) {
+      const inp = $('modalBuscaSubcategoriaTransacao');
+      const hid = $('modalSubcategoriaTransacao');
+      if (inp && hid) {
+        inp.value = transacao.subcategoria.nome;
+        hid.value = transacao.subcategoria._id;
+      }
     }
   }
 

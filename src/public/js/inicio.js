@@ -88,10 +88,14 @@ function preencherTabelaMovimentos(tbodyId, itens = []) {
   tbody.innerHTML = itens
     .map((item) => {
       const data = item.data ? new Date(item.data).toLocaleDateString() : '';
+      // se houver subcategoria, concatenamos
+      const catTexto = item.subcategoria
+        ? `${item.categoria} / ${item.subcategoria}`
+        : item.categoria;
       return `
         <tr>
           <td>${escaparHtml(data)}</td>
-          <td>${escaparHtml(item.categoria)}</td>
+          <td>${escaparHtml(catTexto)}</td>
           <td>${escaparHtml(item.nome)}</td>
           <td>R$ ${formatarValor(item.valor)}</td>
         </tr>

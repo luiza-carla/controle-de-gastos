@@ -90,6 +90,27 @@
                   ></div>
                 </div>
               </div>
+
+              <div
+                class="form-group"
+                id="subcategoriaGroup"
+                style="display: none"
+              >
+                <label>Subcategoria (opcional)</label>
+                <div class="categoria-autocomplete">
+                  <input
+                    type="text"
+                    id="buscaSubcategoria"
+                    placeholder="Buscar ou selecionar subcategoria..."
+                    autocomplete="off"
+                  />
+                  <input type="hidden" id="subcategoria" />
+                  <div
+                    id="dropdownSubcategorias"
+                    class="dropdown-categorias"
+                  ></div>
+                </div>
+              </div>
             </div>
 
             <div id="tagsArea">
@@ -99,10 +120,18 @@
 
               <div class="tag-input-area">
                 <input id="tagInput" placeholder="Digite uma tag" />
-                <button type="button" id="btnAddTag" class="btn btn-success small">
+                <button
+                  type="button"
+                  id="btnAddTag"
+                  class="btn btn-success small"
+                >
                   <i class="fa-solid fa-check"></i>
                 </button>
-                <button type="button" id="btnNovaTag" class="btn btn-primary small">
+                <button
+                  type="button"
+                  id="btnNovaTag"
+                  class="btn btn-primary small"
+                >
                   <i class="fa-solid fa-plus"></i>
                 </button>
               </div>

@@ -7,8 +7,8 @@ import {
   $,
   showElement,
   hideElement,
-  warn,
 } from './index.js';
+import * as logger from './logger.js';
 
 // Configura autocomplete de categorias reutilizável para modais
 export function setupCategoriaAutocomplete(
@@ -28,7 +28,7 @@ export function setupCategoriaAutocomplete(
 
   // Se pelo menos um elemento existe mas está faltando outro, avisar.
   if (!inputBusca || !inputHidden || !dropdown) {
-    warn(
+    logger.warn(
       `Categoria autocomplete não inicializado: ${inputId}`,
       'categoriaHelpers'
     );

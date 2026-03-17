@@ -11,7 +11,7 @@
   --color-black: #111111;
 
   /* ===== BRAND ===== */
-  --brand-primary: #f29ca3;   /* rosa principal */
+  --brand-primary: #f29ca3; /* rosa principal */
   --brand-secondary: #6fb79a; /* verde complementar */
 
   /* ===== BACKGROUND ===== */
@@ -92,7 +92,6 @@
   --brand-secondary-30: rgba(127, 191, 159, 0.3);
   --brand-secondary-40: rgba(127, 191, 159, 0.4);
 }
-
 
 body {
   min-height: 100vh;
@@ -416,7 +415,7 @@ select:focus {
 }
 
 .btn,
-button[class^="btn"] {
+button[class^='btn'] {
   border: none;
   padding: 10px 14px;
   border-radius: 8px;
@@ -431,13 +430,18 @@ button[class^="btn"] {
 }
 
 .btn:hover:not(:disabled),
-button[class^="btn"]:hover:not(:disabled) {
+button[class^='btn']:hover:not(:disabled) {
   filter: brightness(0.95);
   transform: scale(1.05);
 }
 
-.btn.small { padding: 8px 12px; font-size: 13px; }
-.btn.fullwidth { flex: 1; }
+.btn.small {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.btn.fullwidth {
+  flex: 1;
+}
 
 .btn-primary {
   background: var(--brand-primary);
@@ -456,8 +460,6 @@ button[class^="btn"]:hover:not(:disabled) {
 .btn-success:hover {
   background: var(--btn-confirm-hover);
 }
-
-
 
 .btn-danger {
   background: var(--btn-danger);
@@ -485,7 +487,6 @@ button[class^="btn"]:hover:not(:disabled) {
 .btn-muted:hover {
   background: var(--gray-500);
 }
-
 
 .tag,
 .tag-badge {
@@ -525,4 +526,3 @@ button[class^="btn"]:hover:not(:disabled) {
   font-weight: 600 !important;
   text-transform: uppercase;
 }
-

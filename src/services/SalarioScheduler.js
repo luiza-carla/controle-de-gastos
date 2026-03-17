@@ -41,24 +41,33 @@ class SalarioScheduler {
       const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
       // Busca a categoria "Salário"
-      const categoriaSalario = await categoriaHelpers.buscarSalario();
+      const refs = await categoriaHelpers.buscarSalario();
 
-      if (!categoriaSalario) {
+      if (!refs || !refs.categoria) {
         logger.warn('Categoria Salario nao encontrada', 'SalarioScheduler');
         return;
       }
 
       // Busca transações de salário recorrentes que devem ser processadas hoje
-      const salarios = await Transacao.find({
-        categoria: categoriaSalario._id,
+      // base do filtro. inclui tanto salários em conta quanto em carteira.
+      // Nota: salários com diaRecebimento anterior ao dia atual (atrasados)
+      // também devem ser processados, desde que não tenham sido rodados no mês.
+      const filtroBase = {
         ativa: true,
         frequencia: 'mensal',
-        diaRecebimento: diaAtual,
+        diaRecebimento: { $lte: diaAtual },
         $or: [
           { fonteSaldo: 'carteira' },
           { conta: { $exists: true, $ne: null } },
         ],
-      })
+      };
+
+      const { filtroCategoria } = categoriaHelpers.obterFiltrosSalario(refs);
+      const filtro = {
+        $and: [filtroBase, filtroCategoria],
+      };
+
+      const salarios = await Transacao.find(filtro)
         .populate('usuario')
         .populate('conta');
 

@@ -54,7 +54,6 @@
   margin-top: 8px;
 }
 
-
 /* Card de carteira */
 .carteira-card {
   background: var(--gray-50);
@@ -79,7 +78,6 @@
   display: flex;
   gap: 8px;
 }
-
 
 /* Responsivo */
 @media (max-width: 768px) {

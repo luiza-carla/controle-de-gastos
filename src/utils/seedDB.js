@@ -8,6 +8,7 @@ const Usuario = require('../models/Usuario');
 const Carteira = require('../models/Carteira');
 const Conta = require('../models/Conta');
 const Categoria = require('../models/Categoria');
+const Subcategoria = require('../models/Subcategoria');
 const Transacao = require('../models/Transacao');
 const ListaDesejo = require('../models/ListaDesejo');
 const Historico = require('../models/Historico');
@@ -16,6 +17,7 @@ const logger = require('./logger');
 // Importar função de seed de categorias
 const garantirCategoriasPadrao = require('./seedCategoria');
 const { formatarDescricaoHistoricoPadrao } = require('./historicoDescricao');
+const { filtrarSubcategoriasPorCategoria } = require('./subcategoriaUtils');
 
 // Configuração do Faker para pt-BR
 faker.locale = 'pt_BR';
@@ -161,12 +163,16 @@ function gerarConta(usuarioId) {
 /**
  * Gera uma transação para um usuário
  */
-function gerarTransacao(usuarioId, contaId, categorias) {
+function gerarTransacao(usuarioId, contaId, categorias, subcategorias) {
   const tipo = faker.helpers.arrayElement(['entrada', 'saida']);
 
-  // Excluir categoria "Salário" das transações normais
-  const categoriasDisponiveis = categorias.filter((c) => c.nome !== 'Salário');
-  const categoria = faker.helpers.arrayElement(categoriasDisponiveis);
+  const categoria = faker.helpers.arrayElement(categorias);
+  const subs = filtrarSubcategoriasPorCategoria(subcategorias, categoria._id, {
+    excluirNomes: ['Salário'],
+  });
+  const subcategoriaId = subs.length
+    ? faker.helpers.arrayElement(subs)._id
+    : null;
   const fonteSaldo = faker.helpers.arrayElement(['conta', 'carteira']);
 
   // Gerar datas no mês atual para aparecerem no resumo
@@ -182,6 +188,7 @@ function gerarTransacao(usuarioId, contaId, categorias) {
     valor: faker.number.float({ min: 5, max: 180, precision: 0.01 }),
     tipo: tipo,
     categoria: categoria._id,
+    subcategoria: subcategoriaId,
     data: faker.date.between({
       from: inicioMes,
       to: fimMes,
@@ -227,14 +234,24 @@ function gerarTransacao(usuarioId, contaId, categorias) {
 /**
  * Gera um item de lista de desejo para um usuário
  */
-function gerarListaDesejo(usuarioId, categorias) {
+function gerarListaDesejo(usuarioId, categorias, subcategorias) {
   const categoria = faker.helpers.arrayElement(categorias);
+
+  const subcategoriasDaCategoria = filtrarSubcategoriasPorCategoria(
+    subcategorias,
+    categoria._id
+  );
+
+  const subcategoria = faker.datatype.boolean(0.7)
+    ? faker.helpers.arrayElement(subcategoriasDaCategoria)._id
+    : null;
 
   return {
     usuario: usuarioId,
     titulo: faker.commerce.product(),
     valor: faker.number.float({ min: 30, max: 250, precision: 0.01 }),
     categoria: categoria._id,
+    subcategoria: subcategoria,
     tipoDespesa: faker.helpers.arrayElement([
       'essencial',
       'eventual',
@@ -250,7 +267,8 @@ function gerarListaDesejo(usuarioId, categorias) {
 /**
  * Gera um salário recorrente para um usuário
  */
-function gerarSalario(usuarioId, contaId, categoriaSalario) {
+function gerarSalario(usuarioId, contaId, refs) {
+  // refs = { categoria, subcategoria }
   const titulos = [
     'Salário',
     'Salário CLT',
@@ -276,7 +294,8 @@ function gerarSalario(usuarioId, contaId, categoriaSalario) {
     titulo: faker.helpers.arrayElement(titulos),
     valor: faker.number.float({ min: 300, max: 1200, precision: 0.01 }),
     tipo: 'entrada',
-    categoria: categoriaSalario._id,
+    categoria: refs.categoria._id,
+    subcategoria: refs.subcategoria?._id || null,
     data: new Date(hoje.getFullYear(), hoje.getMonth(), diaRecebimento),
     ativa: true,
     tags: ['salario', 'fixo', 'mensal'],
@@ -328,6 +347,56 @@ function criarSnapshotHistorico(entidade, obj) {
 }
 
 /**
+ * Gera um snapshot levemente modificado para simular uma edição.
+ * Isso faz com que o histórico de seed mostre alterações reais.
+ */
+function gerarSnapshotAlterado(entidade, snapshot) {
+  if (!snapshot) {
+    return snapshot;
+  }
+
+  const alterado = JSON.parse(JSON.stringify(snapshot));
+
+  switch (entidade) {
+    case 'transacao':
+    case 'salario': {
+      // Ajusta o valor em alguns % e alterna o status para forçar uma diferença.
+      const fator = 1 + faker.number.float({ min: -0.2, max: 0.2 });
+      alterado.valor = Number((alterado.valor * fator).toFixed(2));
+      alterado.status = alterado.status === 'pago' ? 'pendente' : 'pago';
+      break;
+    }
+    case 'conta': {
+      // Muda o saldo para que apareça como alterado.
+      const delta = faker.number.float({
+        min: -100,
+        max: 100,
+        precision: 0.01,
+      });
+      alterado.saldo = Number((Number(alterado.saldo || 0) + delta).toFixed(2));
+      break;
+    }
+    case 'carteira': {
+      // Apenas altera o saldo para refletir movimentação.
+      const delta = faker.number.float({ min: -50, max: 50, precision: 0.01 });
+      alterado.saldo = Number((Number(alterado.saldo || 0) + delta).toFixed(2));
+      break;
+    }
+    case 'listaDesejo': {
+      // Ajusta o valor e adiciona um sufixo ao título.
+      const delta = faker.number.float({ min: -20, max: 20, precision: 0.01 });
+      alterado.valor = Number((Number(alterado.valor || 0) + delta).toFixed(2));
+      alterado.titulo = `${alterado.titulo} (editado)`;
+      break;
+    }
+    default:
+      break;
+  }
+
+  return alterado;
+}
+
+/**
  * Gera um histórico de ação
  */
 function gerarHistorico(usuarioId, entidades) {
@@ -364,6 +433,7 @@ function gerarHistorico(usuarioId, entidades) {
   const descricaoPadrao = formatarDescricaoHistoricoPadrao(acao, entidade);
 
   const snapshot = criarSnapshotHistorico(entidade, objetoReal);
+  const snapshotEditado = gerarSnapshotAlterado(entidade, snapshot);
 
   return {
     usuario: usuarioId,
@@ -372,7 +442,12 @@ function gerarHistorico(usuarioId, entidades) {
     acao: acao,
     descricao: descricaoPadrao,
     dadosAnteriores: acao !== 'criacao' ? snapshot : null,
-    dadosNovos: acao !== 'delecao' ? snapshot : null,
+    dadosNovos:
+      acao !== 'delecao'
+        ? acao === 'edicao'
+          ? snapshotEditado
+          : snapshot
+        : null,
     metadata: {
       ip: faker.internet.ip(),
       userAgent: faker.internet.userAgent(),
@@ -413,7 +488,8 @@ async function seedDatabase(options = {}) {
 
     await garantirCategoriasPadrao();
     const categorias = await Categoria.find({ ativa: true });
-    const categoriaSalario = await require('./categoriaHelpers').buscarSalario();
+    const subcategorias = await Subcategoria.find({ ativa: true });
+    const salarioRefs = await require('./categoriaHelpers').buscarSalario();
 
     const usuarioTeste = await obterOuAtualizarUsuarioTeste({
       nomeUsuarioTeste,
@@ -433,29 +509,35 @@ async function seedDatabase(options = {}) {
       numTransacoesPorUsuario,
       () => {
         const contaAleatoria = faker.helpers.arrayElement(contas);
-        return gerarTransacao(usuarioTeste._id, contaAleatoria._id, categorias);
+        return gerarTransacao(
+          usuarioTeste._id,
+          contaAleatoria._id,
+          categorias,
+          subcategorias
+        );
       },
       Transacao
     );
 
-    const salarios = categoriaSalario
-      ? await criarEmLote(
-          numSalariosPorUsuario,
-          () => {
-            const contaAleatoria = faker.helpers.arrayElement(contas);
-            return gerarSalario(
-              usuarioTeste._id,
-              contaAleatoria._id,
-              categoriaSalario
-            );
-          },
-          Transacao
-        )
-      : [];
+    const salarios =
+      salarioRefs && salarioRefs.categoria
+        ? await criarEmLote(
+            numSalariosPorUsuario,
+            () => {
+              const contaAleatoria = faker.helpers.arrayElement(contas);
+              return gerarSalario(
+                usuarioTeste._id,
+                contaAleatoria._id,
+                salarioRefs
+              );
+            },
+            Transacao
+          )
+        : [];
 
     const listaDesejos = await criarEmLote(
       numListaDesejoPorUsuario,
-      () => gerarListaDesejo(usuarioTeste._id, categorias),
+      () => gerarListaDesejo(usuarioTeste._id, categorias, subcategorias),
       ListaDesejo
     );
 

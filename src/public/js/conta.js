@@ -250,7 +250,10 @@ export async function popularSelectContas(selectId = 'conta') {
       if (carteira && typeof carteira.saldo !== 'undefined') {
         etiquetaCarteira += ` - R$ ${formatarValor(carteira.saldo)}`;
       }
-    } catch {
+    } catch (e) {
+      // falha em buscar carteira não é crítico; apenas exibimos label padrão
+      // eslint-disable-next-line no-unused-vars
+      const _ = e;
     }
     const opt = select.querySelector(`option[value="${VALOR_CARTEIRA}"]`);
     if (opt) opt.textContent = etiquetaCarteira;

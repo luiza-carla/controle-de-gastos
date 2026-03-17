@@ -1,12 +1,7 @@
 import { logout } from './logout.js';
 import { abrirModalConfirmacao, fecharModal } from './modalDeletar.js';
-import {
-  $,
-  addClass,
-  getPaginaAtual,
-  setHTMLById,
-  warn,
-} from './helpers/index.js';
+import { $, addClass, getPaginaAtual, setHTMLById } from './helpers/index.js';
+import * as logger from './helpers/logger.js';
 
 const MENU_CACHE_KEY = 'menuHtmlCacheV1';
 const MENU_MAX_TENTATIVAS = 2;
@@ -15,7 +10,7 @@ function lerMenuDoCache() {
   try {
     return sessionStorage.getItem(MENU_CACHE_KEY);
   } catch (error) {
-    warn('Nao foi possivel ler cache do menu', 'menu', error);
+    logger.warn('Nao foi possivel ler cache do menu', 'menu', error);
     return null;
   }
 }
@@ -24,7 +19,7 @@ function salvarMenuNoCache(html) {
   try {
     sessionStorage.setItem(MENU_CACHE_KEY, html);
   } catch (error) {
-    warn('Nao foi possivel salvar cache do menu', 'menu', error);
+    logger.warn('Nao foi possivel salvar cache do menu', 'menu', error);
   }
 }
 
