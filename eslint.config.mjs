@@ -5,6 +5,8 @@ import configPrettier from 'eslint-config-prettier';
 import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
+  { ignores: ['src/public/vendor/**'] },
+
   js.configs.recommended,
 
   {

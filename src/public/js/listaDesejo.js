@@ -35,6 +35,7 @@ import {
   inicializarFiltroCategoriaGenerico,
   aplicarFiltroCategoriaGenerico,
   limparFiltroCategoriaGenerico,
+  parseCurrency,
 } from './helpers/index.js';
 
 // Array para armazenar tags temporárias do formulário
@@ -100,9 +101,8 @@ export async function criarDesejo(formId = 'formListaDesejo') {
     const tituloDesejo = form.titulo.value;
 
     const categoria = $('categoria')?.value;
-    const subcategoria = $('subcategoria')?.value;
     const tipoDespesa = $('tipoDespesa')?.value;
-    const valor = Number(form.valor.value);
+    const valor = parseCurrency(form.valor.value);
 
     // Valida que categoria foi selecionada (campo obrigatório)
     if (!tituloDesejo || !valor) {
@@ -129,9 +129,12 @@ export async function criarDesejo(formId = 'formListaDesejo') {
         method: 'POST',
         body: JSON.stringify({
           titulo: tituloDesejo,
-          valor: Number(form.valor.value),
+          valor: parseCurrency(form.valor.value),
           categoria,
-          subcategoria: obterSubcategoriaParaEnviar('buscaSubcategoria', 'subcategoria'),
+          subcategoria: obterSubcategoriaParaEnviar(
+            'buscaSubcategoria',
+            'subcategoria'
+          ),
           tipoDespesa: tipoDespesa || undefined,
           tags: [...tags],
         }),
@@ -324,7 +327,7 @@ window.editarDesejo = async (id) => {
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="number" id="modalValorDesejo" value="${desejo.valor}" step="0.01" required>
+        <input type="text" inputmode="decimal" data-moeda id="modalValorDesejo" value="${desejo.valor}" required>
       </div>
       <div class="form-group">
         <label>Categoria</label>
@@ -366,7 +369,7 @@ window.editarDesejo = async (id) => {
       limparErroInline();
 
       const novoTitulo = $('modalTituloDesejo')?.value?.trim();
-      const novoValor = Number($('modalValorDesejo')?.value);
+      const novoValor = parseCurrency($('modalValorDesejo')?.value);
       const novaCategoria = $('modalCategoriaDesejo')?.value;
       const novoTipoDespesa = $('modalTipoDespesa')?.value;
       const subcategoriaParaEnviar = obterSubcategoriaParaEnviar(
@@ -505,7 +508,7 @@ window.realizarDesejo = async (id) => {
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="number" id="modalValorTransacao" value="${desejo.valor}" step="0.01">
+        <input type="text" inputmode="decimal" data-moeda id="modalValorTransacao" value="${desejo.valor}">
       </div>
       <div class="form-group">
         <label>Status do pagamento</label>
@@ -524,7 +527,7 @@ window.realizarDesejo = async (id) => {
       limparErroInline();
 
       const conta = $('modalContaDesejo')?.value;
-      const valor = Number($('modalValorTransacao')?.value);
+      const valor = parseCurrency($('modalValorTransacao')?.value);
       const status = $('modalStatusTransacao')?.value;
       const data = $('modalDataTransacao')?.value;
 

@@ -1,8 +1,13 @@
 // Middleware global para padronizar respostas de erro da API
+const { logarErro } = require('../utils/errorHelpers');
+
 function errorHandler(err, req, res, next) {
   if (res.headersSent) {
     return next(err);
   }
+
+  // Loga erro padronizado antes de responder
+  logarErro('errorHandler', err);
 
   let status = err.statusCode || err.status || 500;
 

@@ -2,7 +2,6 @@ const Transacao = require('../models/Transacao');
 const HistoricoService = require('../services/HistoricoService');
 const SaldoService = require('../services/SaldoService');
 const categoriaHelpers = require('../utils/categoriaHelpers');
-const Subcategoria = require('../models/Subcategoria');
 const {
   validarSubcategoriaParaCategoria,
   processarSubcategoriaAoAtualizar,

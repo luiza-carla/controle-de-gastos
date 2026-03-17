@@ -1,7 +1,10 @@
-// Formata número para 2 casas decimais
+// Formata número para 2 casas decimais com separadores de milhar (pt-BR)
 export function formatarValor(valor) {
   const num = Number(valor || 0);
-  return num.toFixed(2);
+  return num.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 // Formata valor como moeda brasileira (R$)

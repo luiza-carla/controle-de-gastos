@@ -4,5 +4,7 @@ node_modules/
 # Arquivos de ambiente
 .env
 
+src/public/vendor/
+
 *.txt
 *.md

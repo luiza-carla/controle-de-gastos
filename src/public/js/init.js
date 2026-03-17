@@ -6,7 +6,7 @@ import { criarTransacao, listarTransacoes } from './transacao.js';
 import { criarDesejo, listarDesejos } from './listaDesejo.js';
 import { criarSalario, listarSalarios } from './salario.js';
 import { carregarResumo } from './inicio.js';
-import { $ } from './helpers/index.js';
+import { $, bindCurrencyInputs } from './helpers/index.js';
 
 (async function () {
   await verificarAutenticacao();
@@ -93,4 +93,9 @@ import { $ } from './helpers/index.js';
   if ($('formSalario')) {
     criarSalario('formSalario');
   }
+})();
+
+// Aplica máscara de moeda nos inputs marcados com data-moeda.
+(async function () {
+  await bindCurrencyInputs();
 })();

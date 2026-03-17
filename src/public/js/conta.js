@@ -24,6 +24,7 @@ import {
   escaparHtml,
   $,
   setHTMLById,
+  parseCurrency,
 } from './helpers/index.js';
 const VALOR_CARTEIRA = 'carteira';
 const FORM_ERRO_ID = 'formErroInlineConta';
@@ -116,7 +117,7 @@ export async function criarConta(formId, callback) {
         body: JSON.stringify({
           nome: nomeConta,
           tipo: tipoConta,
-          saldo: Number(form.saldoInicial.value || 0),
+          saldo: parseCurrency(form.saldoInicial.value || 0) || 0,
         }),
       });
 
@@ -294,7 +295,7 @@ window.transferirDaConta = async (contaOrigemId) => {
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="number" id="modalValorTransferenciaConta" step="0.01" min="0" required>
+        <input type="text" inputmode="decimal" data-moeda id="modalValorTransferenciaConta" min="0" required>
       </div>
       <div class="form-group">
         <small style="color: var(--text-secondary);">Saldo disponível: R$ ${formatarValor(contaOrigem.saldo)}</small>
@@ -302,7 +303,7 @@ window.transferirDaConta = async (contaOrigemId) => {
     `,
     onSalvar: async () => {
       const destino = $('modalContaDestino')?.value;
-      const valor = parseFloat($('modalValorTransferenciaConta')?.value);
+      const valor = parseCurrency($('modalValorTransferenciaConta')?.value);
 
       limparErroInline();
       if (!destino || !valor || valor <= 0) {

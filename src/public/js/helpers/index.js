@@ -7,3 +7,4 @@ export * from './pagination.js';
 export * from './logger.js';
 export * from './listagemHelpers.js';
 export * from './subcategoriaHelpers.js';
+export * from './inputHelpers.js';

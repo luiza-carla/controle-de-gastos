@@ -7,6 +7,7 @@ import {
   addClass,
   removeClass,
   $,
+  bindCurrencyInputs,
 } from './helpers/index.js';
 
 // Armazena callback de salvamento do modal
@@ -32,6 +33,9 @@ export function abrirModal({ titulo, conteudoHTML, onSalvar }) {
     `<i class="fa-solid fa-pen-to-square"></i> ${titulo}`
   );
   setHTMLById('modalConteudo', conteudoHTML);
+
+  // Aplica máscara de moeda em campos do modal (se houver)
+  bindCurrencyInputs({ root: $('modalConteudo') });
 
   // Define callback de salvar
   salvarCallback = onSalvar;

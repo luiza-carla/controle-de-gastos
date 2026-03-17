@@ -37,6 +37,7 @@ import {
   inicializarFiltroCategoriaGenerico,
   aplicarFiltroCategoriaGenerico,
   limparFiltroCategoriaGenerico,
+  parseCurrency,
 } from './helpers/index.js';
 const FORM_ERRO_ID = 'formErroInlineTransacao';
 const FORM_MSG_ERRO_ID = 'formMensagemErroTransacao';
@@ -140,10 +141,13 @@ export async function criarTransacao(formId = 'formTransacao') {
 
     const conta = $('conta')?.value;
     const categoria = $('categoria')?.value;
-    const subcategoria = obterSubcategoriaParaEnviar('buscaSubcategoria', 'subcategoria');
+    const subcategoria = obterSubcategoriaParaEnviar(
+      'buscaSubcategoria',
+      'subcategoria'
+    );
     const tipoDespesa =
       tipoSelect.value === 'saida' ? tipoDespesaSelect.value || null : null;
-    const valor = Number(form.valor.value);
+    const valor = parseCurrency(form.valor.value);
 
     if (
       !tituloTransacao ||
@@ -480,7 +484,7 @@ window.editarTransacao = async (id) => {
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="number" id="modalValorTransacao" value="${transacao.valor}" step="0.01" required>
+        <input type="text" inputmode="decimal" data-moeda id="modalValorTransacao" value="${transacao.valor}" required>
       </div>
       <div class="form-group">
         <label>Tipo</label>
@@ -534,7 +538,7 @@ window.editarTransacao = async (id) => {
       limparErroInline();
 
       const novoTitulo = $('modalTituloTransacao')?.value?.trim();
-      const novoValor = Number($('modalValorTransacao')?.value);
+      const novoValor = parseCurrency($('modalValorTransacao')?.value);
       const novoTipo = $('modalTipoTransacao')?.value;
       const novoStatus = $('modalStatusTransacao')?.value;
       const novaConta = $('modalContaTransacao')?.value;

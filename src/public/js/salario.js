@@ -20,6 +20,7 @@ import {
   clearElement,
   escaparHtml,
   setHTMLById,
+  parseCurrency,
 } from './helpers/index.js';
 import { listarContas } from './conta.js';
 import { carregarResumo } from './inicio.js';
@@ -105,11 +106,11 @@ export function criarSalario(formId = 'formSalario', callback) {
     const botaoClicado = e.submitter;
     const acao = botaoClicado?.getAttribute('data-action');
 
-    const valor = $('valor')?.value;
+    const valor = parseCurrency($('valor')?.value);
     const diaRecebimento = $('diaRecebimento')?.value;
     const conta = $('contaSalario')?.value;
 
-    if (!Number(valor) || !diaRecebimento) {
+    if (!valor || !diaRecebimento) {
       abrirModalErro(
         'Por favor, preencha todos os campos obrigatórios',
         FORM_ERRO_ID,
@@ -122,7 +123,7 @@ export function criarSalario(formId = 'formSalario', callback) {
       await apiFetch(salarioBaseUrl, {
         method: 'POST',
         body: JSON.stringify({
-          valor: Number(valor),
+          valor,
           diaRecebimento: Number(diaRecebimento),
           frequencia: 'mensal',
           conta: conta || null,
@@ -241,7 +242,7 @@ window.editarSalario = async (id, valor, diaRecebimento, destinoAtual = '') => {
     conteudoHTML: `
       <div class="form-group">
         <label>Valor</label>
-        <input type="number" id="modalValorSalario" value="${valor}" required>
+        <input type="text" inputmode="decimal" data-moeda id="modalValorSalario" value="${valor}" required>
       </div>
       <div class="form-group">
         <label>Dia do recebimento</label>
@@ -268,7 +269,7 @@ window.editarSalario = async (id, valor, diaRecebimento, destinoAtual = '') => {
     onSalvar: async () => {
       limparErroInline();
 
-      const novoValor = Number($('modalValorSalario')?.value);
+      const novoValor = parseCurrency($('modalValorSalario')?.value);
       const novoDiaRecebimento = Number($('modalDiaRecebimento')?.value);
       const novaConta = $('modalContaSalario')?.value || null;
 

@@ -6,6 +6,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "imask": "^7.6.1",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.1.0",
     "mongoose": "^9.2.4",
@@ -24,7 +25,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "copy:fontawesome": "node scripts/copy-fontawesome.js",
-    "postinstall": "npm run copy:fontawesome",
+    "copy:imask": "node scripts/copy-imask.js",
+    "postinstall": "npm run copy:fontawesome && npm run copy:imask",
     "fix": "prettier . --write && eslint . --fix",
     "seed": "node src/utils/seedDB.js"
   }

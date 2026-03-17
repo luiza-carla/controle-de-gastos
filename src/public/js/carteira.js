@@ -5,7 +5,13 @@ import {
   mostrarErroInline,
   limparErroInline,
 } from './modalEditar.js';
-import { formatarValor, capitalizar, escaparHtml, $ } from './helpers/index.js';
+import {
+  formatarValor,
+  capitalizar,
+  escaparHtml,
+  $,
+  parseCurrency,
+} from './helpers/index.js';
 import { mostrarNotificacao } from './notification.js';
 
 // Obtém dados de carteira do usuário
@@ -42,11 +48,11 @@ window.adicionarDinheiro = async () => {
     conteudoHTML: `
       <div class="form-group">
         <label>Valor a adicionar</label>
-        <input type="number" id="modalValorDinheiro" step="0.01" min="0" required>
+        <input type="text" inputmode="decimal" data-moeda id="modalValorDinheiro" min="0" required>
       </div>
     `,
     onSalvar: async () => {
-      const valor = parseFloat($('modalValorDinheiro')?.value);
+      const valor = parseCurrency($('modalValorDinheiro')?.value);
 
       if (!valor || valor <= 0) {
         mostrarErroInline('Valor inválido');
@@ -78,14 +84,14 @@ window.removerDinheiro = async () => {
     conteudoHTML: `
       <div class="form-group">
         <label>Valor a remover</label>
-        <input type="number" id="modalValorRemover" step="0.01" min="0" required>
+        <input type="text" inputmode="decimal" data-moeda id="modalValorRemover" min="0" required>
       </div>
       <div class="form-group">
         <small style="color: var(--text-secondary);">Saldo disponível: R$ ${formatarValor(carteira.saldo)}</small>
       </div>
     `,
     onSalvar: async () => {
-      const valor = parseFloat($('modalValorRemover')?.value);
+      const valor = parseCurrency($('modalValorRemover')?.value);
 
       if (!valor || valor <= 0) {
         mostrarErroInline('Valor inválido');
@@ -144,7 +150,7 @@ window.abrirTransferencia = async () => {
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="number" id="modalValorTransferencia" step="0.01" min="0" required>
+        <input type="text" inputmode="decimal" data-moeda id="modalValorTransferencia" min="0" required>
       </div>
       <div class="form-group">
         <small style="color: var(--text-secondary);">Saldo disponível: R$ ${formatarValor(carteira.saldo)}</small>
@@ -152,7 +158,7 @@ window.abrirTransferencia = async () => {
     `,
     onSalvar: async () => {
       const contaId = $('modalContaTransferencia')?.value;
-      const valor = parseFloat($('modalValorTransferencia')?.value);
+      const valor = parseCurrency($('modalValorTransferencia')?.value);
 
       if (!contaId || !valor || valor <= 0) {
         mostrarErroInline('Preencha o campo com um valor válido');

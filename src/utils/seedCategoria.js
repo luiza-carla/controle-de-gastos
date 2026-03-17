@@ -1,6 +1,5 @@
 const Categoria = require('../models/Categoria');
 const Subcategoria = require('../models/Subcategoria');
-const logger = require('./logger');
 
 // Função para garantir que categorias padrão existem no banco
 async function garantirCategoriasPadrao() {
