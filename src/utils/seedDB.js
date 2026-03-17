@@ -163,7 +163,16 @@ function gerarConta(usuarioId) {
 /**
  * Gera uma transação para um usuário
  */
-function gerarTransacao(usuarioId, contaId, categorias, subcategorias) {
+function gerarTransacao(
+  usuarioId,
+  contaId,
+  categorias,
+  subcategorias,
+  saldoState = {
+    carteira: 0,
+    contas: new Map(),
+  }
+) {
   const tipo = faker.helpers.arrayElement(['entrada', 'saida']);
 
   const categoria = faker.helpers.arrayElement(categorias);
@@ -180,12 +189,27 @@ function gerarTransacao(usuarioId, contaId, categorias, subcategorias) {
   const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
   const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
 
+  const valor = faker.number.float({ min: 5, max: 180, precision: 0.01 });
+  let status = faker.datatype.boolean(0.8) ? 'pago' : 'pendente'; // 80% pagas
+
+  // Evita criar transações de saída pagas que deixem saldo negativo
+  if (tipo === 'saida' && status === 'pago') {
+    const saldoDisponivel =
+      fonteSaldo === 'carteira'
+        ? saldoState.carteira
+        : saldoState.contas.get(contaId.toString()) || 0;
+
+    if (valor > saldoDisponivel) {
+      status = 'pendente';
+    }
+  }
+
   const transacao = {
     usuario: usuarioId,
     conta: fonteSaldo === 'conta' ? contaId : null,
     fonteSaldo: fonteSaldo,
     titulo: faker.commerce.productName(),
-    valor: faker.number.float({ min: 5, max: 180, precision: 0.01 }),
+    valor: valor,
     tipo: tipo,
     categoria: categoria._id,
     subcategoria: subcategoriaId,
@@ -199,8 +223,20 @@ function gerarTransacao(usuarioId, contaId, categorias, subcategorias) {
       faker.number.int({ min: 0, max: 3 })
     ),
     recorrencia: faker.helpers.arrayElement(['nenhuma', 'mensal']),
-    status: faker.datatype.boolean(0.8) ? 'pago' : 'pendente', // 80% pagas
+    status: status,
   };
+
+  // Ajusta saldo em memória para evitar inconsistências nos próximos itens
+  if (status === 'pago') {
+    const delta = tipo === 'entrada' ? valor : -valor;
+
+    if (fonteSaldo === 'carteira') {
+      saldoState.carteira += delta;
+    } else {
+      const id = contaId.toString();
+      saldoState.contas.set(id, (saldoState.contas.get(id) || 0) + delta);
+    }
+  }
 
   // Adicionar tipoDespesa apenas para saídas
   if (tipo === 'saida') {
@@ -325,6 +361,7 @@ function criarSnapshotHistorico(entidade, obj) {
     snapshot.status = obj.status;
     snapshot.data = obj.data;
     snapshot.categoria = obj.categoria;
+    snapshot.subcategoria = obj.subcategoria || null;
     snapshot.conta = obj.conta || null;
     snapshot.fonteSaldo = obj.fonteSaldo || 'conta';
     return snapshot;
@@ -505,6 +542,13 @@ async function seedDatabase(options = {}) {
       Conta
     );
 
+    // Mantém um saldo em memória para evitar que o seed gere transações de
+    // saída pagas que deixem a conta/carteira negativa.
+    const saldoState = {
+      carteira: carteira.saldo,
+      contas: new Map(contas.map((c) => [c._id.toString(), c.saldo])),
+    };
+
     const transacoes = await criarEmLote(
       numTransacoesPorUsuario,
       () => {
@@ -513,7 +557,8 @@ async function seedDatabase(options = {}) {
           usuarioTeste._id,
           contaAleatoria._id,
           categorias,
-          subcategorias
+          subcategorias,
+          saldoState
         );
       },
       Transacao
@@ -534,6 +579,32 @@ async function seedDatabase(options = {}) {
             Transacao
           )
         : [];
+
+    // Ajusta o saldo das contas para salários que já foram processados no mês.
+    if (salarios.length) {
+      const deltasPorConta = {};
+
+      for (const salario of salarios) {
+        // Considera salário processado se já tiver data de último processamento
+        if (!salario.dataUltimoProcessamento) continue;
+
+        if (salario.fonteSaldo === 'carteira') {
+          // Atualiza carteira diretamente caso seja salário em carteira.
+          await Carteira.updateOne(
+            { usuario: usuarioTeste._id },
+            { $inc: { saldo: salario.valor } }
+          );
+        } else if (salario.conta) {
+          const contaId = salario.conta.toString();
+          deltasPorConta[contaId] =
+            (deltasPorConta[contaId] || 0) + salario.valor;
+        }
+      }
+
+      for (const [contaId, delta] of Object.entries(deltasPorConta)) {
+        await Conta.updateOne({ _id: contaId }, { $inc: { saldo: delta } });
+      }
+    }
 
     const listaDesejos = await criarEmLote(
       numListaDesejoPorUsuario,

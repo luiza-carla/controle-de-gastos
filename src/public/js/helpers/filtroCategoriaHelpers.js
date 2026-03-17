@@ -12,6 +12,16 @@ export function filtrarPorCategoria(lista, categoriaId) {
   });
 }
 
+export function filtrarPorTexto(lista, texto, campo = 'titulo') {
+  const termo = (texto || '').toString().trim().toLowerCase();
+  if (!termo) return lista;
+
+  return lista.filter((item) => {
+    const valor = (item?.[campo] || '').toString().toLowerCase();
+    return valor.includes(termo);
+  });
+}
+
 // Helper para inicializar filtro de categoria com autocomplete
 export async function inicializarFiltroCategoriaGenerico({
   inputBuscaId,

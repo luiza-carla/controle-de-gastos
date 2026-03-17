@@ -81,15 +81,6 @@ class ResumoService {
       0,
       0
     );
-    const fimMes = new Date(
-      hoje.getFullYear(),
-      hoje.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999
-    );
 
     // somente precisamos das contas e da carteira para o resumo simplificado
     const contas = await Conta.find({ usuario: usuarioId });
@@ -116,14 +107,15 @@ class ResumoService {
       });
     }
 
-    // Transações do mês (não faz distinção de categoria)
+    // Transações do mês que já foram pagas (não considera lançamentos futuros)
+    // Isso evita exibir salários que ainda não caíram na conta.
     const filtroTransacoes = {
       usuario: usuarioId,
       ativa: true,
       status: 'pago',
       data: {
         $gte: inicioMes,
-        $lte: fimMes,
+        $lte: hoje,
       },
     };
 
@@ -159,8 +151,9 @@ class ResumoService {
     detalhesEntradas.sort((a, b) => a.valor - b.valor);
     detalhesSaidas.sort((a, b) => a.valor - b.valor);
 
-    // Saldo calculado = saldo atual + entradas - saídas
-    const saldoCalculado = saldoAtual + entradas - saidas;
+    // Saldo calculado atualmente reflete o saldo atual armazenado
+    // (as transações pagas já são aplicadas às contas/carteira).
+    const saldoCalculado = saldoAtual;
 
     return {
       saldoAtual,

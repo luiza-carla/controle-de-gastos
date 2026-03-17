@@ -31,6 +31,7 @@ import {
   criarPaginacao,
   // filtros
   filtrarPorCategoria,
+  filtrarPorTexto,
   renderizarListagemFiltrada,
   inicializarFiltroCategoriaGenerico,
   aplicarFiltroCategoriaGenerico,
@@ -50,6 +51,7 @@ const FORM_MSG_ERRO_ID = 'formMensagemErroListaDesejo';
 const stateDesejos = {
   itens: [],
   filtroCategoriaId: '',
+  filtroTexto: '',
   filtroInicializado: false,
   categoriaAutocompleteFiltro: null,
 };
@@ -73,7 +75,8 @@ function resetarFormularioDesejo(form) {
   resetarTagsFormulario(tags);
   form.reset();
   limparCategoriaSelecionada();
-  if ($('subcategoria')) $('subcategoria').value = '';
+  const subcat = $('subcategoria');
+  if (subcat) subcat.value = '';
 }
 
 // Inicializa e gerencia envio do formulário de criação de desejo
@@ -89,7 +92,8 @@ export async function criarDesejo(formId = 'formListaDesejo') {
 
   inputCategoria?.addEventListener('input', () => {
     if (inputSubcategoria) inputSubcategoria.value = '';
-    if ($('subcategoria')) $('subcategoria').value = '';
+    const subcat = $('subcategoria');
+    if (subcat) subcat.value = '';
   });
 
   form.addEventListener('submit', async (e) => {
@@ -180,8 +184,13 @@ function renderizarPaginaDesejos() {
   renderizarListagemFiltrada(
     'listaDesejos',
     stateDesejos.itens,
-    () =>
-      filtrarPorCategoria(stateDesejos.itens, stateDesejos.filtroCategoriaId),
+    () => {
+      const comCategoria = filtrarPorCategoria(
+        stateDesejos.itens,
+        stateDesejos.filtroCategoriaId
+      );
+      return filtrarPorTexto(comCategoria, stateDesejos.filtroTexto);
+    },
     criarCardDesejo,
     paginacaoDesejos,
     'totalDesejos'
@@ -198,6 +207,11 @@ function aplicarFiltroCategoriaDesejo() {
 }
 
 function limparFiltroCategoriaDesejo() {
+  // Limpa o filtro por categoria e o filtro por texto
+  stateDesejos.filtroTexto = '';
+  const filtroNome = $('filtroBuscaNomeDesejo');
+  if (filtroNome) filtroNome.value = '';
+
   limparFiltroCategoriaGenerico(
     stateDesejos,
     paginacaoDesejos,
@@ -215,8 +229,9 @@ async function inicializarFiltroCategoriaDesejo() {
   const inputBusca = document.getElementById('filtroBuscaCategoriaDesejo');
   const inputHidden = document.getElementById('filtroCategoriaDesejo');
   const dropdown = document.getElementById('filtroDropdownCategoriaDesejo');
+  const inputTexto = document.getElementById('filtroBuscaNomeDesejo');
 
-  if (!inputBusca || !inputHidden || !dropdown) return;
+  if (!inputBusca || !inputHidden || !dropdown || !inputTexto) return;
 
   await inicializarFiltroCategoriaGenerico({
     inputBuscaId: 'filtroBuscaCategoriaDesejo',
@@ -227,6 +242,12 @@ async function inicializarFiltroCategoriaDesejo() {
     stateObj: stateDesejos,
     aplicarFiltroFn: aplicarFiltroCategoriaDesejo,
     limparFiltroFn: limparFiltroCategoriaDesejo,
+  });
+
+  inputTexto.addEventListener('input', () => {
+    stateDesejos.filtroTexto = inputTexto.value;
+    paginacaoDesejos.resetar();
+    renderizarPaginaDesejos();
   });
 
   stateDesejos.filtroInicializado = true;

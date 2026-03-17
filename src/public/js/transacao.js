@@ -33,6 +33,7 @@ import {
   obterSubcategoriaParaEnviar,
   criarPaginacao,
   filtrarPorCategoria,
+  filtrarPorTexto,
   renderizarListagemFiltrada,
   inicializarFiltroCategoriaGenerico,
   aplicarFiltroCategoriaGenerico,
@@ -45,6 +46,7 @@ const FORM_MSG_ERRO_ID = 'formMensagemErroTransacao';
 const stateTransacoes = {
   itens: [],
   filtroCategoriaId: '', // id selecionado no filtro de categoria
+  filtroTexto: '',
   filtroInicializado: false,
   categoriaAutocompleteFiltro: null,
 };
@@ -85,7 +87,8 @@ function resetarFormularioTransacao(
   hideElement(parcelasContainer);
   limparCategoriaSelecionada();
   // também apagar subcategoria
-  if ($('subcategoria')) $('subcategoria').value = '';
+  const subcat = $('subcategoria');
+  if (subcat) subcat.value = '';
 }
 
 // Inicializa envio do formulario de transacao
@@ -107,7 +110,8 @@ export async function criarTransacao(formId = 'formTransacao') {
   inputCategoria?.addEventListener('input', () => {
     // tiver alteração manual a categoria perdida, limpa subcategoria
     if (inputSubcategoria) inputSubcategoria.value = '';
-    $('subcategoria').value = '';
+    const subcat = $('subcategoria');
+    if (subcat) subcat.value = '';
   });
 
   // Controla exibicao de campos condicionais
@@ -225,11 +229,13 @@ function renderizarPaginaTransacoes() {
   renderizarListagemFiltrada(
     'transacoes',
     stateTransacoes.itens,
-    () =>
-      filtrarPorCategoria(
+    () => {
+      const comCategoria = filtrarPorCategoria(
         stateTransacoes.itens,
         stateTransacoes.filtroCategoriaId
-      ),
+      );
+      return filtrarPorTexto(comCategoria, stateTransacoes.filtroTexto);
+    },
     criarCardTransacao,
     paginacaoTransacoes,
     'totalTransacoes',
@@ -247,6 +253,11 @@ function aplicarFiltroCategoria() {
 }
 
 function limparFiltroCategoria() {
+  // Limpa o filtro por categoria e também o filtro de texto
+  stateTransacoes.filtroTexto = '';
+  const filtroNome = $('filtroBuscaNomeTransacao');
+  if (filtroNome) filtroNome.value = '';
+
   limparFiltroCategoriaGenerico(
     stateTransacoes,
     paginacaoTransacoes,
@@ -283,8 +294,9 @@ async function inicializarFiltroCategoria() {
   const inputBusca = $('filtroBuscaCategoriaTransacao');
   const inputHidden = $('filtroCategoriaTransacao');
   const dropdown = $('filtroDropdownCategoriaTransacao');
+  const inputTexto = $('filtroBuscaNomeTransacao');
 
-  if (!inputBusca || !inputHidden || !dropdown) {
+  if (!inputBusca || !inputHidden || !dropdown || !inputTexto) {
     return;
   }
   await inicializarFiltroCategoriaGenerico({
@@ -296,6 +308,12 @@ async function inicializarFiltroCategoria() {
     stateObj: stateTransacoes,
     aplicarFiltroFn: aplicarFiltroCategoria,
     limparFiltroFn: limparFiltroCategoria,
+  });
+
+  inputTexto.addEventListener('input', () => {
+    stateTransacoes.filtroTexto = inputTexto.value;
+    paginacaoTransacoes.resetar();
+    renderizarPaginaTransacoes();
   });
 
   stateTransacoes.filtroInicializado = true;

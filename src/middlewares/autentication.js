@@ -8,7 +8,8 @@ function autenticacao(req, res, next) {
 
   // Valida se token foi fornecido
   if (!authHeader) {
-    return next(criarErro(401, 'Token não fornecido'));
+    const mensagem = `Token não fornecido (${req.method} ${req.originalUrl})`;
+    return next(criarErro(401, mensagem));
   }
 
   // Extrai token do formato "Bearer <token>"
