@@ -195,7 +195,12 @@
 }
 
 .alteracoes-conteudo {
+  display: none;
   padding-top: 8px;
+}
+
+.alteracoes-conteudo.aberto {
+  display: block;
 }
 
 .alteracao-item {
