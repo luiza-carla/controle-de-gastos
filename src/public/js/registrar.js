@@ -5,6 +5,7 @@ import {
   limparErroInline,
   garantirErroInline,
 } from './modalEditar.js';
+import { tratarErro } from './notification.js';
 
 // URL base da API de usuários
 const baseUrl = window.location.origin + '/usuarios';
@@ -53,8 +54,9 @@ if (formRegistrar) {
         window.location.href = '/html/inicio.html';
       }
     } catch (err) {
+      tratarErro(err, 'Erro ao registrar');
       mostrarErroInline(
-        err.message || 'Erro ao registrar',
+        'Não foi possível registrar. Verifique os dados e tente novamente.',
         FORM_ERRO_ID,
         FORM_MSG_ERRO_ID
       );

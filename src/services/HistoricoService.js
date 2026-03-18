@@ -178,8 +178,11 @@ class HistoricoService {
     const limit = filtros.limit || 50;
     const skip = filtros.skip || 0;
 
+    const ordenarPor = filtros.ordenarPor || filtros.sortBy;
+    const sort = ordenarPor === 'nome' ? { descricao: 1 } : { createdAt: -1 };
+
     const historicos = await Historico.find(query)
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .limit(limit)
       .skip(skip)
       .lean();

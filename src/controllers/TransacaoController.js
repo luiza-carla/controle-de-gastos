@@ -166,8 +166,11 @@ class TransacaoController {
       req.user.id
     );
 
+    const ordenarPor = req.query.ordenarPor || req.query.sortBy;
+    const sort = ordenarPor === 'nome' ? { titulo: 1 } : { data: -1 };
+
     const transacoes = await populateTransacao(
-      Transacao.find(filtro).sort({ data: -1 })
+      Transacao.find(filtro).sort(sort)
     );
 
     res.json(transacoes);

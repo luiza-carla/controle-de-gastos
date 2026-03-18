@@ -44,12 +44,29 @@ export async function ensureIMask() {
  */
 export function parseCurrency(value) {
   if (value == null) return NaN;
+
+  if (typeof value === 'number' && !Number.isNaN(value)) {
+    return value;
+  }
+
   const str = String(value).trim();
   if (!str) return NaN;
 
-  // Remove separadores de milhar e transforma vírgula em ponto
-  const normalized = str.replace(/\./g, '').replace(/,/g, '.');
-  return parseFloat(normalized);
+  // Se houver vírgula, assumimos formato pt-BR
+  if (str.includes(',')) {
+    return parseFloat(str.replace(/\./g, '').replace(/,/g, '.'));
+  }
+
+  // Se não houver vírgula, pode ser um número em formato en-US (ex: 101.54)
+  // ou um valor já formatado com separadores de milhar (ex: 1.015.415.950.866.302).
+  // Se houver mais de um ponto, assumimos que são separadores de milhar.
+  const dots = (str.match(/\./g) || []).length;
+  if (dots > 1) {
+    return parseFloat(str.replace(/\./g, ''));
+  }
+
+  // Caso contrário, interpreta o ponto como separador decimal.
+  return parseFloat(str);
 }
 
 /**

@@ -11,6 +11,7 @@ import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
   mostrarNotificacao,
   persistirNotificacaoParaProximaTela,
+  tratarErro,
 } from './notification.js';
 import {
   formatarValor,
@@ -136,10 +137,8 @@ export async function criarConta(formId, callback) {
 
       if (callback) callback();
     } catch (erro) {
-      mostrarNotificacao(
-        'Erro ao criar conta: ' + (erro.message || 'Erro desconhecido'),
-        'erro'
-      );
+      const msg = tratarErro(erro, 'Erro ao criar conta');
+      mostrarNotificacao(msg, 'erro');
     }
   });
 }
@@ -188,7 +187,8 @@ window.editarConta = async (id) => {
         fecharModal();
         listarContas();
       } catch (err) {
-        mostrarErroInline(err.message || 'Erro ao atualizar conta');
+        const msg = tratarErro(err, 'Erro ao atualizar conta');
+        mostrarErroInline(msg);
       }
     },
   });
@@ -205,10 +205,8 @@ window.deletarConta = async (id) => {
         fecharModal();
         listarContas();
       } catch (err) {
-        mostrarNotificacao(
-          'Erro ao excluir conta: ' + (err.message || 'erro'),
-          'erro'
-        );
+        const msg = tratarErro(err, 'Erro ao excluir conta');
+        mostrarNotificacao(msg, 'erro');
       }
     },
   });
@@ -341,7 +339,8 @@ window.transferirDaConta = async (contaOrigemId) => {
         fecharModal();
         await atualizarSaldosTela();
       } catch (err) {
-        mostrarErroInline(err.message);
+        const msg = tratarErro(err, 'Erro ao transferir');
+        mostrarErroInline(msg);
       }
     },
   });

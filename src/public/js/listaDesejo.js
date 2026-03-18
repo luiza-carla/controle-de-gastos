@@ -12,9 +12,11 @@ import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
   mostrarNotificacao,
   persistirNotificacaoParaProximaTela,
+  tratarErro,
 } from './notification.js';
 import {
   formatarValor,
+  formatarData,
   capitalizar,
   criarBotoesAcao,
   $,
@@ -52,7 +54,9 @@ const stateDesejos = {
   itens: [],
   filtroCategoriaId: '',
   filtroTexto: '',
+  ordenarPor: 'data',
   filtroInicializado: false,
+  ordenacaoInicializada: false,
   categoriaAutocompleteFiltro: null,
 };
 
@@ -67,8 +71,17 @@ const paginacaoDesejos = criarPaginacao({
   },
 });
 
-async function carregarDesejos() {
-  return apiFetch(URL_LISTA_DESEJOS);
+async function carregarDesejos(ordenarPor = stateDesejos.ordenarPor) {
+  const params = new URLSearchParams();
+  if (ordenarPor) {
+    params.set('ordenarPor', ordenarPor);
+  }
+
+  const url = params.toString()
+    ? `${URL_LISTA_DESEJOS}?${params.toString()}`
+    : URL_LISTA_DESEJOS;
+
+  return apiFetch(url);
 }
 
 function resetarFormularioDesejo(form) {
@@ -158,7 +171,8 @@ export async function criarDesejo(formId = 'formListaDesejo') {
         listarDesejos();
       }
     } catch (erro) {
-      mostrarNotificacao(erro.message || 'Erro ao criar desejo', 'erro');
+      const msg = tratarErro(erro, 'Erro ao criar desejo');
+      mostrarNotificacao(msg, 'erro');
     }
   });
 }
@@ -171,22 +185,37 @@ export async function listarDesejos() {
   try {
     await inicializarFiltroCategoriaDesejo();
 
-    const desejos = await carregarDesejos();
+    const desejos = await carregarDesejos(stateDesejos.ordenarPor);
     stateDesejos.itens = desejos || [];
 
+    inicializarOrdenacaoDesejos();
     renderizarPaginaDesejos();
   } catch (erro) {
-    mostrarNotificacao(erro.message || 'Erro ao carregar desejos', 'erro');
+    const msg = tratarErro(erro, 'Erro ao carregar desejos');
+    mostrarNotificacao(msg, 'erro');
   }
 }
 
 function renderizarPaginaDesejos() {
+  const itensOrdenados = [...stateDesejos.itens];
+  if (stateDesejos.ordenarPor === 'nome') {
+    itensOrdenados.sort((a, b) =>
+      (a.titulo || '').localeCompare(b.titulo || '', 'pt-BR', { numeric: true })
+    );
+  } else {
+    itensOrdenados.sort((a, b) => {
+      const dataA = new Date(a.createdAt || 0);
+      const dataB = new Date(b.createdAt || 0);
+      return dataB - dataA;
+    });
+  }
+
   renderizarListagemFiltrada(
     'listaDesejos',
-    stateDesejos.itens,
+    itensOrdenados,
     () => {
       const comCategoria = filtrarPorCategoria(
-        stateDesejos.itens,
+        itensOrdenados,
         stateDesejos.filtroCategoriaId
       );
       return filtrarPorTexto(comCategoria, stateDesejos.filtroTexto);
@@ -253,6 +282,22 @@ async function inicializarFiltroCategoriaDesejo() {
   stateDesejos.filtroInicializado = true;
 }
 
+function inicializarOrdenacaoDesejos() {
+  if (stateDesejos.ordenacaoInicializada) return;
+
+  const selectOrdenacao = document.getElementById('filtroOrdenarDesejos');
+  if (!selectOrdenacao) return;
+
+  selectOrdenacao.value = stateDesejos.ordenarPor;
+  selectOrdenacao.addEventListener('change', async () => {
+    stateDesejos.ordenarPor = selectOrdenacao.value;
+    paginacaoDesejos.resetar();
+    await listarDesejos();
+  });
+
+  stateDesejos.ordenacaoInicializada = true;
+}
+
 // Cria HTML de um card de desejo para exibicao na lista
 function criarCardDesejo(d) {
   const tipoDespesaCapitalizado = d.tipoDespesa
@@ -263,6 +308,7 @@ function criarCardDesejo(d) {
     criarBadgesCategoriaSubcategoriaSeparados(d.categoria, d.subcategoria);
   const corCategoria = d.categoria?.cor || 'var(--gray-700)';
   const tagsHtml = gerarTags(d.tags);
+  const dataCriacao = formatarData(d.createdAt);
 
   return `
     <div class="transacao-card transacao-saida" style="--cor-categoria:${corCategoria};">
@@ -288,7 +334,10 @@ function criarCardDesejo(d) {
           </div>`
               : ''
           }
-
+          <div class="info-linha">
+            <span class="info-label">Criado em:</span>
+            <span class="info-valor">${dataCriacao}</span>
+          </div>
           ${
             tipoDespesaCapitalizado
               ? `<div class="info-linha">
@@ -348,7 +397,7 @@ window.editarDesejo = async (id) => {
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="text" inputmode="decimal" data-moeda id="modalValorDesejo" value="${desejo.valor}" required>
+        <input type="text" inputmode="decimal" data-moeda id="modalValorDesejo" value="${formatarValor(desejo.valor)}" required>
       </div>
       <div class="form-group">
         <label>Categoria</label>
@@ -425,7 +474,8 @@ window.editarDesejo = async (id) => {
         fecharModal();
         listarDesejos();
       } catch (erro) {
-        mostrarErroInline(erro.message || 'Erro ao atualizar desejo');
+        const msg = tratarErro(erro, 'Erro ao atualizar desejo');
+        mostrarErroInline(msg);
       }
     },
   });
@@ -529,7 +579,7 @@ window.realizarDesejo = async (id) => {
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="text" inputmode="decimal" data-moeda id="modalValorTransacao" value="${desejo.valor}">
+        <input type="text" inputmode="decimal" data-moeda id="modalValorTransacao" value="${formatarValor(desejo.valor)}">
       </div>
       <div class="form-group">
         <label>Status do pagamento</label>
@@ -582,7 +632,8 @@ window.realizarDesejo = async (id) => {
         fecharModal();
         listarDesejos();
       } catch (err) {
-        mostrarErroInline(err.message);
+        const msg = tratarErro(err, 'Erro ao realizar desejo');
+        mostrarErroInline(msg);
       }
     },
   });
@@ -601,7 +652,8 @@ window.deletarDesejo = async (id) => {
         fecharModal();
         listarDesejos();
       } catch (err) {
-        mostrarNotificacao(err.message || 'Erro ao deletar desejo', 'erro');
+        const msg = tratarErro(err, 'Erro ao deletar desejo');
+        mostrarNotificacao(msg, 'erro');
       }
     },
   });

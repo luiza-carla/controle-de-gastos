@@ -12,7 +12,7 @@ import {
   $,
   parseCurrency,
 } from './helpers/index.js';
-import { mostrarNotificacao } from './notification.js';
+import { mostrarNotificacao, tratarErro } from './notification.js';
 
 // Obtém dados de carteira do usuário
 export async function obterCarteira() {
@@ -68,7 +68,8 @@ window.adicionarDinheiro = async () => {
         fecharModal();
         await exibirCarteira();
       } catch (err) {
-        mostrarErroInline(err.message);
+        const msg = tratarErro(err, 'Erro ao adicionar dinheiro');
+        mostrarErroInline(msg);
       }
     },
   });
@@ -112,7 +113,8 @@ window.removerDinheiro = async () => {
         fecharModal();
         await exibirCarteira();
       } catch (err) {
-        mostrarErroInline(err.message);
+        const msg = tratarErro(err, 'Erro ao remover dinheiro');
+        mostrarErroInline(msg);
       }
     },
   });
@@ -186,7 +188,8 @@ window.abrirTransferencia = async () => {
           await window.listarContas();
         }
       } catch (err) {
-        mostrarErroInline(err.message);
+        const msg = tratarErro(err, 'Erro ao transferir dinheiro');
+        mostrarErroInline(msg);
       }
     },
   });

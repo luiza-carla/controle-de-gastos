@@ -15,7 +15,7 @@ import {
   criarPaginacao,
   criarBadgesCategoriaSubcategoriaSeparados,
 } from './helpers/index.js';
-import { mostrarNotificacao } from './notification.js';
+import { mostrarNotificacao, tratarErro } from './notification.js';
 import { abrirModalConfirmacao, fecharModal } from './modalDeletar.js';
 
 // Estado da aplicação
@@ -25,6 +25,7 @@ let state = {
     entidade: '',
     acao: '',
     desfeito: '',
+    ordenarPor: 'data',
   },
 };
 
@@ -51,17 +52,19 @@ function inicializarEventos() {
   paginacaoHistorico.init();
 
   // Filtro automático ao mudar qualquer select
-  ['filtro-entidade', 'filtro-acao', 'filtro-status'].forEach((id) => {
-    const el = $(id);
-    if (el) {
-      el.addEventListener('change', aplicarFiltros);
+  ['filtro-entidade', 'filtro-acao', 'filtro-status', 'filtro-ordenar'].forEach(
+    (id) => {
+      const el = $(id);
+      if (el) {
+        el.addEventListener('change', aplicarFiltros);
+      }
     }
-  });
+  );
 
   // Delegação para botões de desfazer e toggles adicionados dinamicamente
   onEventById('historico-lista', 'click', async (event) => {
     // toggle sempre deve ser tratado antes do botão de desfazer, porque o
-    // elemento pai (row) carrega `data-historico-id` e acabaria interceptando
+    // elemento pai (row) carregava `data-historico-id` e acabaria interceptando
     // o clique.
     const toggleBtn = event.target.closest('.alteracoes-toggle');
     if (toggleBtn) {
@@ -69,7 +72,7 @@ function inicializarEventos() {
       return;
     }
 
-    const btn = event.target.closest('[data-historico-id]');
+    const btn = event.target.closest('button[data-historico-id]');
     if (btn) {
       await desfazerAcao(btn.dataset.historicoId);
       return;
@@ -82,7 +85,7 @@ async function carregarHistorico() {
   try {
     mostrarLoading(true);
 
-    const { entidade, acao, desfeito } = state.filtros;
+    const { entidade, acao, desfeito, ordenarPor } = state.filtros;
     const { skip, limit } = paginacaoHistorico.getParams();
 
     const params = new URLSearchParams({
@@ -93,6 +96,7 @@ async function carregarHistorico() {
     if (entidade) params.append('entidade', entidade);
     if (acao) params.append('acao', acao);
     if (desfeito !== '') params.append('desfeito', desfeito);
+    if (ordenarPor) params.append('ordenarPor', ordenarPor);
 
     const resultado = await apiFetch(
       `${window.location.origin}/historico?${params}`
@@ -157,7 +161,7 @@ function criarItemHistorico(historico) {
   const detalhesObjetoHtml = gerarDetalhesObjeto(historico);
 
   return `
-    <div class="${classes}" data-historico-id="${historicoId}">
+    <div class="${classes}">
       <div class="historico-item-header">
         <div class="historico-item-info">
           <div class="historico-descricao">${escaparHtml(historico.descricao || '')}</div>
@@ -827,6 +831,10 @@ function aplicarFiltros() {
   state.filtros.entidade = filtroEntidade?.value || '';
   state.filtros.acao = filtroAcao?.value || '';
   state.filtros.desfeito = filtroStatus?.value || '';
+
+  const filtroOrdenar = $('filtro-ordenar');
+  state.filtros.ordenarPor = filtroOrdenar?.value || 'data';
+
   paginacaoHistorico.resetar();
   carregarHistorico();
 }
@@ -840,7 +848,10 @@ function limparFiltros() {
   if (filtroAcao) filtroAcao.value = '';
   if (filtroStatus) filtroStatus.value = '';
 
-  state.filtros = { entidade: '', acao: '', desfeito: '' };
+  const filtroOrdenar = $('filtro-ordenar');
+  if (filtroOrdenar) filtroOrdenar.value = 'data';
+
+  state.filtros = { entidade: '', acao: '', desfeito: '', ordenarPor: 'data' };
   paginacaoHistorico.resetar();
   carregarHistorico();
 }
@@ -882,7 +893,8 @@ async function desfazerAcao(historicoId) {
         // Recarrega lista e estado visual após reversão.
         await carregarHistorico();
       } catch (error) {
-        mostrarNotificacao(error.message || 'Erro ao desfazer ação', 'erro');
+        const msg = tratarErro(error, 'Erro ao desfazer ação');
+        mostrarNotificacao(msg, 'erro');
       }
     },
   });

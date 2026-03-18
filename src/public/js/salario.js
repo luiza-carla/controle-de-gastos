@@ -11,6 +11,7 @@ import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
   mostrarNotificacao,
   persistirNotificacaoParaProximaTela,
+  tratarErro,
 } from './notification.js';
 import {
   formatarValor,
@@ -147,7 +148,8 @@ export function criarSalario(formId = 'formSalario', callback) {
 
       if (callback) callback();
     } catch (erro) {
-      mostrarNotificacao(erro.message || 'Erro ao criar salário', 'erro');
+      const msg = tratarErro(erro, 'Erro ao criar salário');
+      mostrarNotificacao(msg, 'erro');
     }
   });
 }
@@ -217,7 +219,8 @@ window.deletarSalario = async (id) => {
         await atualizarVisoesRelacionadas();
       } catch (err) {
         fecharModal();
-        mostrarNotificacao(err.message || 'Erro ao deletar salário', 'erro');
+        const msg = tratarErro(err, 'Erro ao deletar salário');
+        mostrarNotificacao(msg, 'erro');
       }
     },
   });
@@ -242,7 +245,7 @@ window.editarSalario = async (id, valor, diaRecebimento, destinoAtual = '') => {
     conteudoHTML: `
       <div class="form-group">
         <label>Valor</label>
-        <input type="text" inputmode="decimal" data-moeda id="modalValorSalario" value="${valor}" required>
+        <input type="text" inputmode="decimal" data-moeda id="modalValorSalario" value="${formatarValor(valor)}" required>
       </div>
       <div class="form-group">
         <label>Dia do recebimento</label>
@@ -293,7 +296,8 @@ window.editarSalario = async (id, valor, diaRecebimento, destinoAtual = '') => {
         await listarSalarios();
         await atualizarVisoesRelacionadas();
       } catch (err) {
-        mostrarErroInline(err.message || 'Erro ao atualizar salário');
+        const msg = tratarErro(err, 'Erro ao atualizar salário');
+        mostrarErroInline(msg);
       }
     },
   });

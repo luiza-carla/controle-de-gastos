@@ -8,6 +8,7 @@ class HistoricoController {
       entidade: req.query.entidade,
       acao: req.query.acao,
       desfeito: req.query.desfeito,
+      ordenarPor: req.query.ordenarPor || req.query.sortBy,
       limit: parseQueryInt(req.query.limit, 50),
       skip: parseQueryInt(req.query.skip, 0),
     };

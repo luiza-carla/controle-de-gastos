@@ -12,6 +12,11 @@ export function filtrarPorCategoria(lista, categoriaId) {
   });
 }
 
+export function filtrarPorTipo(lista, tipo) {
+  if (!tipo) return lista;
+  return lista.filter((item) => item?.tipo === tipo);
+}
+
 export function filtrarPorTexto(lista, texto, campo = 'titulo') {
   const termo = (texto || '').toString().trim().toLowerCase();
   if (!termo) return lista;

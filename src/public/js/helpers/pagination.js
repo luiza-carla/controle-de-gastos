@@ -84,7 +84,22 @@ export function criarPaginacao({
     paginaAtual = proximaPagina;
     atualizarUI();
     await notificarMudanca();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Remover foco do botão clicado para evitar que o navegador volte a rolar
+      // para o botão e anule o scroll para o topo.
+      const active = document.activeElement;
+      if (active && typeof active.blur === 'function') {
+        active.blur();
+      }
+
+      // Reforçar o scroll após outra repintura
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      });
+    });
   }
 
   async function irParaPaginaAnterior() {

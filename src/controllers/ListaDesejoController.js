@@ -94,8 +94,11 @@ class ListaDesejoController {
 
   // Lista itens da lista de desejos do usuario
   async listar(req, res) {
+    const ordenarPor = req.query.ordenarPor || req.query.sortBy;
+    const sort = ordenarPor === 'nome' ? { titulo: 1 } : { createdAt: -1 };
+
     const itens = await popularCategoria(
-      ListaDesejo.find({ usuario: req.user.id }).sort({ createdAt: -1 })
+      ListaDesejo.find({ usuario: req.user.id }).sort(sort)
     );
 
     res.json(itens);

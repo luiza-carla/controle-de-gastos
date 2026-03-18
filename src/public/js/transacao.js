@@ -12,6 +12,7 @@ import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
   mostrarNotificacao,
   persistirNotificacaoParaProximaTela,
+  tratarErro,
 } from './notification.js';
 import {
   formatarValor,
@@ -34,6 +35,7 @@ import {
   criarPaginacao,
   filtrarPorCategoria,
   filtrarPorTexto,
+  filtrarPorTipo,
   renderizarListagemFiltrada,
   inicializarFiltroCategoriaGenerico,
   aplicarFiltroCategoriaGenerico,
@@ -47,7 +49,10 @@ const stateTransacoes = {
   itens: [],
   filtroCategoriaId: '', // id selecionado no filtro de categoria
   filtroTexto: '',
+  filtroTipo: '',
+  ordenarPor: 'data',
   filtroInicializado: false,
+  ordenacaoInicializada: false,
   categoriaAutocompleteFiltro: null,
 };
 let tags = [];
@@ -67,12 +72,17 @@ const URL_TRANSACOES = `${window.location.origin}/transacoes`;
 const URL_CATEGORIAS = `${window.location.origin}/categorias`;
 const URL_CONTAS = `${window.location.origin}/contas`;
 
-function mostrarErroApi(erro, mensagemPadrao) {
-  mostrarNotificacao(erro.message || mensagemPadrao, 'erro');
-}
+async function carregarTransacoes(ordenarPor = stateTransacoes.ordenarPor) {
+  const params = new URLSearchParams();
+  if (ordenarPor) {
+    params.set('ordenarPor', ordenarPor);
+  }
 
-async function carregarTransacoes() {
-  return apiFetch(URL_TRANSACOES);
+  const url = params.toString()
+    ? `${URL_TRANSACOES}?${params.toString()}`
+    : URL_TRANSACOES;
+
+  return apiFetch(url);
 }
 
 function resetarFormularioTransacao(
@@ -113,8 +123,6 @@ export async function criarTransacao(formId = 'formTransacao') {
     const subcat = $('subcategoria');
     if (subcat) subcat.value = '';
   });
-
-  // Controla exibicao de campos condicionais
 
   // Controla exibicao de campos condicionais
   tipoSelect?.addEventListener('change', () => {
@@ -216,7 +224,8 @@ export async function criarTransacao(formId = 'formTransacao') {
         listarTransacoes();
       }
     } catch (erro) {
-      mostrarNotificacao(erro.message || 'Erro ao criar transação', 'erro');
+      const msg = tratarErro(erro, 'Erro ao criar transação');
+      mostrarNotificacao(msg, 'erro');
     }
   });
 }
@@ -226,15 +235,30 @@ function renderizarPaginaTransacoes() {
   const fnTotal = (t) =>
     t.tipo === 'saida' ? -Number(t.valor || 0) : Number(t.valor || 0);
 
+  // Ordena os itens de acordo com a seleção do usuário
+  const itensOrdenados = [...stateTransacoes.itens];
+  if (stateTransacoes.ordenarPor === 'nome') {
+    itensOrdenados.sort((a, b) =>
+      (a.titulo || '').localeCompare(b.titulo || '', 'pt-BR', { numeric: true })
+    );
+  } else {
+    itensOrdenados.sort((a, b) => {
+      const dataA = new Date(a.data || a.createdAt || 0);
+      const dataB = new Date(b.data || b.createdAt || 0);
+      return dataB - dataA;
+    });
+  }
+
   renderizarListagemFiltrada(
     'transacoes',
-    stateTransacoes.itens,
+    itensOrdenados,
     () => {
       const comCategoria = filtrarPorCategoria(
-        stateTransacoes.itens,
+        itensOrdenados,
         stateTransacoes.filtroCategoriaId
       );
-      return filtrarPorTexto(comCategoria, stateTransacoes.filtroTexto);
+      const comTipo = filtrarPorTipo(comCategoria, stateTransacoes.filtroTipo);
+      return filtrarPorTexto(comTipo, stateTransacoes.filtroTexto);
     },
     criarCardTransacao,
     paginacaoTransacoes,
@@ -253,10 +277,15 @@ function aplicarFiltroCategoria() {
 }
 
 function limparFiltroCategoria() {
-  // Limpa o filtro por categoria e também o filtro de texto
+  // Limpa os filtros de categoria, texto e tipo
   stateTransacoes.filtroTexto = '';
+  stateTransacoes.filtroTipo = '';
+
   const filtroNome = $('filtroBuscaNomeTransacao');
   if (filtroNome) filtroNome.value = '';
+
+  const filtroTipo = $('filtroTipoTransacao');
+  if (filtroTipo) filtroTipo.value = '';
 
   limparFiltroCategoriaGenerico(
     stateTransacoes,
@@ -272,13 +301,14 @@ export async function listarTransacoes() {
   try {
     await inicializarFiltroCategoria();
 
-    const transacoes = await carregarTransacoes();
+    const transacoes = await carregarTransacoes(stateTransacoes.ordenarPor);
     stateTransacoes.itens = transacoes || [];
 
+    inicializarOrdenacaoTransacoes();
     renderizarPaginaTransacoes();
   } catch (erro) {
-    // se houver erro (tipicamente não autorizado), mostra notificação
-    mostrarNotificacao(erro.message || 'Erro ao carregar transações', 'erro');
+    const msg = tratarErro(erro, 'Erro ao carregar transações');
+    mostrarNotificacao(msg, 'erro');
   }
 }
 
@@ -316,8 +346,34 @@ async function inicializarFiltroCategoria() {
     renderizarPaginaTransacoes();
   });
 
+  const filtroTipo = $('filtroTipoTransacao');
+  if (filtroTipo) {
+    filtroTipo.addEventListener('change', () => {
+      stateTransacoes.filtroTipo = filtroTipo.value;
+      paginacaoTransacoes.resetar();
+      renderizarPaginaTransacoes();
+    });
+  }
+
   stateTransacoes.filtroInicializado = true;
 }
+
+function inicializarOrdenacaoTransacoes() {
+  if (stateTransacoes.ordenacaoInicializada) return;
+
+  const selectOrdenacao = $('filtroOrdenarTransacoes');
+  if (!selectOrdenacao) return;
+
+  selectOrdenacao.value = stateTransacoes.ordenarPor;
+  selectOrdenacao.addEventListener('change', async () => {
+    stateTransacoes.ordenarPor = selectOrdenacao.value;
+    paginacaoTransacoes.resetar();
+    await listarTransacoes();
+  });
+
+  stateTransacoes.ordenacaoInicializada = true;
+}
+
 function criarCardTransacao(t) {
   const tipoClasse =
     t.tipo === 'entrada' ? 'transacao-entrada' : 'transacao-saida';
@@ -502,7 +558,7 @@ window.editarTransacao = async (id) => {
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="text" inputmode="decimal" data-moeda id="modalValorTransacao" value="${transacao.valor}" required>
+        <input type="text" inputmode="decimal" data-moeda id="modalValorTransacao" value="${formatarValor(transacao.valor)}" required>
       </div>
       <div class="form-group">
         <label>Tipo</label>
@@ -603,7 +659,8 @@ window.editarTransacao = async (id) => {
         fecharModal();
         listarTransacoes();
       } catch (erro) {
-        mostrarErroInline(erro.message || 'Erro ao atualizar transação');
+        const msg = tratarErro(erro, 'Erro ao atualizar transação');
+        mostrarErroInline(msg);
       }
     },
   });
@@ -698,7 +755,8 @@ window.deletarTransacao = async (id) => {
         fecharModal();
         listarTransacoes();
       } catch (err) {
-        mostrarErroApi(err, 'Erro ao deletar transação');
+        const msg = tratarErro(err, 'Erro ao deletar transação');
+        mostrarNotificacao(msg, 'erro');
       }
     },
   });

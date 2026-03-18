@@ -362,20 +362,19 @@
 }
 
 #transacoes {
-  column-count: 2;
-  column-gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
   margin-top: 15px;
 }
 
 #transacoes .transacao-card {
-  display: inline-block;
   width: 100%;
-  break-inside: avoid;
 }
 
 @media (max-width: 1200px) {
   #transacoes {
-    column-count: 1;
+    grid-template-columns: 1fr;
   }
 
   .filtro-actions {

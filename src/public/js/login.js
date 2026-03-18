@@ -5,6 +5,7 @@ import {
   limparErroInline,
   garantirErroInline,
 } from './modalEditar.js';
+import { tratarErro } from './notification.js';
 
 // Referência do formulário e URL da API
 const formLogin = document.getElementById('formLogin');
@@ -48,8 +49,9 @@ if (formLogin) {
         window.location.href = '/html/inicio.html';
       }
     } catch (err) {
+      tratarErro(err, 'Erro ao fazer login');
       mostrarErroInline(
-        err.message || 'Erro ao fazer login',
+        'Não foi possível fazer login. Verifique suas credenciais e tente novamente.',
         FORM_ERRO_ID,
         FORM_MSG_ERRO_ID
       );
