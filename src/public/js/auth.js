@@ -13,17 +13,20 @@ export async function verificarAutenticacao() {
   // Redireciona para login se não autenticado
   if (!token && !paginasPublicas.includes(pagina)) {
     window.location.href = '/html/login.html';
-    return;
+    return false;
   }
 
   // Redireciona para início se já autenticado
   if (token && paginasPublicas.includes(pagina)) {
     window.location.href = '/html/inicio.html';
-    return;
+    return false;
   }
 
   // Carrega menu se autenticado
   if (token) {
     adicionarMenu().catch(() => undefined);
+    return true;
   }
+
+  return false;
 }

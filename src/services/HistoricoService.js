@@ -758,15 +758,16 @@ class HistoricoService {
     const dataReferencia = dataAcao ? new Date(dataAcao) : new Date();
 
     switch (acao) {
-      case 'criacao':
-        await this._aplicarDeltaSalario(
-          usuarioId,
-          dadosNovos,
-          -1,
-          dataReferencia
-        );
+      case 'criacao': {
+        const ref = dadosNovos?.dataUltimoProcessamento
+          ? new Date(dadosNovos.dataUltimoProcessamento)
+          : dataReferencia;
+
+        await this._aplicarDeltaSalario(usuarioId, dadosNovos, -1, ref);
+
         await Transacao.findByIdAndDelete(entidadeId);
         break;
+      }
       case 'edicao': {
         this._garantirDadosAnteriores(dadosAnteriores);
 
@@ -786,19 +787,16 @@ class HistoricoService {
           }
         }
 
+        const refAnt = dadosAnteriores?.dataUltimoProcessamento
+          ? new Date(dadosAnteriores.dataUltimoProcessamento)
+          : dataReferencia;
+        const refNov = dadosNovos?.dataUltimoProcessamento
+          ? new Date(dadosNovos.dataUltimoProcessamento)
+          : dataReferencia;
+
         // Inverte os deltas aplicados na edição e volta o documento para o estado anterior.
-        await this._aplicarDeltaSalario(
-          usuarioId,
-          dadosNovos,
-          -1,
-          dataReferencia
-        );
-        await this._aplicarDeltaSalario(
-          usuarioId,
-          dadosAnteriores,
-          1,
-          dataReferencia
-        );
+        await this._aplicarDeltaSalario(usuarioId, dadosNovos, -1, refNov);
+        await this._aplicarDeltaSalario(usuarioId, dadosAnteriores, 1, refAnt);
 
         await Transacao.findByIdAndUpdate(entidadeId, dadosAnteriores);
         break;
@@ -824,12 +822,12 @@ class HistoricoService {
         }
 
         await Transacao.create(dadosAnteriores);
-        await this._aplicarDeltaSalario(
-          usuarioId,
-          dadosAnteriores,
-          1,
-          dataReferencia
-        );
+
+        const ref = dadosAnteriores?.dataUltimoProcessamento
+          ? new Date(dadosAnteriores.dataUltimoProcessamento)
+          : dataReferencia;
+
+        await this._aplicarDeltaSalario(usuarioId, dadosAnteriores, 1, ref);
         break;
       }
       default:

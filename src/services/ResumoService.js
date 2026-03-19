@@ -84,10 +84,7 @@ class ResumoService {
 
     // somente precisamos das contas e da carteira para o resumo simplificado
     const contas = await Conta.find({ usuario: usuarioId });
-    const carteira = await Carteira.findOne({
-      usuario: usuarioId,
-      ativa: true,
-    });
+    const carteira = await Carteira.findOne({ usuario: usuarioId });
 
     const saldoContas = somarCampo(contas, 'saldo');
     const saldoCarteira = carteira?.saldo || 0;

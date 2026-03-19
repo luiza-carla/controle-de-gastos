@@ -6,5 +6,7 @@ node_modules/
 
 src/public/vendor/
 
+scripts/test-*.js
+
 *.txt
-*.md
+md/

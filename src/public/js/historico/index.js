@@ -3,6 +3,7 @@ import { showElement, hideElement } from '../helpers/index.js';
 import { criarHistoricoState } from './state.js';
 import { fetchHistoricos, desfazerHistorico } from './api.js';
 import { renderHistoricoLista, alternarDetalhesAlteracoes } from './render.js';
+import { initHistoricoFilters } from './filters.js';
 import { mostrarNotificacao, tratarErro } from '../notification.js';
 import { abrirModalConfirmacao, fecharModal } from '../modalDeletar.js';
 
@@ -18,33 +19,17 @@ const paginacaoHistorico = criarPaginacao({
 });
 
 export async function initHistorico() {
-  inicializarEventos();
+  initHistoricoFilters({
+    state,
+    paginacao: paginacaoHistorico,
+    onReload: carregarHistorico,
+  });
   paginacaoHistorico.init();
+  bindHistoricoListActions();
   await carregarHistorico();
 }
 
-function inicializarEventos() {
-  const btnLimpar = document.getElementById('btn-limpar-filtros');
-  if (btnLimpar) {
-    btnLimpar.addEventListener('click', () => {
-      limparFiltros();
-      carregarHistorico();
-    });
-  }
-
-  // Filtro automático ao mudar qualquer select
-  ['filtro-entidade', 'filtro-acao', 'filtro-status', 'filtro-ordenar'].forEach(
-    (id) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('change', () => {
-        aplicarFiltros();
-        carregarHistorico();
-      });
-    }
-  );
-
-  // Delegação para botões de desfazer e toggles adicionados dinamicamente
+function bindHistoricoListActions() {
   const historicoLista = document.getElementById('historico-lista');
   if (!historicoLista) return;
 
@@ -60,37 +45,6 @@ function inicializarEventos() {
       await desfazerAcao(btn.dataset.historicoId);
     }
   });
-}
-
-function getFiltrosDoFormulario() {
-  const entidade = document.getElementById('filtro-entidade')?.value || '';
-  const acao = document.getElementById('filtro-acao')?.value || '';
-  const desfeito = document.getElementById('filtro-status')?.value || '';
-  const ordenarPor = document.getElementById('filtro-ordenar')?.value || 'data';
-
-  return { entidade, acao, desfeito, ordenarPor };
-}
-
-function aplicarFiltros() {
-  state.setFiltros(getFiltrosDoFormulario());
-  paginacaoHistorico.resetar();
-}
-
-function limparFiltros() {
-  const selectIds = [
-    'filtro-entidade',
-    'filtro-acao',
-    'filtro-status',
-    'filtro-ordenar',
-  ];
-
-  selectIds.forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.value = id === 'filtro-ordenar' ? 'data' : '';
-  });
-
-  state.resetFiltros();
-  paginacaoHistorico.resetar();
 }
 
 async function carregarHistorico() {

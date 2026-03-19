@@ -59,10 +59,19 @@ export function parseCurrency(value) {
 
   // Se não houver vírgula, pode ser um número em formato en-US (ex: 101.54)
   // ou um valor já formatado com separadores de milhar (ex: 1.015.415.950.866.302).
-  // Se houver mais de um ponto, assumimos que são separadores de milhar.
+  // Se houver mais de um ponto, assumimos que todos são separadores de milhar.
   const dots = (str.match(/\./g) || []).length;
   if (dots > 1) {
     return parseFloat(str.replace(/\./g, ''));
+  }
+
+  // Se houver exatamente um ponto, pode ser separador decimal (en-US) ou separador de milhar (pt-BR).
+  // Para evitar interpretar "100.000" como cem, tratamos como milhar quando houver exatamente 3 dígitos após o ponto.
+  if (dots === 1) {
+    const afterDot = str.split('.').pop();
+    if (/^\d{3}$/.test(afterDot)) {
+      return parseFloat(str.replace(/\./g, ''));
+    }
   }
 
   // Caso contrário, interpreta o ponto como separador decimal.

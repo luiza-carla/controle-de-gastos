@@ -1,52 +1,49 @@
 import { verificarAutenticacao } from './auth.js';
 import { criarConta, popularSelectContas, listarContas } from './conta.js';
-import { exibirCarteira } from './carteira.js';
+import { initCarteiraPage } from './carteira.js';
 import { inicializarCategorias } from './categoria.js';
-import { criarTransacao, listarTransacoes } from './transacao.js';
-import { criarDesejo, listarDesejos } from './listaDesejo.js';
-import { criarSalario, listarSalarios } from './salario.js';
+import { initDesejos } from './listaDesejo.js';
+import { initTransacoes } from './transacao/index.js';
+import { initSalario } from './salario/index.js';
 import { carregarResumo } from './inicio.js';
 import { $, bindCurrencyInputs } from './helpers/index.js';
 
-(async function () {
-  await verificarAutenticacao();
+async function initApp() {
+  const autenticado = await verificarAutenticacao();
+  if (!autenticado) return;
 
-  await Promise.all([
-    import('./modalEditar.js'),
-    // Inicializa categorias
-    inicializarCategorias(),
-  ]);
-})();
+  // Módulos que só são usados quando o usuário está autenticado
+  const tarefasIniciais = [import('./modalEditar.js')];
 
-// Inicializa transações
-(async function () {
-  if ($('formTransacao')) {
-    criarTransacao('formTransacao');
+  const precisaCategorias =
+    document.getElementById('buscaCategoria') ||
+    document.getElementById('filtroBuscaCategoriaDesejo') ||
+    document.getElementById('filtroCategoriaDesejo');
+
+  if (precisaCategorias) {
+    tarefasIniciais.push(inicializarCategorias());
   }
 
-  if ($('transacoes')) {
-    await listarTransacoes();
-  }
-})();
+  await Promise.all(tarefasIniciais);
 
-// Inicializa contas
-(async function () {
-  const tarefas = [];
+  await initDesejos();
+  await initTransacoes();
 
+  const tarefasConta = [];
   if ($('contas')) {
-    tarefas.push(listarContas());
+    tarefasConta.push(listarContas());
   }
 
   if ($('carteiraSaldo')) {
-    tarefas.push(exibirCarteira());
+    tarefasConta.push(initCarteiraPage());
   }
 
   if ($('conta')) {
-    tarefas.push(popularSelectContas());
+    tarefasConta.push(popularSelectContas());
   }
 
-  if (tarefas.length) {
-    await Promise.all(tarefas);
+  if (tarefasConta.length) {
+    await Promise.all(tarefasConta);
   }
 
   if ($('formConta')) {
@@ -54,48 +51,15 @@ import { $, bindCurrencyInputs } from './helpers/index.js';
       await popularSelectContas();
     });
   }
-})();
 
-// Inicializa lista de desejos
-(async function () {
-  if ($('formListaDesejo')) {
-    criarDesejo('formListaDesejo');
-  }
-
-  if ($('listaDesejos')) {
-    await listarDesejos();
-  }
-})();
-
-// Inicializa resumo financeiro
-(async function () {
   if ($('saldoAtual') || $('saldoCalculado')) {
     await carregarResumo();
   }
-})();
 
-// Inicializa salarios
-(async function () {
-  const tarefas = [];
+  await initSalario();
 
-  if ($('salariosContainer')) {
-    tarefas.push(listarSalarios());
-  }
-
-  if ($('contaSalario')) {
-    tarefas.push(popularSelectContas('contaSalario'));
-  }
-
-  if (tarefas.length) {
-    await Promise.all(tarefas);
-  }
-
-  if ($('formSalario')) {
-    criarSalario('formSalario');
-  }
-})();
-
-// Aplica máscara de moeda nos inputs marcados com data-moeda.
-(async function () {
+  // Aplica máscara de moeda nos inputs marcados com data-moeda.
   await bindCurrencyInputs();
-})();
+}
+
+initApp();

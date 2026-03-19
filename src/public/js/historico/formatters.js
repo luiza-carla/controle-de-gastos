@@ -53,14 +53,17 @@ export function formatarObjetoTransacao(transacao) {
     html = withField(html, 'Valor', formatarMoeda(transacao.valor), false);
   }
 
-  html += renderCategoriaSubcategoria(transacao.categoria, transacao.subcategoria);
+  html += renderCategoriaSubcategoria(
+    transacao.categoria,
+    transacao.subcategoria
+  );
 
   const contaNome =
     transacao.fonteSaldo === 'carteira'
       ? 'Carteira'
       : transacao.conta && transacao.conta.nome
-      ? transacao.conta.nome
-      : '';
+        ? transacao.conta.nome
+        : '';
 
   if (contaNome) {
     html = withField(html, 'Conta', contaNome);
@@ -88,8 +91,8 @@ export function formatarObjetoConta(conta) {
     conta.tipo === 'corrente'
       ? 'Corrente'
       : conta.tipo === 'poupanca'
-      ? 'Poupança'
-      : 'Outro';
+        ? 'Poupança'
+        : 'Outro';
 
   return `
     ${renderCampo('Nome', conta.nome || '')}

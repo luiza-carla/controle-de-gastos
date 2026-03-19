@@ -13,11 +13,6 @@ const CarteiraSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
-    ativa: {
-      type: Boolean,
-      default: true,
-    },
   },
   { timestamps: true }
 );

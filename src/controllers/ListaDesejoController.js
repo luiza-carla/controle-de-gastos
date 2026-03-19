@@ -218,6 +218,11 @@ class ListaDesejoController {
       });
     }
 
+    const tipoDespesa =
+      item.tipoDespesa && typeof item.tipoDespesa === 'string'
+        ? item.tipoDespesa
+        : undefined;
+
     const novaTransacao = await Transacao.create({
       usuario: req.user.id,
       conta: fonteSaldo === 'carteira' ? undefined : conta,
@@ -235,7 +240,7 @@ class ListaDesejoController {
         parcelaAtual: 1,
       },
       tags: item.tags || [],
-      tipoDespesa: item.tipoDespesa,
+      tipoDespesa,
     });
 
     if (statusFinal === 'pago') {

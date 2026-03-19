@@ -50,9 +50,11 @@ class SalarioController {
       refs,
       usuarioId
     );
-    if (!filtroUsuario) return null;
 
-    return Transacao.findOne({ _id: id, ...filtroUsuario });
+    const filtroBase = { _id: id, usuario: usuarioId };
+    if (!filtroUsuario) return Transacao.findOne(filtroBase);
+
+    return Transacao.findOne({ ...filtroBase, ...filtroUsuario });
   }
 
   // Verifica se salário deve ser processado na data informada
@@ -153,12 +155,11 @@ class SalarioController {
       Transacao.findById(salario._id)
     );
 
-    // Registra no histórico
     await registrarHistoricoDaRequisicao(req, 'salario', {
-      entidadeId: salario._id,
+      entidadeId: salarioPopulado._id,
       acao: 'criacao',
-      descricao: montarDescricaoHistoricoSalario('criacao', salario),
-      dadosNovos: salario.toObject(),
+      descricao: montarDescricaoHistoricoSalario('criacao', salarioPopulado),
+      dadosNovos: salarioPopulado.toObject(),
     });
 
     res.status(201).json(salarioPopulado);
@@ -286,7 +287,8 @@ class SalarioController {
     }
 
     const destino = extrairDestinoSaldo(salario);
-    if (salarioJaProcessadoNoMes(salario)) {
+
+    if (salario.status === 'pago') {
       if (destino.tipo === 'conta') {
         await SaldoService.aplicarDeltaContas(
           { [destino.contaId]: -salario.valor },

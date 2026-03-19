@@ -15,7 +15,15 @@ function obterInicioMes(dataReferencia = new Date()) {
 
 // Verifica se salário já foi processado no mês atual
 function salarioJaProcessadoNoMes(salario, dataReferencia = new Date()) {
-  if (!salario || !salario.dataUltimoProcessamento) {
+  if (!salario) {
+    return false;
+  }
+
+  if (salario.status === 'pago') {
+    return true;
+  }
+
+  if (!salario.dataUltimoProcessamento) {
     return false;
   }
 

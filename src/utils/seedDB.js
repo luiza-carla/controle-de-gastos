@@ -113,7 +113,6 @@ function gerarCarteira(usuarioId) {
   return {
     usuario: usuarioId,
     saldo: faker.number.float({ min: 0, max: 300, precision: 0.01 }),
-    ativa: faker.datatype.boolean(0.9), // 90% de chance de estar ativa
   };
 }
 

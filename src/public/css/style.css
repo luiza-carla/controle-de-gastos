@@ -93,6 +93,11 @@
   --brand-secondary-40: rgba(127, 191, 159, 0.4);
 }
 
+/* Utilities */
+.is-hidden {
+  display: none !important;
+}
+
 body {
   min-height: 100vh;
   background: var(--bg-main);

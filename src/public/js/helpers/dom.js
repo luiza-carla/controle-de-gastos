@@ -74,6 +74,24 @@ export function hideModal() {
   if (modal) modal.style.display = 'none';
 }
 
+// Mostra overlay global de carregamento (p.ex. "Enviando...")
+export function showLoadingOverlay(message = 'Enviando...') {
+  const overlay = document.getElementById('loadingOverlay');
+  if (!overlay) return;
+
+  const titleEl = overlay.querySelector('.loading-title');
+  if (titleEl) titleEl.textContent = message;
+
+  overlay.style.display = 'flex';
+}
+
+// Oculta overlay global de carregamento
+export function hideLoadingOverlay() {
+  const overlay = document.getElementById('loadingOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+}
+
 // Adiciona evento a elemento por ID
 export function onEventById(id, evento, handler) {
   const el = $(id);
@@ -110,9 +128,20 @@ export function criarBotoesAcao(acoes) {
       if (variant && !variant.startsWith('btn-')) {
         variant = `btn-${variant}`;
       }
+
+      const dataAttrs = acao.dataAttributes
+        ? Object.entries(acao.dataAttributes)
+            .map(([key, value]) => ` data-${key}="${value}"`)
+            .join('')
+        : '';
+
+      const titleAttr = acao.title ? ` title="${acao.title}"` : '';
+      const text = acao.texto ? ` ${acao.texto}` : '';
+      const onclick = acao.onclick ? ` onclick="${acao.onclick}"` : '';
+
       return `
-    <button class="btn ${variant}" onclick="${acao.onclick}"${acao.title ? ` title="${acao.title}"` : ''}>
-      <i class="fa-solid ${acao.icone}"></i>${acao.texto ? ` ${acao.texto}` : ''}
+    <button class="btn ${variant}"${onclick}${titleAttr}${dataAttrs}>
+      <i class="fa-solid ${acao.icone}"></i>${text}
     </button>
   `;
     })

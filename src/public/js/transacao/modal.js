@@ -1,0 +1,191 @@
+import { apiFetch } from '../config.js';
+import { abrirModal, fecharModal, mostrarErroInline } from '../modalEditar.js';
+import { abrirModalConfirmacao } from '../modalDeletar.js';
+import { mostrarNotificacao, tratarErro } from '../notification.js';
+import {
+  showElement,
+  hideElement,
+  $,
+  inicializarEditorTags,
+  setupCategoriaAutocomplete,
+  carregarSubcategorias,
+  setupSubcategoriaAutocomplete,
+  obterSubcategoriaParaEnviar,
+} from '../helpers/index.js';
+import { templateEditarTransacaoModal } from './templates.js';
+import {
+  atualizarTransacao,
+  deletarTransacao as deletarTransacaoService,
+} from './service.js';
+import { listarTransacoes } from './render.js';
+import { obterTransacaoPorId } from './service.js';
+
+const URL_CATEGORIAS = `${window.location.origin}/categorias`;
+const URL_CONTAS = `${window.location.origin}/contas`;
+
+export const editarTransacao = async (id) => {
+  const transacao =
+    obterTransacaoPorId(id) ||
+    (await listarTransacoes()).find((t) => t._id === id);
+  const categorias = await apiFetch(URL_CATEGORIAS);
+  const contas = await apiFetch(URL_CONTAS);
+
+  if (!transacao) return;
+
+  let tagsModal = [...(transacao.tags || [])];
+
+  abrirModal({
+    titulo: 'Editar transação',
+    conteudoHTML: templateEditarTransacaoModal(transacao, contas),
+    onSalvar: async () => {
+      const novoTitulo = $('modalTituloTransacao')?.value;
+      const novoValor = parseFloat(
+        ($('modalValorTransacao')?.value || '').replace(',', '.')
+      );
+      const novoTipo = $('modalTipoTransacao')?.value;
+      const novoStatus = $('modalStatusTransacao')?.value;
+      const novaConta = $('modalContaTransacao')?.value;
+      const novaCategoria = $('modalCategoriaTransacao')?.value;
+      const novoTipoDespesa = $('modalTipoDespesa')?.value;
+
+      const subcategoriaParaEnviar = obterSubcategoriaParaEnviar(
+        'modalBuscaSubcategoriaTransacao',
+        'modalSubcategoriaTransacao'
+      );
+
+      if (
+        !novoTitulo ||
+        !novoValor ||
+        !novoTipo ||
+        !novoStatus ||
+        !novaConta ||
+        !novaCategoria
+      ) {
+        mostrarErroInline('Por favor, preencha todos os campos obrigatórios');
+        return;
+      }
+
+      const dados = {
+        titulo: novoTitulo,
+        valor: novoValor,
+        tipo: novoTipo,
+        status: novoStatus,
+        conta: novaConta,
+        categoria: novaCategoria,
+        subcategoria: subcategoriaParaEnviar,
+        tags: tagsModal,
+      };
+
+      if (novoTipo === 'saida') {
+        dados.tipoDespesa = novoTipoDespesa || undefined;
+      }
+
+      try {
+        await atualizarTransacao(id, dados);
+
+        fecharModal();
+        listarTransacoes();
+      } catch (erro) {
+        const msg = tratarErro(erro, 'Erro ao atualizar transação');
+        mostrarErroInline(msg);
+      }
+    },
+  });
+
+  inicializarEditorTags({
+    tags: tagsModal,
+    containerId: 'modalTagsContainer',
+    inputId: 'modalTagInput',
+    addButtonId: 'modalBtnAddTag',
+  });
+
+  const modalSubGroup = $('modalSubcategoriaGroup');
+  const atualizarVisibilidadeModal = (lista) => {
+    if (modalSubGroup)
+      modalSubGroup.style.display = lista && lista.length ? '' : 'none';
+  };
+
+  // inicializa autocomplete de categoria para o modal
+  setupCategoriaAutocomplete(
+    'modalBuscaCategoriaTransacao',
+    'modalCategoriaTransacao',
+    'modalDropdownCategoriaTransacao',
+    categorias,
+    async (catId) => {
+      // ao escolher nova categoria enquanto edita, limpa eventual seleção de subcategoria
+      subcategoriaAutocompleteModal?.limpar?.();
+
+      // busca subcategorias para a nova categoria
+      const subs = await carregarSubcategorias(catId);
+      subcategoriaAutocompleteModal.atualizarOpcoes(subs);
+      atualizarVisibilidadeModal(subs);
+    }
+  );
+
+  // subcategoria autocompleto para o modal (inicialmente vazio)
+  const subcategoriaAutocompleteModal = setupSubcategoriaAutocomplete(
+    'modalBuscaSubcategoriaTransacao',
+    'modalSubcategoriaTransacao',
+    'modalDropdownSubcategoriaTransacao',
+    []
+  );
+  // começa escondido
+  atualizarVisibilidadeModal([]);
+
+  if (transacao.categoria) {
+    const inputBusca = $('modalBuscaCategoriaTransacao');
+    const inputHidden = $('modalCategoriaTransacao');
+    if (inputBusca && inputHidden) {
+      inputBusca.value = transacao.categoria.nome;
+      inputHidden.value = transacao.categoria._id;
+      const cor = transacao.categoria.cor || '';
+      inputBusca.style.boxShadow = cor ? `inset 4px 0 0 ${cor}` : '';
+    }
+    // carregar lista de subcategorias existente para pré‑selecionar
+    const subs = await carregarSubcategorias(transacao.categoria._id);
+    subcategoriaAutocompleteModal.atualizarOpcoes(subs);
+    atualizarVisibilidadeModal(subs);
+    if (transacao.subcategoria) {
+      const inp = $('modalBuscaSubcategoriaTransacao');
+      const hid = $('modalSubcategoriaTransacao');
+      if (inp && hid) {
+        inp.value = transacao.subcategoria.nome;
+        hid.value = transacao.subcategoria._id;
+      }
+    }
+  }
+
+  const selectTipo = $('modalTipoTransacao');
+  const despField = $('modalGrupoTipoDespesa');
+  if (selectTipo && despField) {
+    const toggle = () => {
+      if (selectTipo.value === 'saida') {
+        showElement(despField);
+      } else {
+        hideElement(despField);
+      }
+    };
+    selectTipo.addEventListener('change', toggle);
+    toggle();
+  }
+};
+
+export const deletarTransacao = async (id) => {
+  abrirModalConfirmacao({
+    titulo: 'Confirmar exclusão',
+    mensagem: 'Tem certeza que deseja deletar esta transação?',
+    onConfirmar: async () => {
+      try {
+        await deletarTransacaoService(id);
+        fecharModal();
+        listarTransacoes();
+      } catch (err) {
+        const msg = tratarErro(err, 'Erro ao deletar transação');
+        mostrarNotificacao(msg, 'erro');
+      }
+    },
+  });
+};
+
+window.editarTransacao = editarTransacao;
+window.deletarTransacao = deletarTransacao;

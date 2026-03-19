@@ -51,7 +51,8 @@ class SaldoService {
     if (transacao.fonteSaldo === 'carteira') {
       await Carteira.updateOne(
         { usuario: usuarioId },
-        { $inc: { saldo: delta } }
+        { $inc: { saldo: delta } },
+        { upsert: true }
       );
       return;
     }
@@ -78,7 +79,8 @@ class SaldoService {
     if (transacao.fonteSaldo === 'carteira') {
       await Carteira.updateOne(
         { usuario: usuarioId },
-        { $inc: { saldo: delta } }
+        { $inc: { saldo: delta } },
+        { upsert: true }
       );
       return;
     }
