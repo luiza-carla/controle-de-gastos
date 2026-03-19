@@ -36,11 +36,9 @@ export function createFormSubmitGuard(
   const setButtonsDisabled = (disabled) => {
     getSubmitButtons().forEach((button) => {
       if (disabled) {
-        // Preserve any explicit disabled state set by markup.
         button.dataset._disabledDuringSubmit = String(button.disabled);
         button.disabled = true;
       } else {
-        // Restore the state that existed before the submit started.
         if (button.dataset._disabledDuringSubmit != null) {
           button.disabled = button.dataset._disabledDuringSubmit === 'true';
           delete button.dataset._disabledDuringSubmit;

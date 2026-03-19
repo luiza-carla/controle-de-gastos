@@ -6,7 +6,6 @@ import {
 } from '../modalEditar.js';
 import { abrirModalConfirmacao } from '../modalDeletar.js';
 import { desejosService } from './api.js';
-import { tratarErro } from '../notification.js';
 import {
   $,
   showElement,
@@ -18,6 +17,7 @@ import {
   obterSubcategoriaParaEnviar,
   inicializarEditorTags,
   parseCurrency,
+  executarAcaoModal,
 } from '../helpers/index.js';
 import { buildEditarDesejoHTML, buildRealizarDesejoHTML } from './templates.js';
 
@@ -144,19 +144,21 @@ export async function abrirModalEditarDesejoComAcoes({
         return;
       }
 
-      try {
-        const atualizado = await desejosService.atualizar(id, {
-          ...formData,
-          valor: valorNum,
-        });
+      await executarAcaoModal({
+        acao: async () => {
+          const atualizado = await desejosService.atualizar(id, {
+            ...formData,
+            valor: valorNum,
+          });
 
-        state.updateItem(atualizado);
-        fecharModal();
-        onAtualizar?.();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao atualizar desejo');
-        mostrarErroInline(msg);
-      }
+          state.updateItem(atualizado);
+        },
+        mensagemErro: 'Erro ao atualizar desejo',
+        onAtualizar: () => {
+          fecharModal();
+          onAtualizar?.();
+        },
+      });
     },
   });
 }
@@ -201,22 +203,24 @@ export async function abrirModalRealizarDesejoComAcoes({
         return;
       }
 
-      try {
-        await desejosService.realizar(id, {
-          conta,
-          tipoDespesa: tipoDespesa || undefined,
-          valor: valorNum,
-          status,
-          data: data || new Date().toISOString(),
-        });
+      await executarAcaoModal({
+        acao: async () => {
+          await desejosService.realizar(id, {
+            conta,
+            tipoDespesa: tipoDespesa || undefined,
+            valor: valorNum,
+            status,
+            data: data || new Date().toISOString(),
+          });
 
-        state.removeItem(id);
-        fecharModal();
-        onAtualizar?.();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao realizar desejo');
-        mostrarErroInline(msg);
-      }
+          state.removeItem(id);
+        },
+        mensagemErro: 'Erro ao realizar desejo',
+        onAtualizar: () => {
+          fecharModal();
+          onAtualizar?.();
+        },
+      });
     },
   });
 }
@@ -230,15 +234,17 @@ export async function abrirModalConfirmarRemoverDesejo({
     titulo: 'Confirmar exclusao',
     mensagem: 'Tem certeza que deseja deletar este item da lista de desejos?',
     onConfirmar: async () => {
-      try {
-        await desejosService.deletar(id);
-        state.removeItem(id);
-        fecharModal();
-        onAtualizar?.();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao deletar desejo');
-        mostrarErroInline(msg);
-      }
+      await executarAcaoModal({
+        acao: async () => {
+          await desejosService.deletar(id);
+          state.removeItem(id);
+        },
+        mensagemErro: 'Erro ao deletar desejo',
+        onAtualizar: () => {
+          fecharModal();
+          onAtualizar?.();
+        },
+      });
     },
   });
 }

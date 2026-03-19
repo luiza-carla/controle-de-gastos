@@ -5,7 +5,7 @@ import {
   limparErroInline,
 } from '../modalEditar.js';
 import { abrirModalConfirmacao } from '../modalDeletar.js';
-import { tratarErro } from '../notification.js';
+import { executarAcaoModal } from '../helpers/index.js';
 import { parseCurrency } from '../helpers/index.js';
 import {
   updateConta,
@@ -39,14 +39,14 @@ export async function abrirModalEditarConta(
         return;
       }
 
-      try {
-        await updateConta(id, { nome: novoNome, tipo: novoTipo });
-        fecharModal();
-        await carregarERenderizarContas();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao atualizar conta');
-        mostrarErroInline(msg);
-      }
+      await executarAcaoModal({
+        acao: () => updateConta(id, { nome: novoNome, tipo: novoTipo }),
+        mensagemErro: 'Erro ao atualizar conta',
+        onAtualizar: async () => {
+          fecharModal();
+          await carregarERenderizarContas();
+        },
+      });
     },
   });
 }
@@ -59,15 +59,14 @@ export async function abrirModalDeletarConta(
     titulo: 'Confirmar exclusão',
     mensagem: 'Tem certeza que deseja deletar esta conta?',
     onConfirmar: async () => {
-      try {
-        await deleteConta(id);
-        fecharModal();
-        await carregarERenderizarContas();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao excluir conta');
-
-        console.error(msg);
-      }
+      await executarAcaoModal({
+        acao: () => deleteConta(id),
+        mensagemErro: 'Erro ao excluir conta',
+        onAtualizar: async () => {
+          fecharModal();
+          await carregarERenderizarContas();
+        },
+      });
     },
   });
 }
@@ -112,19 +111,20 @@ export async function abrirModalTransferirConta(
         return;
       }
 
-      try {
-        if (destino === VALOR_CARTEIRA) {
-          await transferirParaCarteira(contaOrigemId, valor);
-        } else {
-          await transferirEntreContas(contaOrigemId, destino, valor);
-        }
-
-        fecharModal();
-        await atualizarSaldosTela();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao transferir');
-        mostrarErroInline(msg);
-      }
+      await executarAcaoModal({
+        acao: async () => {
+          if (destino === VALOR_CARTEIRA) {
+            await transferirParaCarteira(contaOrigemId, valor);
+          } else {
+            await transferirEntreContas(contaOrigemId, destino, valor);
+          }
+        },
+        mensagemErro: 'Erro ao transferir',
+        onAtualizar: async () => {
+          fecharModal();
+          await atualizarSaldosTela();
+        },
+      });
     },
   });
 }

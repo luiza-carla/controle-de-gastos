@@ -4,8 +4,11 @@ import {
   mostrarErroInline,
   limparErroInline,
 } from '../modalEditar.js';
-import { tratarErro } from '../notification.js';
-import { formatarValor, parseCurrency } from '../helpers/index.js';
+import {
+  executarAcaoModal,
+  formatarValor,
+  parseCurrency,
+} from '../helpers/index.js';
 import { atualizarSalario, deletarSalario } from './service.js';
 
 export function criarTemplateEditarSalario(
@@ -86,20 +89,20 @@ export async function abrirModalEditarSalario({
         return;
       }
 
-      try {
-        await atualizarSalario(id, {
-          valor: novoValor,
-          diaRecebimento: novoDiaRecebimento,
-          frequencia: 'mensal',
-          conta: novaConta,
-        });
-
-        fecharModal();
-        await onAtualizar();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao atualizar salário');
-        mostrarErroInline(msg);
-      }
+      await executarAcaoModal({
+        acao: () =>
+          atualizarSalario(id, {
+            valor: novoValor,
+            diaRecebimento: novoDiaRecebimento,
+            frequencia: 'mensal',
+            conta: novaConta,
+          }),
+        mensagemErro: 'Erro ao atualizar salário',
+        onAtualizar: async () => {
+          fecharModal();
+          await onAtualizar();
+        },
+      });
     },
   });
 }
@@ -109,14 +112,14 @@ export async function abrirModalDeletarSalario({ id, onAtualizar }) {
     titulo: 'Confirmar exclusão',
     conteudoHTML: `<p>Tem certeza que deseja deletar este salário?</p>`,
     onSalvar: async () => {
-      try {
-        await deletarSalario(id);
-        fecharModal();
-        await onAtualizar();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao deletar salário');
-        mostrarErroInline(msg);
-      }
+      await executarAcaoModal({
+        acao: () => deletarSalario(id),
+        mensagemErro: 'Erro ao deletar salário',
+        onAtualizar: async () => {
+          fecharModal();
+          await onAtualizar();
+        },
+      });
     },
   });
 }

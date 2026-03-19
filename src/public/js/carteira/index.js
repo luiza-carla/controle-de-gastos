@@ -31,12 +31,12 @@ function bindCarteiraAcoes() {
   );
 
   adicionarBtn?.addEventListener('click', () =>
-    abrirModalAdicionarDinheiro({ onSuccess: atualizarSaldoVisivel })
+    abrirModalAdicionarDinheiro({ onAtualizar: atualizarSaldoVisivel })
   );
   removerBtn?.addEventListener('click', () =>
-    abrirModalRemoverDinheiro({ onSuccess: atualizarSaldoVisivel })
+    abrirModalRemoverDinheiro({ onAtualizar: atualizarSaldoVisivel })
   );
   transferirBtn?.addEventListener('click', () =>
-    abrirModalTransferencia({ onSuccess: atualizarSaldoVisivel })
+    abrirModalTransferencia({ onAtualizar: atualizarSaldoVisivel })
   );
 }

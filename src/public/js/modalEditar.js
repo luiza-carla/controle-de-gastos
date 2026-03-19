@@ -8,10 +8,12 @@ import {
   removeClass,
   $,
   bindCurrencyInputs,
+  createFormSubmitGuard,
 } from './helpers/index.js';
 
 // Armazena callback de salvamento do modal
 let salvarCallback = null;
+let salvarGuard = null;
 
 function definirFooterModal(tipo) {
   hideElement($('modalFooterEditar'));
@@ -37,8 +39,11 @@ export function abrirModal({ titulo, conteudoHTML, onSalvar }) {
   // Aplica máscara de moeda em campos do modal (se houver)
   bindCurrencyInputs({ root: $('modalConteudo') });
 
-  // Define callback de salvar
+  // Define callback de salvar (com proteção contra cliques rápidos)
   salvarCallback = onSalvar;
+  salvarGuard = onSalvar
+    ? createFormSubmitGuard(document.createElement('form'))(onSalvar)
+    : null;
 
   // Ajusta botoes exibidos no modal
   definirFooterModal('editar');
@@ -50,6 +55,7 @@ export function abrirModal({ titulo, conteudoHTML, onSalvar }) {
 export function fecharModal() {
   limparErroInline();
   salvarCallback = null;
+  salvarGuard = null;
   hideModal();
 }
 
@@ -113,6 +119,10 @@ export function garantirErroInline(
 // Trata cliques dos botoes do modal
 document.addEventListener('click', (e) => {
   if (e.target.id === 'modalSalvar') {
+    if (salvarGuard) {
+      salvarGuard(e);
+      return;
+    }
     if (salvarCallback) salvarCallback();
   }
   if (

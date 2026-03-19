@@ -6,6 +6,7 @@ import {
   limparErroInline,
 } from '../modalEditar.js';
 import {
+  executarAcaoModal,
   formatarValor,
   capitalizar,
   escaparHtml,
@@ -31,7 +32,7 @@ import { obterCarteira, invalidateCarteira } from './service.js';
 
 const URL_CONTAS = `${window.location.origin}/contas`;
 
-export async function abrirModalAdicionarDinheiro({ onSuccess } = {}) {
+export async function abrirModalAdicionarDinheiro({ onAtualizar } = {}) {
   limparErroInline();
 
   abrirModal({
@@ -47,20 +48,20 @@ export async function abrirModalAdicionarDinheiro({ onSuccess } = {}) {
         return;
       }
 
-      try {
-        await atualizarCarteira(valorResult.valor);
-        invalidateCarteira();
-        fecharModal();
-        if (onSuccess) await onSuccess();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao adicionar dinheiro');
-        mostrarErroInline(msg);
-      }
+      await executarAcaoModal({
+        acao: () => atualizarCarteira(valorResult.valor),
+        mensagemErro: 'Erro ao adicionar dinheiro',
+        onAtualizar: async () => {
+          invalidateCarteira();
+          fecharModal();
+          if (onAtualizar) await onAtualizar();
+        },
+      });
     },
   });
 }
 
-export async function abrirModalRemoverDinheiro({ onSuccess } = {}) {
+export async function abrirModalRemoverDinheiro({ onAtualizar } = {}) {
   limparErroInline();
 
   const carteira = await obterCarteira();
@@ -89,20 +90,20 @@ export async function abrirModalRemoverDinheiro({ onSuccess } = {}) {
         return;
       }
 
-      try {
-        await atualizarCarteira(-valorResult.valor);
-        invalidateCarteira();
-        fecharModal();
-        if (onSuccess) await onSuccess();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao remover dinheiro');
-        mostrarErroInline(msg);
-      }
+      await executarAcaoModal({
+        acao: () => atualizarCarteira(-valorResult.valor),
+        mensagemErro: 'Erro ao remover dinheiro',
+        onAtualizar: async () => {
+          invalidateCarteira();
+          fecharModal();
+          if (onAtualizar) await onAtualizar();
+        },
+      });
     },
   });
 }
 
-export async function abrirModalTransferencia({ onSuccess } = {}) {
+export async function abrirModalTransferencia({ onAtualizar } = {}) {
   limparErroInline();
 
   const carteira = await obterCarteira();
@@ -152,15 +153,15 @@ export async function abrirModalTransferencia({ onSuccess } = {}) {
         return;
       }
 
-      try {
-        await transferirParaConta(contaId, valorResult.valor);
-        invalidateCarteira();
-        fecharModal();
-        if (onSuccess) await onSuccess();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao transferir dinheiro');
-        mostrarErroInline(msg);
-      }
+      await executarAcaoModal({
+        acao: () => transferirParaConta(contaId, valorResult.valor),
+        mensagemErro: 'Erro ao transferir dinheiro',
+        onAtualizar: async () => {
+          invalidateCarteira();
+          fecharModal();
+          if (onAtualizar) await onAtualizar();
+        },
+      });
     },
   });
 }
