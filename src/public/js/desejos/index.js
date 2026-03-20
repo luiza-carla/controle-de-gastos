@@ -97,8 +97,8 @@ export async function initDesejos() {
 
   if ($('listaDesejos')) {
     state.pagination.init();
+    await initFiltroCategoriaDesejo(state, listarDesejos);
     await listarDesejos();
-    initFiltroCategoriaDesejo(state, listarDesejos);
     initOrdenacaoDesejos(state, listarDesejos, listarDesejos);
   }
 }

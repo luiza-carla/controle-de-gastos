@@ -5,7 +5,6 @@ import { inicializarCategorias } from './categoria.js';
 import { initDesejos } from './listaDesejo.js';
 import { initTransacoes } from './transacao/index.js';
 import { initSalario } from './salario/index.js';
-import { carregarResumo } from './inicio.js';
 import { $, bindCurrencyInputs } from './helpers/index.js';
 
 async function initApp() {
@@ -50,10 +49,6 @@ async function initApp() {
     criarConta('formConta', async () => {
       await popularSelectContas();
     });
-  }
-
-  if ($('saldoAtual') || $('saldoCalculado')) {
-    await carregarResumo();
   }
 
   await initSalario();

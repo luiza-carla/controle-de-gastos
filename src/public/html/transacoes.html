@@ -68,6 +68,15 @@
           </div>
 
           <div class="filter-group">
+            <label for="filtroStatusTransacao">Status:</label>
+            <select id="filtroStatusTransacao">
+              <option value="">Todos</option>
+              <option value="pago">Pago</option>
+              <option value="pendente">Pendente</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
             <label for="filtroOrdenarTransacoes">Ordenar por:</label>
             <select id="filtroOrdenarTransacoes">
               <option value="data">Data (mais recente)</option>
@@ -79,9 +88,14 @@
             <button
               id="btnLimparFiltroCategoriaTransacao"
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-secondary btn-with-badge"
             >
               Limpar
+              <span
+                id="btnLimparBadge"
+                class="filter-badge"
+                aria-hidden="true"
+              ></span>
             </button>
           </div>
         </div>

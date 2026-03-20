@@ -5,6 +5,7 @@ import {
   filtrarPorCategoria,
   filtrarPorTexto,
   filtrarPorTipo,
+  filtrarPorStatus,
   renderizarListagemFiltrada,
 } from '../helpers/index.js';
 import { templateTransacaoCard } from './templates.js';
@@ -56,7 +57,8 @@ function renderizarPaginaTransacoes() {
         stateTransacoes.filtroCategoriaId
       );
       const comTipo = filtrarPorTipo(comCategoria, stateTransacoes.filtroTipo);
-      return filtrarPorTexto(comTipo, stateTransacoes.filtroTexto);
+      const comStatus = filtrarPorStatus(comTipo, stateTransacoes.filtroStatus);
+      return filtrarPorTexto(comStatus, stateTransacoes.filtroTexto);
     },
     templateTransacaoCard,
     paginacaoTransacoes,
@@ -84,7 +86,7 @@ export async function initTransacoesList() {
   if (!container) return;
 
   paginacaoTransacoes.init();
-  initTransacaoFilters({
+  await initTransacaoFilters({
     state: stateTransacoes,
     renderFn: renderizarPaginaTransacoes,
     listarFn: listarTransacoes,

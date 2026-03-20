@@ -1,4 +1,5 @@
 export * from './filtroCategoriaHelpers.js';
+export * from './filterBadge.js';
 export * from './format.js';
 export * from './dom.js';
 export * from './categoriaHelpers.js';

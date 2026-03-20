@@ -45,6 +45,15 @@ export function setupCategoriaAutocomplete(
     inputBusca.style.boxShadow = `inset 4px 0 0 ${cor}`;
   };
 
+  const selecionarCategoria = (id, nome, cor) => {
+    inputBusca.value = nome;
+    inputHidden.value = id;
+    categoriaSelecionada = { id, nome, cor };
+    aplicarCor(cor);
+    removeClass(dropdown, 'show');
+    hideElement(dropdown);
+  };
+
   const mostrarDropdown = (categoriasFiltradas) => {
     if (categoriasFiltradas.length === 0) {
       setHTMLById(
@@ -74,12 +83,7 @@ export function setupCategoriaAutocomplete(
         const nome = item.getAttribute('data-nome');
         const cor = item.getAttribute('data-cor');
         if (id && nome) {
-          inputBusca.value = nome;
-          inputHidden.value = id;
-          categoriaSelecionada = { id, nome, cor };
-          aplicarCor(cor);
-          removeClass(dropdown, 'show');
-          hideElement(dropdown);
+          selecionarCategoria(id, nome, cor);
           if (onSelect) onSelect(id, nome, cor);
         }
       });
@@ -129,15 +133,36 @@ export function setupCategoriaAutocomplete(
   };
   document.addEventListener('click', handler);
 
+  // Se já existe valor no campo (restauração do navegador), tenta sincronizar
+  if (inputHidden.value) {
+    const cat = categorias.find((c) => c._id === inputHidden.value);
+    if (cat) {
+      selecionarCategoria(cat._id, cat.nome, cat.cor);
+      onSelect?.(cat._id, cat.nome, cat.cor);
+    }
+  } else if (inputBusca.value) {
+    const termo = removerAcentos(inputBusca.value.toLowerCase().trim());
+
+    // Primeiro tenta encontrar correspondência exata (sem acentos)
+    let cat = categorias.find(
+      (c) => removerAcentos(c.nome.toLowerCase()).trim() === termo
+    );
+
+    // Se não encontrou, tenta buscar por substring (mais permissivo)
+    if (!cat) {
+      cat = categorias.find((c) =>
+        removerAcentos(c.nome.toLowerCase()).includes(termo)
+      );
+    }
+
+    if (cat) {
+      selecionarCategoria(cat._id, cat.nome, cat.cor);
+      onSelect?.(cat._id, cat.nome, cat.cor);
+    }
+  }
+
   return {
-    selecionarCategoria: (id, nome, cor) => {
-      inputBusca.value = nome;
-      inputHidden.value = id;
-      categoriaSelecionada = { id, nome, cor };
-      aplicarCor(cor);
-      removeClass(dropdown, 'show');
-      hideElement(dropdown);
-    },
+    selecionarCategoria,
     limpar: () => {
       inputBusca.value = '';
       inputHidden.value = '';

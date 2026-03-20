@@ -27,6 +27,11 @@ export function filtrarPorTexto(lista, texto, campo = 'titulo') {
   });
 }
 
+export function filtrarPorStatus(lista, status) {
+  if (!status) return lista;
+  return lista.filter((item) => item?.status === status);
+}
+
 // Helper para inicializar filtro de categoria com autocomplete
 export async function inicializarFiltroCategoriaGenerico({
   inputBuscaId,

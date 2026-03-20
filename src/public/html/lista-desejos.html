@@ -70,9 +70,14 @@
             <button
               id="btnLimparFiltroCategoriaDesejo"
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-secondary btn-with-badge"
             >
               Limpar
+              <span
+                id="btnLimparBadgeDesejos"
+                class="filter-badge"
+                aria-hidden="true"
+              ></span>
             </button>
           </div>
         </div>
@@ -91,11 +96,13 @@
           class="pagination-listagem"
           style="display: none"
         >
-          <button id="btnAnteriorDesejos" type="button" disabled>
+          <button id="btnAnteriorDesejos" type="button" class="btn btn-secondary" disabled>
             Anterior
           </button>
           <span id="pageInfoDesejos">Página 1</span>
-          <button id="btnProximoDesejos" type="button">Próximo</button>
+          <button id="btnProximoDesejos" type="button" class="btn btn-secondary">
+            Próximo
+          </button>
         </div>
       </div>
     </main>

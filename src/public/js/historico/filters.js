@@ -1,12 +1,22 @@
-import { $ } from '../helpers/index.js';
+import { $, createFilterBadge } from '../helpers/index.js';
 
 export function initHistoricoFilters({ state, paginacao, onReload }) {
   if (!state || !paginacao || !onReload) return;
+
+  const badge = createFilterBadge({
+    buttonId: 'btn-limpar-filtros',
+    getCount: () => {
+      const filtros = state.getFiltros();
+      return [filtros.entidade, filtros.acao, filtros.desfeito].filter(Boolean)
+        .length;
+    },
+  });
 
   const btnLimpar = $('btn-limpar-filtros');
   if (btnLimpar) {
     btnLimpar.addEventListener('click', () => {
       limparFiltros(state, paginacao);
+      badge.update();
       onReload();
     });
   }
@@ -18,10 +28,14 @@ export function initHistoricoFilters({ state, paginacao, onReload }) {
       if (!el) return;
       el.addEventListener('change', () => {
         aplicarFiltros(state, paginacao);
+        badge.update();
         onReload();
       });
     }
   );
+
+  state.setFiltros(getFiltrosDoFormulario());
+  badge.update();
 }
 
 export function aplicarFiltros(state, paginacao) {
