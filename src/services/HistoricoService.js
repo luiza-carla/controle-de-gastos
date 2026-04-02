@@ -149,7 +149,34 @@ function criarResolvedorHistoricoPorOperacao(buscarObjetoRelacionado) {
 }
 
 class HistoricoService {
-  static _anexarDescricaoEObjeto(historico, objeto = null) {
+  static _obterDescricaoEntidadeRemovida(entidade) {
+    return (
+      {
+        transacao: 'a transação foi removida',
+        conta: 'a conta foi removida',
+        carteira: 'a carteira foi removida',
+        salario: 'o salário foi removido',
+        listaDesejo: 'o item da lista de desejos foi removido',
+      }[entidade] || 'o item foi removido'
+    );
+  }
+
+  static _formatarMotivoBloqueioDesfazer(contexto, detalhe) {
+    return `Não é possível desfazer ${contexto} porque ${detalhe}`;
+  }
+
+  static _formatarMotivoContaRemovida(contexto, relacao) {
+    return this._formatarMotivoBloqueioDesfazer(
+      contexto,
+      `a conta ${relacao} foi removida`
+    );
+  }
+
+  static _anexarDescricaoEObjeto(
+    historico,
+    objeto = null,
+    statusDesfazer = {}
+  ) {
     return {
       ...historico,
       descricao: formatarDescricaoHistoricoPadrao(
@@ -157,6 +184,199 @@ class HistoricoService {
         historico.entidade
       ),
       objeto,
+      desfazerDisponivel:
+        statusDesfazer.desfazerDisponivel !== false && !historico.desfeito,
+      motivoBloqueioDesfazer: statusDesfazer.motivoBloqueioDesfazer || null,
+    };
+  }
+
+  static async _contaExisteParaUsuario(contaId, usuarioId) {
+    if (!contaId) {
+      return false;
+    }
+
+    const contaExiste = await Conta.exists({
+      _id: contaId,
+      usuario: usuarioId,
+    });
+
+    return Boolean(contaExiste);
+  }
+
+  static async _obterMotivoBloqueioPorObjetoRemovido(historico) {
+    if (!['criacao', 'edicao'].includes(historico.acao)) {
+      return null;
+    }
+
+    const objetoRelacionado = await this._buscarObjetoRelacionado(
+      historico.entidade,
+      historico.entidadeId
+    );
+
+    if (objetoRelacionado) {
+      return null;
+    }
+
+    return this._formatarMotivoBloqueioDesfazer(
+      'esta ação',
+      this._obterDescricaoEntidadeRemovida(historico.entidade)
+    );
+  }
+
+  static async _obterMotivoBloqueioTransacao(historico) {
+    if (!['delecao', 'edicao'].includes(historico.acao)) {
+      return null;
+    }
+
+    const contaId = extrairContaId(historico.dadosAnteriores?.conta);
+    if (!contaId) {
+      return null;
+    }
+
+    const contaExiste = await this._contaExisteParaUsuario(
+      contaId,
+      historico.usuario
+    );
+
+    if (contaExiste) {
+      return null;
+    }
+
+    return this._formatarMotivoContaRemovida('transação', 'associada');
+  }
+
+  static async _obterMotivoBloqueioSalario(historico) {
+    if (!['delecao', 'edicao'].includes(historico.acao)) {
+      return null;
+    }
+
+    const destino = extrairDestinoSaldo(historico.dadosAnteriores);
+    if (destino.tipo !== 'conta' || !destino.contaId) {
+      return null;
+    }
+
+    const contaExiste = await this._contaExisteParaUsuario(
+      destino.contaId,
+      historico.usuario
+    );
+
+    if (contaExiste) {
+      return null;
+    }
+
+    if (historico.acao === 'edicao') {
+      return this._formatarMotivoContaRemovida(
+        'edição do salário',
+        'de destino'
+      );
+    }
+
+    return this._formatarMotivoContaRemovida(
+      'exclusão do salário',
+      'de destino'
+    );
+  }
+
+  static async _obterMotivoBloqueioConta(historico) {
+    if (historico.acao !== 'transferencia') {
+      return null;
+    }
+
+    const { contaOrigemId, contaDestinoId } = historico.dadosAnteriores || {};
+
+    const [origemExiste, destinoExiste] = await Promise.all([
+      this._contaExisteParaUsuario(contaOrigemId, historico.usuario),
+      this._contaExisteParaUsuario(contaDestinoId, historico.usuario),
+    ]);
+
+    if (!origemExiste && !destinoExiste) {
+      return this._formatarMotivoBloqueioDesfazer(
+        'transferência entre contas',
+        'as contas de origem e destino foram removidas'
+      );
+    }
+
+    if (!origemExiste) {
+      return this._formatarMotivoContaRemovida(
+        'transferência entre contas',
+        'de origem'
+      );
+    }
+
+    if (!destinoExiste) {
+      return this._formatarMotivoContaRemovida(
+        'transferência entre contas',
+        'de destino'
+      );
+    }
+
+    return null;
+  }
+
+  static async _obterMotivoBloqueioCarteira(historico) {
+    if (historico.acao !== 'transferencia') {
+      return null;
+    }
+
+    const contaId = historico.dadosAnteriores?.contaId;
+    if (!contaId) {
+      return null;
+    }
+
+    const contaExiste = await this._contaExisteParaUsuario(
+      contaId,
+      historico.usuario
+    );
+
+    if (contaExiste) {
+      return null;
+    }
+
+    return this._formatarMotivoContaRemovida(
+      'transferência da carteira',
+      'associada'
+    );
+  }
+
+  static async _obterMotivoBloqueioDesfazer(historico) {
+    if (!historico || historico.desfeito) {
+      return null;
+    }
+
+    const motivoObjetoRemovido =
+      await this._obterMotivoBloqueioPorObjetoRemovido(historico);
+    if (motivoObjetoRemovido) {
+      return motivoObjetoRemovido;
+    }
+
+    switch (historico.entidade) {
+      case 'transacao':
+        return this._obterMotivoBloqueioTransacao(historico);
+      case 'salario':
+        return this._obterMotivoBloqueioSalario(historico);
+      case 'conta':
+        return this._obterMotivoBloqueioConta(historico);
+      case 'carteira':
+        return this._obterMotivoBloqueioCarteira(historico);
+      default:
+        return null;
+    }
+  }
+
+  static async _obterStatusDesfazer(historico) {
+    if (!historico || historico.desfeito) {
+      return {
+        desfazerDisponivel: false,
+        motivoBloqueioDesfazer: null,
+      };
+    }
+
+    const motivoBloqueioDesfazer =
+      await this._obterMotivoBloqueioDesfazer(historico);
+
+    return {
+      desfazerDisponivel: !motivoBloqueioDesfazer,
+      motivoBloqueioDesfazer,
     };
   }
 
@@ -325,9 +545,12 @@ class HistoricoService {
           await popularIds(historico.dadosAnteriores);
         }
 
+        const statusDesfazer = await this._obterStatusDesfazer(historico);
+
         return this._anexarDescricaoEObjeto(
           historico,
-          await obterObjetoRelacionado(historico)
+          await obterObjetoRelacionado(historico),
+          statusDesfazer
         );
       })
     );
@@ -354,8 +577,12 @@ class HistoricoService {
     // Busca o objeto relacionado uma única vez
     const objeto = await this._buscarObjetoRelacionado(entidade, entidadeId);
 
-    return historicos.map((historico) =>
-      this._anexarDescricaoEObjeto(historico, objeto)
+    return Promise.all(
+      historicos.map(async (historico) => {
+        const statusDesfazer = await this._obterStatusDesfazer(historico);
+
+        return this._anexarDescricaoEObjeto(historico, objeto, statusDesfazer);
+      })
     );
   }
 
@@ -587,6 +814,13 @@ class HistoricoService {
       throw criarErro(409, 'Esta ação já foi desfeita');
     }
 
+    const motivoBloqueioDesfazer =
+      await this._obterMotivoBloqueioDesfazer(historico);
+
+    if (motivoBloqueioDesfazer) {
+      throw criarErro(400, motivoBloqueioDesfazer);
+    }
+
     // Reverte a ação; erros sobem para o middleware global de erro
     await this._reverterAcao(historico);
 
@@ -654,16 +888,13 @@ class HistoricoService {
     // fazia referência a uma conta e, em caso afirmativo, se essa conta
     // ainda está presente no banco.
     if (acao === 'delecao' || acao === 'edicao') {
-      const contaRef = dadosAnteriores?.conta;
-      const contaId = extrairContaId(contaRef);
-      if (contaId) {
-        const contaExiste = await Conta.exists({ _id: contaId });
-        if (!contaExiste) {
-          throw criarErro(
-            400,
-            'Não é possível desfazer transação porque a conta associada foi removida'
-          );
-        }
+      const motivoBloqueioDesfazer = await this._obterMotivoBloqueioTransacao({
+        acao,
+        dadosAnteriores,
+      });
+
+      if (motivoBloqueioDesfazer) {
+        throw criarErro(400, motivoBloqueioDesfazer);
       }
     }
 
@@ -734,6 +965,16 @@ class HistoricoService {
       case 'transferencia': {
         this._garantirDadosAnteriores(dadosAnteriores);
 
+        const motivoBloqueioDesfazer = await this._obterMotivoBloqueioConta({
+          acao,
+          dadosAnteriores,
+          usuario: usuarioId,
+        });
+
+        if (motivoBloqueioDesfazer) {
+          throw criarErro(400, motivoBloqueioDesfazer);
+        }
+
         const { contaOrigemId, contaDestinoId, saldoOrigem, saldoDestino } =
           dadosAnteriores;
 
@@ -755,6 +996,16 @@ class HistoricoService {
     }
 
     this._garantirDadosAnteriores(dadosAnteriores);
+
+    const motivoBloqueioDesfazer = await this._obterMotivoBloqueioCarteira({
+      acao,
+      dadosAnteriores,
+      usuario: usuarioId,
+    });
+
+    if (motivoBloqueioDesfazer) {
+      throw criarErro(400, motivoBloqueioDesfazer);
+    }
 
     const { carteiraSaldo, contaId, contaSaldo } = dadosAnteriores;
 
@@ -810,20 +1061,14 @@ class HistoricoService {
       case 'edicao': {
         this._garantirDadosAnteriores(dadosAnteriores);
 
-        // antes de voltar para o estado anterior, verifica se ainda é
-        // válido (por exemplo, conta de destino não foi removida)
-        const destinoAnt = extrairDestinoSaldo(dadosAnteriores);
-        if (destinoAnt.tipo === 'conta') {
-          const contaExiste = await Conta.exists({
-            _id: destinoAnt.contaId,
-            usuario: usuarioId,
-          });
-          if (!contaExiste) {
-            throw criarErro(
-              400,
-              'Não é possível desfazer edição do salário porque a conta de destino foi removida'
-            );
-          }
+        const motivoBloqueioDesfazer = await this._obterMotivoBloqueioSalario({
+          acao,
+          dadosAnteriores,
+          usuario: usuarioId,
+        });
+
+        if (motivoBloqueioDesfazer) {
+          throw criarErro(400, motivoBloqueioDesfazer);
         }
 
         const refAnt = dadosAnteriores?.dataUltimoProcessamento
@@ -843,21 +1088,14 @@ class HistoricoService {
       case 'delecao': {
         this._garantirDadosAnteriores(dadosAnteriores);
 
-        // Se o salário tinha destino em conta, certifica de que a conta
-        // ainda exista antes de recriar o registro. Caso contrário, permitir
-        // o undo resultaria em transação órfã e em inconsistência de saldo.
-        const destino = extrairDestinoSaldo(dadosAnteriores);
-        if (destino.tipo === 'conta') {
-          const contaExiste = await Conta.exists({
-            _id: destino.contaId,
-            usuario: usuarioId,
-          });
-          if (!contaExiste) {
-            throw criarErro(
-              400,
-              'Não é possível desfazer exclusão do salário porque a conta de destino foi removida'
-            );
-          }
+        const motivoBloqueioDesfazer = await this._obterMotivoBloqueioSalario({
+          acao,
+          dadosAnteriores,
+          usuario: usuarioId,
+        });
+
+        if (motivoBloqueioDesfazer) {
+          throw criarErro(400, motivoBloqueioDesfazer);
         }
 
         await Transacao.create(dadosAnteriores);

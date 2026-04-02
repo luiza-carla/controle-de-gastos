@@ -298,6 +298,30 @@
   color: var(--text-secondary);
 }
 
+.btn-desfazer-bloqueado,
+.btn-desfazer-bloqueado:disabled,
+.btn-desfazer-bloqueado:hover,
+.btn-desfazer-bloqueado:disabled:hover {
+  background: var(--gray-300);
+  color: var(--gray-600);
+  border: 1px solid var(--gray-400);
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-desfazer-bloqueado i,
+.btn-desfazer-bloqueado:disabled i {
+  color: inherit;
+}
+
+.historico-bloqueio {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--alert-error-text);
+}
+
 .loading,
 .empty-state {
   text-align: center;

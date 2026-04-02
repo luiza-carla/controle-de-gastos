@@ -108,6 +108,10 @@ export function criarItemHistorico(historico) {
   const classes = `historico-item acao-${historico.acao}${
     historico.desfeito ? ' historico-desfeito' : ''
   }`;
+  const desfazerBloqueado =
+    !historico.desfeito && historico.desfazerDisponivel === false;
+  const motivoBloqueio =
+    historico.motivoBloqueioDesfazer || 'Esta ação não pode ser desfeita agora';
 
   const dataFormatada = formatarData(historico.createdAt);
   const horaFormatada = formatarHora(historico.createdAt);
@@ -115,11 +119,26 @@ export function criarItemHistorico(historico) {
   const entidadeLabel = traduzirEntidade(historico.entidade);
   const acaoLabel = traduzirAcao(historico.acao);
 
-  const btnDesfazer = !historico.desfeito
-    ? `<button class="btn btn-success" data-historico-id="${historicoId}">
+  const btnDesfazer = historico.desfeito
+    ? '<span class="badge-desfeito">Desfeito</span>'
+    : desfazerBloqueado
+      ? `<button
+         class="btn btn-success btn-desfazer-bloqueado"
+         type="button"
+         disabled
+         title="${escaparHtml(motivoBloqueio)}"
+       >
+         <i class="fa-solid fa-rotate-left"></i> Não pode desfazer
+       </button>`
+      : !historico.desfeito
+        ? `<button class="btn btn-success" data-historico-id="${historicoId}">
          <i class="fa-solid fa-rotate-left"></i> Desfazer
        </button>`
-    : '<span class="badge-desfeito">Desfeito</span>';
+        : '';
+
+  const avisoBloqueioHtml = desfazerBloqueado
+    ? `<div class="historico-bloqueio">${escaparHtml(motivoBloqueio)}</div>`
+    : '';
 
   const detalhesEdicaoHtml = gerarDetalhesEdicao(historico);
   const detalhesObjetoHtml = gerarDetalhesObjeto(historico);
@@ -134,6 +153,7 @@ export function criarItemHistorico(historico) {
           <div class="historico-meta">
             <span>${dataFormatada} às ${horaFormatada}</span>
           </div>
+          ${avisoBloqueioHtml}
         </div>
         <div class="historico-actions">
           <span class="historico-badge badge-${historico.acao}">${acaoLabel}</span>
