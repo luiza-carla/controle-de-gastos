@@ -5,8 +5,12 @@ import {
   inicializarTags,
   resetarTagsFormulario,
   createFormSubmitGuard,
+  resetFormWithMasks,
 } from '../helpers/index.js';
-import { limparCategoriaSelecionada } from '../categoria.js';
+import {
+  limparCategoriaSelecionada,
+  limparSubcategoriaSelecionada,
+} from '../categoria.js';
 import {
   abrirModalErro,
   garantirErroInline,
@@ -99,8 +103,9 @@ export function initFormDesejos(state, { onCreated }) {
     },
     resetForm() {
       resetarTagsFormulario(tags);
-      form.reset();
+      resetFormWithMasks(form);
       limparCategoriaSelecionada();
+      limparSubcategoriaSelecionada();
     },
   };
 }

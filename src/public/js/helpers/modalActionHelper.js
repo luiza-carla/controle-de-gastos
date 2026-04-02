@@ -2,6 +2,7 @@ import {
   criarMensagemOperacao,
   mostrarNotificacao,
   tratarErro,
+  extrairMensagemErroInline,
 } from '../notification.js';
 import { mostrarErroInline } from '../modalEditar.js';
 
@@ -40,6 +41,12 @@ export async function executarAcaoModal({
 
     return resultado;
   } catch (err) {
+    const mensagemInline = extrairMensagemErroInline(err);
+    if (mensagemInline) {
+      mostrarErroInline(mensagemInline);
+      return;
+    }
+
     const msg = tratarErro(err, mensagemErro);
     mostrarErroInline(msg);
   }

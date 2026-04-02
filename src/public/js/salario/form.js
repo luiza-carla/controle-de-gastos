@@ -14,6 +14,7 @@ import {
   createFormSubmitGuard,
   formatarValor,
   $,
+  resetFormWithMasks,
 } from '../helpers/index.js';
 import { listarContas } from '../conta.js';
 import { criarSalario as serviceCriarSalario } from './service.js';
@@ -40,6 +41,12 @@ function popularSelectDiasRecebimento(
     }
     select.appendChild(option);
   }
+}
+
+function resetarFormularioSalario(form) {
+  resetFormWithMasks(form);
+  popularSelectDiasRecebimento();
+  popularSelectDestinoSalario('contaSalario');
 }
 
 async function popularSelectDestinoSalario(selectId = 'contaSalario') {
@@ -124,14 +131,14 @@ export function criarSalario(formId, callback) {
 
         if (acao === 'salvar-adicionar-outro') {
           notificarOperacao(notificacaoSalario);
-          form.reset();
+          resetarFormularioSalario(form);
         } else if (estaNaTelaDeAdicao) {
           agendarNotificacaoOperacao(notificacaoSalario);
           if (callback) await callback();
           window.location.href = '/html/salario.html';
         } else {
           notificarOperacao(notificacaoSalario);
-          form.reset();
+          resetarFormularioSalario(form);
           if (callback) await callback();
         }
       } catch (erro) {

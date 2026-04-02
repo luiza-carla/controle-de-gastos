@@ -17,6 +17,9 @@ const RADICAIS_OPERACAO = {
 };
 
 const CHAVE_NOTIFICACAO_PENDENTE = 'notificacaoPendente';
+const MENSAGENS_ERRO_INLINE_CONHECIDAS = new Set([
+  'Saldo insuficiente na carteira',
+]);
 
 //Erro que pode ser mostrado ao usuário
 export function erroUsuario(mensagem) {
@@ -29,6 +32,17 @@ function isErroUsuario(error) {
   return !!(error && error.__mostrarAoUsuario);
 }
 
+export function extrairMensagemErroInline(error) {
+  if (isErroUsuario(error)) {
+    return error.message || null;
+  }
+
+  const mensagem = error?.message?.trim();
+  if (!mensagem) return null;
+
+  return MENSAGENS_ERRO_INLINE_CONHECIDAS.has(mensagem) ? mensagem : null;
+}
+
 /**
  * Trata um erro: se for um erro destinado ao usuário, exibe uma notificação.
  * Caso contrário, apenas registra no logger.
@@ -37,10 +51,9 @@ function isErroUsuario(error) {
  * @param {string} mensagemPadrao - Texto a ser usado se não houver mensagem no erro
  */
 export function tratarErro(error, mensagemPadrao = 'Ocorreu um erro') {
-  const isUsuario = isErroUsuario(error);
-  const mensagem = isUsuario
-    ? (error && error.message) || mensagemPadrao
-    : mensagemPadrao;
+  const mensagemInline = extrairMensagemErroInline(error);
+  const isUsuario = !!mensagemInline;
+  const mensagem = mensagemInline || mensagemPadrao;
 
   if (isUsuario) {
     mostrarNotificacao(mensagem, 'erro');
@@ -87,11 +100,7 @@ export function mostrarNotificacao(mensagem, tipo = 'sucesso', duracao = 3000) {
   }, duracao);
 }
 
-export function criarMensagemOperacao({
-  objeto,
-  acao,
-  genero = 'masculino',
-}) {
+export function criarMensagemOperacao({ objeto, acao, genero = 'masculino' }) {
   const generoNormalizado = genero === 'feminino' ? 'feminino' : 'masculino';
   const radical = RADICAIS_OPERACAO[acao] || RADICAIS_OPERACAO.atualizacao;
   const sufixo = generoNormalizado === 'feminino' ? 'a' : 'o';

@@ -86,3 +86,19 @@ export function createFormSubmitGuard(
     };
   };
 }
+
+export function resetFormWithMasks(form) {
+  if (!form) return;
+
+  form.reset();
+
+  const currencyInputs = form.querySelectorAll('input[data-moeda]');
+  currencyInputs.forEach((input) => {
+    if (input._currencyMask) {
+      input._currencyMask.value = '';
+      return;
+    }
+
+    input.value = '';
+  });
+}

@@ -9,7 +9,11 @@ import {
   agendarNotificacaoOperacao,
   tratarErro,
 } from '../notification.js';
-import { parseCurrency, createFormSubmitGuard } from '../helpers/index.js';
+import {
+  parseCurrency,
+  createFormSubmitGuard,
+  resetFormWithMasks,
+} from '../helpers/index.js';
 import { createConta } from './api.js';
 import { invalidateContas } from './service.js';
 
@@ -65,7 +69,7 @@ export async function criarConta(formId, callback) {
 
         if (acao === 'salvar-adicionar-outro') {
           notificarOperacao(notificacaoConta);
-          form.reset();
+          resetFormWithMasks(form);
         } else if (window.location.pathname.includes('adicionar-conta')) {
           agendarNotificacaoOperacao(notificacaoConta);
           window.location.href = '/html/contas.html';

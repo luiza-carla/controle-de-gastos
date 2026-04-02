@@ -89,6 +89,7 @@ export async function initDesejos() {
 
         if (keepForm) {
           notificarOperacao(notificacaoDesejo);
+          formController?.resetForm?.();
           return;
         }
 

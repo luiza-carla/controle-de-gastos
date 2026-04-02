@@ -10,6 +10,7 @@ import {
   notificarOperacao,
   agendarNotificacaoOperacao,
   tratarErro,
+  extrairMensagemErroInline,
 } from '../notification.js';
 import {
   showElement,
@@ -20,6 +21,7 @@ import {
   resetarTagsFormulario,
   inicializarTags,
   obterSubcategoriaParaEnviar,
+  resetFormWithMasks,
 } from '../helpers/index.js';
 import { criarTransacao } from './service.js';
 import { listarTransacoes } from './render.js';
@@ -35,7 +37,7 @@ function resetarFormularioTransacao(
   parcelasContainer
 ) {
   resetarTagsFormulario(tags);
-  form.reset();
+  resetFormWithMasks(form);
   hideElement($('tipoDespesaContainer'));
   tipoDespesaSelect.value = '';
   hideElement(parcelasContainer);
@@ -180,6 +182,12 @@ export async function initTransacaoForm(formId = 'formTransacao') {
           await listarTransacoes();
         }
       } catch (erro) {
+        const mensagemInline = extrairMensagemErroInline(erro);
+        if (mensagemInline) {
+          mostrarErroInline(mensagemInline, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
+          return;
+        }
+
         const msg = tratarErro(erro, 'Erro ao criar transação');
         mostrarNotificacao(msg, 'erro');
       }

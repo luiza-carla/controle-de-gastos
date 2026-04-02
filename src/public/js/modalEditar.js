@@ -15,6 +15,21 @@ import {
 let salvarCallback = null;
 let salvarGuard = null;
 
+function rolarParaErroInline(erroEl) {
+  if (!erroEl) return;
+
+  const modalBox = erroEl.closest('.modal-box');
+  if (modalBox) {
+    modalBox.scrollTo({ top: 0, behavior: 'smooth' });
+    erroEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+
+  const top = erroEl.getBoundingClientRect().top + window.scrollY - 16;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  erroEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function definirFooterModal(tipo) {
   hideElement($('modalFooterEditar'));
   hideElement($('modalFooterConfirmar'));
@@ -85,7 +100,10 @@ export function mostrarErroInline(
 ) {
   const erroEl = $(erroId);
   setHTMLById(mensagemId, mensagem);
-  if (erroEl) addClass(erroEl, 'ativo');
+  if (erroEl) {
+    addClass(erroEl, 'ativo');
+    requestAnimationFrame(() => rolarParaErroInline(erroEl));
+  }
 }
 
 // Limpa erro inline no modal (padrao) ou em alvo customizado
