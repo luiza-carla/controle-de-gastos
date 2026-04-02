@@ -1,4 +1,4 @@
-import { capitalizar, formatarMoeda } from '../helpers/index.js';
+import { capitalizar, formatarMoeda, gerarTags } from '../helpers/index.js';
 import { criarBadgesCategoriaSubcategoriaSeparados } from '../helpers/index.js';
 
 function renderCampo(label, valor, escape = true) {
@@ -23,11 +23,10 @@ function renderCategoriaSubcategoria(categoria, subcategoria) {
 }
 
 function renderTags(tags = []) {
-  if (!Array.isArray(tags) || tags.length === 0) return '';
+  const tagsNormalizadas = normalizarTags(tags);
+  if (!tagsNormalizadas.length) return '';
 
-  const badges = tags
-    .map((tag) => `<span class="tag-badge">${String(tag)}</span>`)
-    .join(' ');
+  const badges = gerarTags(tagsNormalizadas);
 
   return `<div class="objeto-campo"><strong>Tags:</strong> ${badges}</div>`;
 }
@@ -35,6 +34,51 @@ function renderTags(tags = []) {
 function withField(rendered, label, valor, escape = true) {
   if (valor === undefined || valor === null || valor === '') return rendered;
   return `${rendered}${renderCampo(label, valor, escape)}`;
+}
+
+function normalizarTags(tags) {
+  if (Array.isArray(tags)) {
+    return tags.map((tag) => String(tag).trim()).filter(Boolean);
+  }
+
+  if (typeof tags === 'string') {
+    return tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function obterNomeContaOuDestino({ conta, fonteSaldo }) {
+  if (fonteSaldo === 'carteira') {
+    return 'Carteira';
+  }
+
+  if (conta === 'carteira') {
+    return 'Carteira';
+  }
+
+  if (conta && typeof conta === 'object' && conta.nome) {
+    return conta.nome;
+  }
+
+  return '';
+}
+
+function formatarFrequencia(valor) {
+  const labels = {
+    mensal: 'Mensal',
+    semanal: 'Semanal',
+    diario: 'Diária',
+    anual: 'Anual',
+    hora: 'Por hora',
+    outra: 'Outra',
+    nenhuma: 'Nenhuma',
+  };
+
+  return labels[valor] || (valor ? capitalizar(valor) : '');
 }
 
 export function formatarObjetoTransacao(transacao) {
@@ -58,26 +102,111 @@ export function formatarObjetoTransacao(transacao) {
     transacao.subcategoria
   );
 
-  const contaNome =
-    transacao.fonteSaldo === 'carteira'
-      ? 'Carteira'
-      : transacao.conta && transacao.conta.nome
-        ? transacao.conta.nome
-        : '';
+  const contaNome = obterNomeContaOuDestino(transacao);
 
   if (contaNome) {
     html = withField(html, 'Conta', contaNome);
+  }
+
+  if (transacao.tipoDespesa) {
+    html = withField(
+      html,
+      'Tipo de despesa',
+      capitalizar(transacao.tipoDespesa),
+      false
+    );
+  }
+
+  if (transacao.recorrencia && transacao.recorrencia !== 'nenhuma') {
+    html = withField(
+      html,
+      'Recorrência',
+      formatarFrequencia(transacao.recorrencia),
+      false
+    );
+  }
+
+  if (transacao.frequencia) {
+    html = withField(
+      html,
+      'Frequência',
+      formatarFrequencia(transacao.frequencia),
+      false
+    );
+  }
+
+  if (transacao.diaRecebimento) {
+    html = withField(
+      html,
+      'Dia de recebimento',
+      `Todo dia ${transacao.diaRecebimento}`
+    );
+  }
+
+  if (transacao.parcelamento?.totalParcelas > 1) {
+    html = withField(
+      html,
+      'Parcelamento',
+      `${transacao.parcelamento.parcelaAtual || 1}/${transacao.parcelamento.totalParcelas}`
+    );
   }
 
   if (transacao.status) {
     html = withField(html, 'Status', capitalizar(transacao.status), false);
   }
 
-  if (transacao.data) {
-    html = withField(html, 'Data', transacao.data ? transacao.data : '', false);
+  if (typeof transacao.ativa === 'boolean') {
+    html = withField(html, 'Ativa', transacao.ativa ? 'Sim' : 'Não', false);
   }
 
   html += renderTags(transacao.tags);
+
+  return html || '<div class="objeto-campo">Sem detalhes para exibir</div>';
+}
+
+export function formatarObjetoSalario(salario) {
+  if (!salario) {
+    return '<div class="objeto-campo">Objeto não disponível</div>';
+  }
+
+  let html = '';
+  html = withField(html, 'Título', salario.titulo || 'Salário');
+
+  if (salario.valor !== undefined && salario.valor !== null) {
+    html = withField(html, 'Valor', formatarMoeda(salario.valor), false);
+  }
+
+  const destino = obterNomeContaOuDestino(salario);
+  if (destino) {
+    html = withField(html, 'Destino', destino);
+  }
+
+  if (salario.frequencia) {
+    html = withField(
+      html,
+      'Frequência',
+      formatarFrequencia(salario.frequencia),
+      false
+    );
+  }
+
+  if (salario.diaRecebimento) {
+    html = withField(
+      html,
+      'Dia de recebimento',
+      `Todo dia ${salario.diaRecebimento}`
+    );
+  }
+
+  if (salario.status) {
+    html = withField(html, 'Status', capitalizar(salario.status), false);
+  }
+
+  if (typeof salario.ativa === 'boolean') {
+    html = withField(html, 'Ativo', salario.ativa ? 'Sim' : 'Não', false);
+  }
+
+  html += renderTags(salario.tags);
 
   return html || '<div class="objeto-campo">Sem detalhes para exibir</div>';
 }
@@ -90,9 +219,11 @@ export function formatarObjetoConta(conta) {
   const tipo =
     conta.tipo === 'corrente'
       ? 'Corrente'
-      : conta.tipo === 'poupanca'
-        ? 'Poupança'
-        : 'Outro';
+      : conta.tipo === 'credito'
+        ? 'Crédito'
+        : conta.tipo === 'investimento'
+          ? 'Investimento'
+          : 'Outro';
 
   return `
     ${renderCampo('Nome', conta.nome || '')}
@@ -110,27 +241,22 @@ export function formatarObjetoListaDesejo(item) {
   let html = '';
   html = withField(html, 'Título', item.titulo);
 
-  if (item.preco !== undefined && item.preco !== null) {
-    html = withField(html, 'Preço', formatarMoeda(item.preco), false);
+  if (item.valor !== undefined && item.valor !== null) {
+    html = withField(html, 'Valor', formatarMoeda(item.valor), false);
   }
 
   html += renderCategoriaSubcategoria(item.categoria, item.subcategoria);
 
-  if (
-    item.valorEconomizado !== undefined &&
-    item.valorEconomizado !== null &&
-    item.preco
-  ) {
-    const progresso = ((item.valorEconomizado / item.preco) * 100).toFixed(1);
+  if (item.tipoDespesa) {
     html = withField(
       html,
-      'Economizado',
-      `${formatarMoeda(item.valorEconomizado)} (${progresso}%)`,
+      'Tipo de despesa',
+      capitalizar(item.tipoDespesa),
       false
     );
   }
 
-  html = withField(html, 'Descrição', item.descricao);
+  html += renderTags(item.tags);
 
   return html || '<div class="objeto-campo">Sem detalhes para exibir</div>';
 }

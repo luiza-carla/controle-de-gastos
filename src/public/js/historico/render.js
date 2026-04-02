@@ -13,6 +13,7 @@ import {
   formatarObjetoCarteira,
   formatarObjetoConta,
   formatarObjetoListaDesejo,
+  formatarObjetoSalario,
   formatarObjetoTransacao,
 } from './formatters.js';
 
@@ -20,16 +21,8 @@ const FORMATADORES_OBJETO = {
   transacao: formatarObjetoTransacao,
   conta: formatarObjetoConta,
   listaDesejo: formatarObjetoListaDesejo,
-  salario: formatarObjetoTransacao,
+  salario: formatarObjetoSalario,
   carteira: formatarObjetoCarteira,
-};
-
-const TITULO_POR_ACAO_OBJETO = {
-  criacao: 'Objeto criado',
-  edicao: 'Objeto editado',
-  delecao: 'Objeto deletado',
-  realizacao: 'Objeto realizado',
-  transferencia: 'Transferência',
 };
 
 const FONTE_DADOS_PRIORITARIA_POR_ACAO = {
@@ -172,7 +165,11 @@ export function gerarDetalhesEdicao(historico) {
 
   const alteracoes = calcularAlteracoes(
     historico.dadosAnteriores,
-    historico.dadosNovos
+    historico.dadosNovos,
+    {
+      entidade: historico.entidade,
+      acao: historico.acao,
+    }
   );
 
   const quantidadeAlteracoes = alteracoes.length;
@@ -220,20 +217,82 @@ export function gerarDetalhesEdicao(historico) {
 }
 
 export function gerarDetalhesObjeto(historico) {
-  const { acao, entidade, objeto } = historico;
+  const { entidade } = historico;
+  const secoes = obterSecoesObjetoHistorico(historico);
+
+  if (!secoes.length) return '';
+
+  const secoesHtml = secoes
+    .map(({ titulo, objeto }) =>
+      gerarDetalhesObjetoHtml({
+        objeto,
+        entidade,
+        titulo,
+      })
+    )
+    .join('');
+
+  return `<div class="historico-objetos-grid">${secoesHtml}</div>`;
+}
+
+function obterSecoesObjetoHistorico(historico) {
+  const { acao, entidade, objeto, dadosAnteriores, dadosNovos } = historico;
+
+  if (acao === 'edicao') {
+    const secoesEdicao = [
+      {
+        titulo: obterTituloDetalheHistorico('antesEdicao', entidade),
+        objeto: dadosAnteriores || objeto || dadosNovos || null,
+      },
+    ].filter(({ objeto: objetoSecao }) => Boolean(objetoSecao));
+
+    if (secoesEdicao.length) {
+      return secoesEdicao;
+    }
+  }
+
   const fontePrioritaria = FONTE_DADOS_PRIORITARIA_POR_ACAO[acao];
   const snapshot = fontePrioritaria ? historico[fontePrioritaria] : null;
   const objetoParaExibir = snapshot || objeto;
 
-  if (!objetoParaExibir) return '';
+  if (!objetoParaExibir) {
+    return [];
+  }
 
-  const titulo = TITULO_POR_ACAO_OBJETO[acao] || 'Objeto atual';
+  return [
+    {
+      titulo: obterTituloDetalheHistorico(acao, entidade),
+      objeto: objetoParaExibir,
+    },
+  ];
+}
 
-  return gerarDetalhesObjetoHtml({
-    objeto: objetoParaExibir,
-    entidade,
-    titulo,
-  });
+function obterTituloDetalheHistorico(tipoTitulo, entidade) {
+  const entidadeLabel = traduzirEntidade(entidade).toLowerCase();
+  const sufixoGenero = obterSufixoGeneroEntidade(entidade);
+
+  const titulos = {
+    criacao: `${entidadeLabel} criad${sufixoGenero}`,
+    edicao: `${entidadeLabel} editad${sufixoGenero}`,
+    delecao: `${entidadeLabel} deletad${sufixoGenero}`,
+    realizacao: `${entidadeLabel} realizad${sufixoGenero}`,
+    transferencia: 'Transferência',
+    antesEdicao: `${entidadeLabel} editad${sufixoGenero}`,
+  };
+
+  return titulos[tipoTitulo] || entidadeLabel;
+}
+
+function obterSufixoGeneroEntidade(entidade) {
+  const sufixos = {
+    transacao: 'a',
+    conta: 'a',
+    carteira: 'a',
+    salario: 'o',
+    listaDesejo: 'a',
+  };
+
+  return sufixos[entidade] || 'o';
 }
 
 function gerarDetalhesObjetoHtml({ objeto, entidade, titulo }) {

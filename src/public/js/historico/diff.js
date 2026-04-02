@@ -1,13 +1,22 @@
 import { formatarData, formatarMoeda } from '../helpers/index.js';
 
 // Campos que não são relevantes para o diff exibido na UI.
-const CAMPOS_OCULTOS = new Set([
+const CAMPOS_OCULTOS_GERAIS = new Set([
   '_id',
   '__v',
   'createdAt',
   'updatedAt',
   'usuario',
+  'data',
+  'dataUltimoProcessamento',
+  'fonteSaldo',
 ]);
+
+const CAMPOS_OCULTOS_POR_CONTEXTO = {
+  salario: {
+    edicao: new Set(['status', 'frequencia']),
+  },
+};
 
 const LABEL_CAMPO_ALTERACAO = {
   titulo: 'Título',
@@ -28,7 +37,11 @@ const LABEL_CAMPO_ALTERACAO = {
   nome: 'Nome',
 };
 
-export function calcularAlteracoes(dadosAnteriores = {}, dadosNovos = {}) {
+export function calcularAlteracoes(
+  dadosAnteriores = {},
+  dadosNovos = {},
+  contexto = {}
+) {
   const antes = achatarObjeto(dadosAnteriores);
   const depois = achatarObjeto(dadosNovos);
 
@@ -36,8 +49,7 @@ export function calcularAlteracoes(dadosAnteriores = {}, dadosNovos = {}) {
   const alteracoes = [];
 
   for (const chave of chaves) {
-    const ultimaParte = chave.split('.').pop();
-    if (CAMPOS_OCULTOS.has(ultimaParte)) continue;
+    if (deveOcultarCampo(chave, contexto)) continue;
 
     const valorAntes = normalizarValorCampo(
       chave,
@@ -62,6 +74,25 @@ export function calcularAlteracoes(dadosAnteriores = {}, dadosNovos = {}) {
   }
 
   return alteracoes;
+}
+
+function deveOcultarCampo(chave, contexto = {}) {
+  const ultimaParte = chave.split('.').pop();
+
+  if (CAMPOS_OCULTOS_GERAIS.has(chave) || CAMPOS_OCULTOS_GERAIS.has(ultimaParte)) {
+    return true;
+  }
+
+  const entidade = contexto.entidade;
+  const acao = contexto.acao;
+  const ocultosPorAcao = entidade
+    ? CAMPOS_OCULTOS_POR_CONTEXTO[entidade]?.[acao]
+    : null;
+
+  return Boolean(
+    ocultosPorAcao &&
+      (ocultosPorAcao.has(chave) || ocultosPorAcao.has(ultimaParte))
+  );
 }
 
 function nomeCampo(chave) {
@@ -125,6 +156,9 @@ function normalizarValorCampo(chave, valor, snapshotAtual, snapshotOutro) {
     return valor;
   }
 
+  const destinoCarteira = extrairDestinoCarteira(chave, valor, snapshotAtual);
+  if (destinoCarteira) return destinoCarteira;
+
   const nomeDireto = extrairNomeLegivel(valor);
   if (nomeDireto) return nomeDireto;
 
@@ -140,6 +174,24 @@ function normalizarValorCampo(chave, valor, snapshotAtual, snapshotOutro) {
   if (nomeOutroSnapshot) return nomeOutroSnapshot;
 
   return valor;
+}
+
+function extrairDestinoCarteira(chave, valor, snapshotAtual) {
+  const ultimaParte = chave.split('.').pop();
+
+  if (ultimaParte !== 'conta') {
+    return null;
+  }
+
+  if (valor === 'carteira' || snapshotAtual?.conta === 'carteira') {
+    return 'Carteira';
+  }
+
+  if (snapshotAtual?.fonteSaldo === 'carteira') {
+    return 'Carteira';
+  }
+
+  return null;
 }
 
 function ehCampoReferencia(chave) {
@@ -226,10 +278,19 @@ function achatarObjeto(obj, prefixo = '') {
 }
 
 function saoValoresIguais(a, b) {
+  if (valorAusente(a) && valorAusente(b)) {
+    return true;
+  }
+
   return areDeepEqual(normalizarParaComparacao(a), normalizarParaComparacao(b));
 }
 
+function valorAusente(valor) {
+  return valor === undefined || valor === null || valor === '';
+}
+
 function normalizarParaComparacao(valor) {
+  if (valorAusente(valor)) return null;
   if (valor instanceof Date) return valor.toISOString();
   if (Array.isArray(valor)) return valor.map(normalizarParaComparacao);
   if (valor && typeof valor === 'object') {
