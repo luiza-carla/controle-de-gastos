@@ -4,18 +4,12 @@ const ListaDesejoController = require('../controllers/ListaDesejoController');
 const autenticacao = require('../middlewares/autentication');
 const asyncHandler = require('../middlewares/asyncHandler');
 
-router.post('/', autenticacao, asyncHandler(ListaDesejoController.criar));
-router.get('/', autenticacao, asyncHandler(ListaDesejoController.listar));
-router.post(
-  '/:id/realizar',
-  autenticacao,
-  asyncHandler(ListaDesejoController.realizar)
-);
-router.put('/:id', autenticacao, asyncHandler(ListaDesejoController.atualizar));
-router.delete(
-  '/:id',
-  autenticacao,
-  asyncHandler(ListaDesejoController.deletar)
-);
+const listaDesejoHandler = asyncHandler.controller(ListaDesejoController);
+
+router.post('/', autenticacao, listaDesejoHandler('criar'));
+router.get('/', autenticacao, listaDesejoHandler('listar'));
+router.post('/:id/realizar', autenticacao, listaDesejoHandler('realizar'));
+router.put('/:id', autenticacao, listaDesejoHandler('atualizar'));
+router.delete('/:id', autenticacao, listaDesejoHandler('deletar'));
 
 module.exports = router;

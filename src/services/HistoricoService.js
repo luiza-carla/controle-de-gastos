@@ -24,6 +24,130 @@ const FONTE_DADOS_PRIORITARIA_POR_ACAO = {
 
 // helpers de population reutilizados entre módulos
 const { transacao: populateTransacao } = require('../utils/populateHelpers');
+
+function criarResolvedorHistoricoPorOperacao(buscarObjetoRelacionado) {
+  const cacheObjetos = new Map();
+  const cacheCategorias = new Map();
+  const cacheSubcategorias = new Map();
+
+  const isObjectIdString = (value) =>
+    typeof value === 'string' && /^[a-fA-F0-9]{24}$/.test(value);
+
+  function obterChaveCache(valor) {
+    return valor && valor.toString ? valor.toString() : String(valor);
+  }
+
+  async function carregarCategoria(categoriaId) {
+    const chaveCache = obterChaveCache(categoriaId);
+
+    if (!cacheCategorias.has(chaveCache)) {
+      const Categoria = require('../models/Categoria');
+      cacheCategorias.set(
+        chaveCache,
+        Categoria.findById(categoriaId)
+          .select('nome cor tipo')
+          .catch(() => null)
+      );
+    }
+
+    return cacheCategorias.get(chaveCache);
+  }
+
+  async function carregarSubcategoria(subcategoriaId) {
+    const chaveCache = obterChaveCache(subcategoriaId);
+
+    if (!cacheSubcategorias.has(chaveCache)) {
+      const Subcategoria = require('../models/Subcategoria');
+      cacheSubcategorias.set(
+        chaveCache,
+        Subcategoria.findById(subcategoriaId)
+          .select('nome')
+          .catch(() => null)
+      );
+    }
+
+    return cacheSubcategorias.get(chaveCache);
+  }
+
+  async function popularIds(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+
+    const categoriaPopulada =
+      obj.categoria && typeof obj.categoria === 'object' && obj.categoria.nome;
+    const categoriaEhId =
+      obj.categoria &&
+      (isObjectIdString(obj.categoria) || obj.categoria.toString);
+
+    if (obj.categoria && !categoriaPopulada && categoriaEhId) {
+      const categoria = await carregarCategoria(obj.categoria);
+      if (categoria) obj.categoria = categoria;
+    }
+
+    const subcategoriaPopulada =
+      obj.subcategoria &&
+      typeof obj.subcategoria === 'object' &&
+      obj.subcategoria.nome;
+    const subcategoriaEhId =
+      obj.subcategoria &&
+      (isObjectIdString(obj.subcategoria) || obj.subcategoria.toString);
+
+    if (obj.subcategoria && !subcategoriaPopulada && subcategoriaEhId) {
+      const subcategoria = await carregarSubcategoria(obj.subcategoria);
+      if (subcategoria) obj.subcategoria = subcategoria;
+    }
+
+    return obj;
+  }
+
+  async function obterObjetoRelacionado(historico) {
+    const chaveCache = `${historico.entidade}:${historico.entidadeId}`;
+
+    if (!cacheObjetos.has(chaveCache)) {
+      cacheObjetos.set(
+        chaveCache,
+        (async () => {
+          let objetoRelacionado;
+          let snapshotObj = null;
+
+          const fontePrioritaria =
+            FONTE_DADOS_PRIORITARIA_POR_ACAO[historico.acao];
+          if (
+            fontePrioritaria &&
+            historico[fontePrioritaria] &&
+            Object.keys(historico[fontePrioritaria]).length
+          ) {
+            snapshotObj = { ...historico[fontePrioritaria] };
+          }
+
+          if (
+            historico.acao === 'delecao' &&
+            historico.dadosAnteriores &&
+            Object.keys(historico.dadosAnteriores).length
+          ) {
+            objetoRelacionado = { ...historico.dadosAnteriores };
+          } else if (snapshotObj) {
+            objetoRelacionado = snapshotObj;
+          } else {
+            objetoRelacionado = await buscarObjetoRelacionado(
+              historico.entidade,
+              historico.entidadeId
+            );
+          }
+
+          return popularIds(objetoRelacionado);
+        })()
+      );
+    }
+
+    return cacheObjetos.get(chaveCache);
+  }
+
+  return {
+    obterObjetoRelacionado,
+    popularIds,
+  };
+}
+
 class HistoricoService {
   static _anexarDescricaoEObjeto(historico, objeto = null) {
     return {
@@ -187,64 +311,13 @@ class HistoricoService {
       .skip(skip)
       .lean();
 
-    // Evita consultas repetidas quando varios historicos apontam para o mesmo objeto.
-    const cacheObjetos = new Map();
-
-    // helper interno para transformar IDs em objetos legíveis
-    async function popularIds(obj) {
-      if (!obj || typeof obj !== 'object') return obj;
-
-      // Função utilitária para identificar strings que parecem ObjectId.
-      const isObjectIdString = (value) =>
-        typeof value === 'string' && /^[a-fA-F0-9]{24}$/.test(value);
-
-      const categoriaPopulada =
-        obj.categoria &&
-        typeof obj.categoria === 'object' &&
-        obj.categoria.nome;
-      const categoriaEhId =
-        obj.categoria &&
-        (isObjectIdString(obj.categoria) || obj.categoria.toString);
-
-      if (obj.categoria && !categoriaPopulada && categoriaEhId) {
-        try {
-          const Categoria = require('../models/Categoria');
-          const cat = await Categoria.findById(obj.categoria).select(
-            'nome cor tipo'
-          );
-          if (cat) obj.categoria = cat;
-        } catch {
-          // não crítico
-        }
-      }
-
-      const subcategoriaPopulada =
-        obj.subcategoria &&
-        typeof obj.subcategoria === 'object' &&
-        obj.subcategoria.nome;
-      const subcategoriaEhId =
-        obj.subcategoria &&
-        (isObjectIdString(obj.subcategoria) || obj.subcategoria.toString);
-
-      if (obj.subcategoria && !subcategoriaPopulada && subcategoriaEhId) {
-        try {
-          const Subcategoria = require('../models/Subcategoria');
-          const sub = await Subcategoria.findById(obj.subcategoria).select(
-            'nome'
-          );
-          if (sub) obj.subcategoria = sub;
-        } catch {
-          // não crítico
-        }
-      }
-
-      return obj;
-    }
+    const { popularIds, obterObjetoRelacionado } =
+      criarResolvedorHistoricoPorOperacao((entidade, entidadeId) =>
+        this._buscarObjetoRelacionado(entidade, entidadeId)
+      );
 
     const historicosComObjetos = await Promise.all(
       historicos.map(async (historico) => {
-        const chaveCache = `${historico.entidade}:${historico.entidadeId}`;
-
         if (historico.dadosNovos) {
           await popularIds(historico.dadosNovos);
         }
@@ -252,43 +325,9 @@ class HistoricoService {
           await popularIds(historico.dadosAnteriores);
         }
 
-        if (!cacheObjetos.has(chaveCache)) {
-          let objetoRelacionado;
-          let snapshotObj = null;
-
-          const fontePrioritaria =
-            FONTE_DADOS_PRIORITARIA_POR_ACAO[historico.acao];
-          if (
-            fontePrioritaria &&
-            historico[fontePrioritaria] &&
-            Object.keys(historico[fontePrioritaria]).length
-          ) {
-            snapshotObj = { ...historico[fontePrioritaria] };
-          }
-
-          if (
-            historico.acao === 'delecao' &&
-            historico.dadosAnteriores &&
-            Object.keys(historico.dadosAnteriores).length
-          ) {
-            objetoRelacionado = { ...historico.dadosAnteriores };
-          } else if (snapshotObj) {
-            objetoRelacionado = snapshotObj;
-          } else {
-            objetoRelacionado = await this._buscarObjetoRelacionado(
-              historico.entidade,
-              historico.entidadeId
-            );
-          }
-
-          objetoRelacionado = await popularIds(objetoRelacionado);
-
-          cacheObjetos.set(chaveCache, objetoRelacionado);
-        }
-
         return this._anexarDescricaoEObjeto(
           historico,
-          cacheObjetos.get(chaveCache)
+          await obterObjetoRelacionado(historico)
         );
       })
     );

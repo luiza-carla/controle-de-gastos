@@ -1,4 +1,5 @@
 import {
+  criarColecaoFiltrada,
   criarPaginacao,
   filtrarPorCategoria,
   filtrarPorTexto,
@@ -22,7 +23,33 @@ export function createDesejosState({ onPageChange }) {
         if (onPageChange) onPageChange();
       },
     }),
+  };
 
+  const colecao = criarColecaoFiltrada({
+    getItens: () => state.itens,
+    getParamsPaginacao: () => state.pagination.getParams(),
+    aplicarFiltros: (itens) => {
+      if (state.ordenarPor === 'nome') {
+        itens.sort((a, b) =>
+          (a.titulo || '').localeCompare(b.titulo || '', 'pt-BR', {
+            numeric: true,
+          })
+        );
+      } else {
+        itens.sort((a, b) => {
+          const dataA = new Date(a.createdAt || 0);
+          const dataB = new Date(b.createdAt || 0);
+          return dataB - dataA;
+        });
+      }
+
+      const porCategoria = filtrarPorCategoria(itens, state.filtroCategoriaId);
+      return filtrarPorTexto(porCategoria, state.filtroTexto);
+    },
+    calcularValorTotal: (item) => Number(item.valor) || 0,
+  });
+
+  Object.assign(state, {
     setItens(itens = []) {
       this.itens = itens;
     },
@@ -48,43 +75,21 @@ export function createDesejosState({ onPageChange }) {
     },
 
     getFilteredItems() {
-      const itens = [...this.itens];
-
-      if (this.ordenarPor === 'nome') {
-        itens.sort((a, b) =>
-          (a.titulo || '').localeCompare(b.titulo || '', 'pt-BR', {
-            numeric: true,
-          })
-        );
-      } else {
-        itens.sort((a, b) => {
-          const dataA = new Date(a.createdAt || 0);
-          const dataB = new Date(b.createdAt || 0);
-          return dataB - dataA;
-        });
-      }
-
-      const porCategoria = filtrarPorCategoria(itens, this.filtroCategoriaId);
-      return filtrarPorTexto(porCategoria, this.filtroTexto);
+      return colecao.getFilteredItems();
     },
 
     getPageItems() {
-      const itens = this.getFilteredItems();
-      const { skip, limit } = this.pagination.getParams();
-      return itens.slice(skip, skip + limit);
+      return colecao.getPageItems();
     },
 
     getTotalItems() {
-      return this.getFilteredItems().length;
+      return colecao.getTotalItems();
     },
 
     getTotalValor() {
-      return this.getFilteredItems().reduce(
-        (acc, item) => acc + (Number(item.valor) || 0),
-        0
-      );
+      return colecao.getTotalValor();
     },
-  };
+  });
 
   return state;
 }

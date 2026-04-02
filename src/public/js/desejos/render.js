@@ -106,6 +106,70 @@ export function buildDesejoCard(desejo) {
   return card;
 }
 
+export function criarControladorListaDesejos({
+  state,
+  onAction,
+  containerId = 'listaDesejos',
+  totalId = 'totalDesejos',
+} = {}) {
+  let handlerAtual = null;
+
+  function obterContainer() {
+    return document.getElementById(containerId);
+  }
+
+  function removerHandlerAnterior(container) {
+    if (container && handlerAtual) {
+      container.removeEventListener('click', handlerAtual);
+    }
+  }
+
+  function registrarHandler(container) {
+    removerHandlerAnterior(container);
+
+    handlerAtual = (event) => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+
+      const action = button.dataset.action;
+      const id = button.dataset.id;
+      if (!action || !id) return;
+
+      onAction?.({ action, id });
+    };
+
+    container.addEventListener('click', handlerAtual);
+  }
+
+  function init() {
+    const container = obterContainer();
+    if (!container) return;
+
+    registrarHandler(container);
+  }
+
+  function render() {
+    const container = obterContainer();
+    if (!container || !state) return;
+
+    const itens = state.getPageItems();
+    const total = state.getTotalItems();
+
+    clearElement(container);
+    itens.forEach((item) => {
+      container.appendChild(buildDesejoCard(item));
+    });
+
+    state.pagination.setTotal(total);
+    setTextById(totalId, `R$ ${formatarValor(state.getTotalValor())}`);
+  }
+
+  return {
+    init,
+    render,
+  };
+}
+
 export function renderListaDesejos({ state, container, onAction }) {
   if (!container) return;
 

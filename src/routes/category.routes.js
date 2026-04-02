@@ -5,12 +5,15 @@ const SubcategoriaController = require('../controllers/SubcategoriaController');
 const autenticacao = require('../middlewares/autentication');
 const asyncHandler = require('../middlewares/asyncHandler');
 
-router.get('/', autenticacao, asyncHandler(CategoriaController.listar));
+const categoriaHandler = asyncHandler.controller(CategoriaController);
+const subcategoriaHandler = asyncHandler.controller(SubcategoriaController);
+
+router.get('/', autenticacao, categoriaHandler('listar'));
 
 router.get(
   '/:id/subcategorias',
   autenticacao,
-  asyncHandler(SubcategoriaController.listarPorCategoria)
+  subcategoriaHandler('listarPorCategoria')
 );
 
 module.exports = router;

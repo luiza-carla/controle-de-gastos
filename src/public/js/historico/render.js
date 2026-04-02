@@ -38,25 +38,69 @@ const FONTE_DADOS_PRIORITARIA_POR_ACAO = {
   delecao: 'dadosAnteriores',
 };
 
-export function renderHistoricoLista(historicos = []) {
-  const lista = document.getElementById('historico-lista');
-  const emptyState = document.getElementById('empty-state');
+export function criarControladorHistorico({
+  containerId = 'historico-lista',
+  emptyStateId = 'empty-state',
+  onDesfazer,
+  onAlternarAlteracoes = alternarDetalhesAlteracoes,
+} = {}) {
+  let inicializado = false;
 
-  if (!lista) return;
-
-  if (!Array.isArray(historicos) || historicos.length === 0) {
-    setHTMLById('historico-lista', '');
-    hideElement(lista);
-    showElement(emptyState);
-    return;
+  function obterElementos() {
+    return {
+      lista: document.getElementById(containerId),
+      emptyState: document.getElementById(emptyStateId),
+    };
   }
 
-  setHTMLById(
-    'historico-lista',
-    criarCardsHTML(historicos, criarItemHistorico)
-  );
-  showElement(lista);
-  hideElement(emptyState);
+  async function aoClicarNaLista(event) {
+    const toggleBtn = event.target.closest('.alteracoes-toggle');
+    if (toggleBtn) {
+      onAlternarAlteracoes(toggleBtn);
+      return;
+    }
+
+    const btn = event.target.closest('button[data-historico-id]');
+    if (btn && typeof onDesfazer === 'function') {
+      await onDesfazer(btn.dataset.historicoId);
+    }
+  }
+
+  function init() {
+    if (inicializado) return;
+
+    const { lista } = obterElementos();
+    if (!lista) return;
+
+    lista.addEventListener('click', aoClicarNaLista);
+    inicializado = true;
+  }
+
+  function render(historicos = []) {
+    const { lista, emptyState } = obterElementos();
+
+    if (!lista) return;
+
+    if (!Array.isArray(historicos) || historicos.length === 0) {
+      setHTMLById(containerId, '');
+      hideElement(lista);
+      showElement(emptyState);
+      return;
+    }
+
+    setHTMLById(containerId, criarCardsHTML(historicos, criarItemHistorico));
+    showElement(lista);
+    hideElement(emptyState);
+  }
+
+  return {
+    init,
+    render,
+  };
+}
+
+export function renderHistoricoLista(historicos = []) {
+  return criarControladorHistorico().render(historicos);
 }
 
 export function criarItemHistorico(historico) {

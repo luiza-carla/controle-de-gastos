@@ -1,6 +1,6 @@
 import { desejosService } from './api.js';
 import { createDesejosState } from './state.js';
-import { renderListaDesejos } from './render.js';
+import { criarControladorListaDesejos } from './render.js';
 import {
   abrirModalEditarDesejoComAcoes,
   abrirModalRealizarDesejoComAcoes,
@@ -12,16 +12,13 @@ import { mostrarNotificacao, tratarErro } from '../notification.js';
 import { $ } from '../helpers/index.js';
 
 const state = createDesejosState({ onPageChange: renderPaginaDesejos });
+const controladorListaDesejos = criarControladorListaDesejos({
+  state,
+  onAction: handleCardAction,
+});
 
 function renderPaginaDesejos() {
-  const container = $('listaDesejos');
-  if (!container) return;
-
-  renderListaDesejos({
-    container,
-    state,
-    onAction: handleCardAction,
-  });
+  controladorListaDesejos.render();
 }
 
 async function carregarDesejos() {
@@ -96,6 +93,7 @@ export async function initDesejos() {
   }
 
   if ($('listaDesejos')) {
+    controladorListaDesejos.init();
     state.pagination.init();
     await initFiltroCategoriaDesejo(state, listarDesejos);
     await listarDesejos();

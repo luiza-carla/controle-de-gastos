@@ -4,9 +4,11 @@ const SalarioController = require('../controllers/SalarioController');
 const autenticacao = require('../middlewares/autentication');
 const asyncHandler = require('../middlewares/asyncHandler');
 
-router.post('/', autenticacao, asyncHandler(SalarioController.criar));
-router.get('/', autenticacao, asyncHandler(SalarioController.listar));
-router.put('/:id', autenticacao, asyncHandler(SalarioController.atualizar));
-router.delete('/:id', autenticacao, asyncHandler(SalarioController.deletar));
+const salarioHandler = asyncHandler.controller(SalarioController);
+
+router.post('/', autenticacao, salarioHandler('criar'));
+router.get('/', autenticacao, salarioHandler('listar'));
+router.put('/:id', autenticacao, salarioHandler('atualizar'));
+router.delete('/:id', autenticacao, salarioHandler('deletar'));
 
 module.exports = router;

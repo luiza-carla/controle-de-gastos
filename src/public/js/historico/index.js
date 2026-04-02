@@ -2,7 +2,7 @@ import { criarPaginacao } from '../helpers/index.js';
 import { showElement, hideElement } from '../helpers/index.js';
 import { criarHistoricoState } from './state.js';
 import { fetchHistoricos, desfazerHistorico } from './api.js';
-import { renderHistoricoLista, alternarDetalhesAlteracoes } from './render.js';
+import { criarControladorHistorico } from './render.js';
 import { initHistoricoFilters } from './filters.js';
 import { mostrarNotificacao, tratarErro } from '../notification.js';
 import { abrirModalConfirmacao, fecharModal } from '../modalDeletar.js';
@@ -18,6 +18,10 @@ const paginacaoHistorico = criarPaginacao({
   onChange: carregarHistorico,
 });
 
+const controladorHistorico = criarControladorHistorico({
+  onDesfazer: desfazerAcao,
+});
+
 export async function initHistorico() {
   initHistoricoFilters({
     state,
@@ -25,26 +29,8 @@ export async function initHistorico() {
     onReload: carregarHistorico,
   });
   paginacaoHistorico.init();
-  bindHistoricoListActions();
+  controladorHistorico.init();
   await carregarHistorico();
-}
-
-function bindHistoricoListActions() {
-  const historicoLista = document.getElementById('historico-lista');
-  if (!historicoLista) return;
-
-  historicoLista.addEventListener('click', async (event) => {
-    const toggleBtn = event.target.closest('.alteracoes-toggle');
-    if (toggleBtn) {
-      alternarDetalhesAlteracoes(toggleBtn);
-      return;
-    }
-
-    const btn = event.target.closest('button[data-historico-id]');
-    if (btn) {
-      await desfazerAcao(btn.dataset.historicoId);
-    }
-  });
 }
 
 async function carregarHistorico() {
@@ -66,7 +52,7 @@ async function carregarHistorico() {
       return;
     }
 
-    renderHistoricoLista(state.getHistoricos());
+    controladorHistorico.render(state.getHistoricos());
   } catch (error) {
     const msg = tratarErro(error, 'Erro ao carregar histórico');
     mostrarNotificacao(msg, 'erro');

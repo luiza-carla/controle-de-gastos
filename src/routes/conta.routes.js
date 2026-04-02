@@ -4,14 +4,12 @@ const ContaController = require('../controllers/ContaController');
 const autenticacao = require('../middlewares/autentication');
 const asyncHandler = require('../middlewares/asyncHandler');
 
-router.post('/', autenticacao, asyncHandler(ContaController.criar));
-router.get('/', autenticacao, asyncHandler(ContaController.listar));
-router.put('/:id', autenticacao, asyncHandler(ContaController.atualizar));
-router.delete('/:id', autenticacao, asyncHandler(ContaController.deletar));
-router.post(
-  '/:id/transferir',
-  autenticacao,
-  asyncHandler(ContaController.transferir)
-);
+const contaHandler = asyncHandler.controller(ContaController);
+
+router.post('/', autenticacao, contaHandler('criar'));
+router.get('/', autenticacao, contaHandler('listar'));
+router.put('/:id', autenticacao, contaHandler('atualizar'));
+router.delete('/:id', autenticacao, contaHandler('deletar'));
+router.post('/:id/transferir', autenticacao, contaHandler('transferir'));
 
 module.exports = router;

@@ -5,12 +5,10 @@ const ResumoController = require('../controllers/ResumoController');
 const autenticacao = require('../middlewares/autentication');
 const asyncHandler = require('../middlewares/asyncHandler');
 
-router.get('/', autenticacao, asyncHandler(ResumoController.obterResumo));
+const resumoHandler = asyncHandler.controller(ResumoController);
 
-router.get(
-  '/projecao',
-  autenticacao,
-  asyncHandler(ResumoController.obterProjecao)
-);
+router.get('/', autenticacao, resumoHandler('obterResumo'));
+
+router.get('/projecao', autenticacao, resumoHandler('obterProjecao'));
 
 module.exports = router;

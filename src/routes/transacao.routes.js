@@ -4,9 +4,11 @@ const TransacaoController = require('../controllers/TransacaoController');
 const autenticacao = require('../middlewares/autentication');
 const asyncHandler = require('../middlewares/asyncHandler');
 
-router.post('/', autenticacao, asyncHandler(TransacaoController.criar));
-router.get('/', autenticacao, asyncHandler(TransacaoController.listar));
-router.put('/:id', autenticacao, asyncHandler(TransacaoController.atualizar));
-router.delete('/:id', autenticacao, asyncHandler(TransacaoController.deletar));
+const transacaoHandler = asyncHandler.controller(TransacaoController);
+
+router.post('/', autenticacao, transacaoHandler('criar'));
+router.get('/', autenticacao, transacaoHandler('listar'));
+router.put('/:id', autenticacao, transacaoHandler('atualizar'));
+router.delete('/:id', autenticacao, transacaoHandler('deletar'));
 
 module.exports = router;

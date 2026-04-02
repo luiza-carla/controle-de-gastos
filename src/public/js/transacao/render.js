@@ -2,11 +2,11 @@ import { stateTransacoes } from './state.js';
 import {
   $,
   criarPaginacao,
+  criarControladorListagemFiltrada,
   filtrarPorCategoria,
   filtrarPorTexto,
   filtrarPorTipo,
   filtrarPorStatus,
-  renderizarListagemFiltrada,
 } from '../helpers/index.js';
 import { templateTransacaoCard } from './templates.js';
 import { mostrarNotificacao, tratarErro } from '../notification.js';
@@ -20,22 +20,13 @@ const paginacaoTransacoes = criarPaginacao({
   infoId: 'pageInfoTransacoes',
   limit: 10,
   onChange: async () => {
-    renderizarPaginaTransacoes();
+    controladorListagemTransacoes.render();
   },
 });
 
-export async function carregarTransacoes(
-  ordenarPor = stateTransacoes.ordenarPor
-) {
-  return carregarTransacoesService(ordenarPor);
-}
-
-function renderizarPaginaTransacoes() {
-  const fnTotal = (t) =>
-    t.tipo === 'saida' ? -Number(t.valor || 0) : Number(t.valor || 0);
-
-  // Ordena os itens de acordo com a seleção do usuário
+function obterItensOrdenadosTransacoes() {
   const itensOrdenados = [...stateTransacoes.itens];
+
   if (stateTransacoes.ordenarPor === 'nome') {
     itensOrdenados.sort((a, b) =>
       (a.titulo || '').localeCompare(b.titulo || '', 'pt-BR', { numeric: true })
@@ -48,23 +39,38 @@ function renderizarPaginaTransacoes() {
     });
   }
 
-  renderizarListagemFiltrada(
-    'transacoes',
-    itensOrdenados,
-    () => {
-      const comCategoria = filtrarPorCategoria(
-        itensOrdenados,
-        stateTransacoes.filtroCategoriaId
-      );
-      const comTipo = filtrarPorTipo(comCategoria, stateTransacoes.filtroTipo);
-      const comStatus = filtrarPorStatus(comTipo, stateTransacoes.filtroStatus);
-      return filtrarPorTexto(comStatus, stateTransacoes.filtroTexto);
-    },
-    templateTransacaoCard,
-    paginacaoTransacoes,
-    'totalTransacoes',
-    fnTotal
-  );
+  return itensOrdenados;
+}
+
+const controladorListagemTransacoes = criarControladorListagemFiltrada({
+  containerId: 'transacoes',
+  getLista: obterItensOrdenadosTransacoes,
+  filtrarItens: (itensOrdenados) => {
+    const comCategoria = filtrarPorCategoria(
+      itensOrdenados,
+      stateTransacoes.filtroCategoriaId
+    );
+    const comTipo = filtrarPorTipo(comCategoria, stateTransacoes.filtroTipo);
+    const comStatus = filtrarPorStatus(comTipo, stateTransacoes.filtroStatus);
+    return filtrarPorTexto(comStatus, stateTransacoes.filtroTexto);
+  },
+  renderCardFn: templateTransacaoCard,
+  paginacao: paginacaoTransacoes,
+  totalId: 'totalTransacoes',
+  fnTotal: (transacao) =>
+    transacao.tipo === 'saida'
+      ? -Number(transacao.valor || 0)
+      : Number(transacao.valor || 0),
+});
+
+export async function carregarTransacoes(
+  ordenarPor = stateTransacoes.ordenarPor
+) {
+  return carregarTransacoesService(ordenarPor);
+}
+
+function renderizarPaginaTransacoes() {
+  controladorListagemTransacoes.render();
 }
 
 export async function listarTransacoes() {
