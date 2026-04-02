@@ -5,10 +5,16 @@ import {
 } from '../modalEditar.js';
 import {
   mostrarNotificacao,
-  persistirNotificacaoParaProximaTela,
+  notificarOperacao,
+  agendarNotificacaoOperacao,
   tratarErro,
 } from '../notification.js';
-import { parseCurrency, createFormSubmitGuard, $ } from '../helpers/index.js';
+import {
+  parseCurrency,
+  createFormSubmitGuard,
+  formatarValor,
+  $,
+} from '../helpers/index.js';
 import { listarContas } from '../conta.js';
 import { criarSalario as serviceCriarSalario } from './service.js';
 
@@ -87,10 +93,17 @@ export function criarSalario(formId, callback) {
 
       const botaoClicado = e.submitter;
       const acao = botaoClicado?.getAttribute('data-action');
+      const estaNaTelaDeAdicao =
+        window.location.pathname.includes('adicionar-salario');
 
       const valor = parseCurrency(form.valor.value);
       const diaRecebimento = form.diaRecebimento.value;
       const conta = form.contaSalario.value;
+      const notificacaoSalario = {
+        objeto: `Salário de R$ ${formatarValor(valor)}`,
+        acao: 'criacao',
+        genero: 'masculino',
+      };
 
       if (!valor || !diaRecebimento) {
         abrirModalErro(
@@ -110,20 +123,17 @@ export function criarSalario(formId, callback) {
         });
 
         if (acao === 'salvar-adicionar-outro') {
-          mostrarNotificacao(`Salário de R$ ${valor} adicionado com sucesso!`);
+          notificarOperacao(notificacaoSalario);
           form.reset();
-        } else if (window.location.pathname.includes('adicionar-salario')) {
-          persistirNotificacaoParaProximaTela(
-            `Salário de R$ ${valor} adicionado com sucesso!`
-          );
+        } else if (estaNaTelaDeAdicao) {
+          agendarNotificacaoOperacao(notificacaoSalario);
+          if (callback) await callback();
           window.location.href = '/html/salario.html';
         } else {
-          mostrarNotificacao(`Salário de R$ ${valor} adicionado com sucesso!`);
+          notificarOperacao(notificacaoSalario);
           form.reset();
           if (callback) await callback();
         }
-
-        if (callback) await callback();
       } catch (erro) {
         const msg = tratarErro(erro, 'Erro ao criar salário');
         mostrarNotificacao(msg, 'erro');

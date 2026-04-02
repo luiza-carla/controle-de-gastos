@@ -98,6 +98,11 @@ export async function abrirModalEditarSalario({
             conta: novaConta,
           }),
         mensagemErro: 'Erro ao atualizar salário',
+        notificacaoSucesso: {
+          objeto: `Salário de R$ ${formatarValor(novoValor)}`,
+          acao: 'atualizacao',
+          genero: 'masculino',
+        },
         onAtualizar: async () => {
           fecharModal();
           await onAtualizar();
@@ -107,7 +112,7 @@ export async function abrirModalEditarSalario({
   });
 }
 
-export async function abrirModalDeletarSalario({ id, onAtualizar }) {
+export async function abrirModalDeletarSalario({ id, valor, onAtualizar }) {
   abrirModal({
     titulo: 'Confirmar exclusão',
     conteudoHTML: `<p>Tem certeza que deseja deletar este salário?</p>`,
@@ -115,6 +120,11 @@ export async function abrirModalDeletarSalario({ id, onAtualizar }) {
       await executarAcaoModal({
         acao: () => deletarSalario(id),
         mensagemErro: 'Erro ao deletar salário',
+        notificacaoSucesso: {
+          objeto: valor ? `Salário de R$ ${formatarValor(valor)}` : 'Salário',
+          acao: 'delecao',
+          genero: 'masculino',
+        },
         onAtualizar: async () => {
           fecharModal();
           await onAtualizar();

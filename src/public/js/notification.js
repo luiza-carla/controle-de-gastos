@@ -6,6 +6,16 @@ const ICONES_NOTIFICACAO = {
   aviso: 'fa-triangle-exclamation',
 };
 
+const RADICAIS_OPERACAO = {
+  adicao: 'adicionad',
+  criacao: 'criad',
+  atualizacao: 'atualizad',
+  delecao: 'deletad',
+  remocao: 'removid',
+  transferencia: 'transferid',
+  realizacao: 'realizad',
+};
+
 const CHAVE_NOTIFICACAO_PENDENTE = 'notificacaoPendente';
 
 //Erro que pode ser mostrado ao usuário
@@ -77,6 +87,26 @@ export function mostrarNotificacao(mensagem, tipo = 'sucesso', duracao = 3000) {
   }, duracao);
 }
 
+export function criarMensagemOperacao({
+  objeto,
+  acao,
+  genero = 'masculino',
+}) {
+  const generoNormalizado = genero === 'feminino' ? 'feminino' : 'masculino';
+  const radical = RADICAIS_OPERACAO[acao] || RADICAIS_OPERACAO.atualizacao;
+  const sufixo = generoNormalizado === 'feminino' ? 'a' : 'o';
+  const participio = `${radical}${sufixo}`;
+  const objetoNormalizado = (objeto || 'Item').trim();
+
+  return `${objetoNormalizado} ${participio} com sucesso!`;
+}
+
+export function notificarOperacao(opcoes, duracao = 3000) {
+  const mensagem = criarMensagemOperacao(opcoes);
+  mostrarNotificacao(mensagem, 'sucesso', duracao);
+  return mensagem;
+}
+
 export function persistirNotificacaoParaProximaTela(
   mensagem,
   tipo = 'sucesso',
@@ -92,6 +122,12 @@ export function persistirNotificacaoParaProximaTela(
   } catch {
     // Ignora falhas de storage e segue sem persistir notificacao
   }
+}
+
+export function agendarNotificacaoOperacao(opcoes, duracao = 3000) {
+  const mensagem = criarMensagemOperacao(opcoes);
+  persistirNotificacaoParaProximaTela(mensagem, 'sucesso', duracao);
+  return mensagem;
 }
 
 function exibirNotificacaoPersistida() {

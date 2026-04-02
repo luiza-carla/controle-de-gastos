@@ -7,7 +7,8 @@ import {
 } from '../modalEditar.js';
 import {
   mostrarNotificacao,
-  persistirNotificacaoParaProximaTela,
+  notificarOperacao,
+  agendarNotificacaoOperacao,
   tratarErro,
 } from '../notification.js';
 import {
@@ -101,6 +102,11 @@ export async function initTransacaoForm(formId = 'formTransacao') {
       const botaoClicado = e.submitter;
       const acao = botaoClicado?.getAttribute('data-action');
       const tituloTransacao = form.titulo.value;
+      const notificacaoTransacao = {
+        objeto: `Transação "${tituloTransacao}"`,
+        acao: 'criacao',
+        genero: 'feminino',
+      };
 
       const conta = $('conta')?.value;
       const categoria = $('categoria')?.value;
@@ -155,23 +161,17 @@ export async function initTransacaoForm(formId = 'formTransacao') {
         });
 
         if (acao === 'salvar-adicionar-outro') {
-          mostrarNotificacao(
-            `Transação "${tituloTransacao}" adicionada com sucesso!`
-          );
+          notificarOperacao(notificacaoTransacao);
           resetarFormularioTransacao(
             form,
             tipoDespesaSelect,
             parcelasContainer
           );
         } else if (window.location.pathname.includes('adicionar-transacao')) {
-          persistirNotificacaoParaProximaTela(
-            `Transação "${tituloTransacao}" adicionada com sucesso!`
-          );
+          agendarNotificacaoOperacao(notificacaoTransacao);
           window.location.href = '/html/transacoes.html';
         } else {
-          mostrarNotificacao(
-            `Transação "${tituloTransacao}" adicionada com sucesso!`
-          );
+          notificarOperacao(notificacaoTransacao);
           resetarFormularioTransacao(
             form,
             tipoDespesaSelect,

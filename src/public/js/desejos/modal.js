@@ -152,8 +152,14 @@ export async function abrirModalEditarDesejoComAcoes({
           });
 
           state.updateItem(atualizado);
+          return atualizado;
         },
         mensagemErro: 'Erro ao atualizar desejo',
+        notificacaoSucesso: (desejoAtualizado) => ({
+          objeto: `Desejo "${desejoAtualizado?.titulo || formData.titulo}"`,
+          acao: 'atualizacao',
+          genero: 'masculino',
+        }),
         onAtualizar: () => {
           fecharModal();
           onAtualizar?.();
@@ -216,6 +222,11 @@ export async function abrirModalRealizarDesejoComAcoes({
           state.removeItem(id);
         },
         mensagemErro: 'Erro ao realizar desejo',
+        notificacaoSucesso: {
+          objeto: `Desejo "${desejo.titulo}"`,
+          acao: 'realizacao',
+          genero: 'masculino',
+        },
         onAtualizar: () => {
           fecharModal();
           onAtualizar?.();
@@ -230,6 +241,8 @@ export async function abrirModalConfirmarRemoverDesejo({
   state,
   onAtualizar,
 }) {
+  const desejo = state.itens.find((item) => item._id === id);
+
   abrirModalConfirmacao({
     titulo: 'Confirmar exclusao',
     mensagem: 'Tem certeza que deseja deletar este item da lista de desejos?',
@@ -240,6 +253,11 @@ export async function abrirModalConfirmarRemoverDesejo({
           state.removeItem(id);
         },
         mensagemErro: 'Erro ao deletar desejo',
+        notificacaoSucesso: {
+          objeto: desejo?.titulo ? `Desejo "${desejo.titulo}"` : 'Desejo',
+          acao: 'delecao',
+          genero: 'masculino',
+        },
         onAtualizar: () => {
           fecharModal();
           onAtualizar?.();

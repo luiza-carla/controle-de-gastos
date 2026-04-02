@@ -61,6 +61,7 @@ function bindEventosContas() {
 
     if (action === 'deletar') {
       await abrirModalDeletarConta(contaId, {
+        obterContas,
         carregarERenderizarContas,
       });
       return;

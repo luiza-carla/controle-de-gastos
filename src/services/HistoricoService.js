@@ -838,7 +838,7 @@ class HistoricoService {
     historico.desfeitoEm = new Date();
     await historico.save();
 
-    return { success: true, message: 'Ação desfeita com sucesso' };
+    return { success: true, message: 'Ação desfeita com sucesso!' };
   }
 
   // Reverte uma ação específica

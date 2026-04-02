@@ -93,7 +93,7 @@ export function extractSalarioAction(event) {
   return button?.dataset.action || null;
 }
 
-export function extractSalarioMeta(event) {
+export function extractSalarioDados(event) {
   const button = _getSalarioButton(event);
   if (!button) return {};
   return {

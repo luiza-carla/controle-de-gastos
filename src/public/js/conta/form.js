@@ -5,7 +5,8 @@ import {
 } from '../modalEditar.js';
 import {
   mostrarNotificacao,
-  persistirNotificacaoParaProximaTela,
+  notificarOperacao,
+  agendarNotificacaoOperacao,
   tratarErro,
 } from '../notification.js';
 import { parseCurrency, createFormSubmitGuard } from '../helpers/index.js';
@@ -38,6 +39,11 @@ export async function criarConta(formId, callback) {
       const acao = botaoClicado?.getAttribute('data-action');
       const nomeConta = form.nome.value?.trim();
       const tipoConta = form.tipo.value;
+      const notificacaoConta = {
+        objeto: `Conta "${nomeConta}"`,
+        acao: 'criacao',
+        genero: 'feminino',
+      };
 
       if (!nomeConta || !tipoConta) {
         abrirModalErro(
@@ -58,15 +64,13 @@ export async function criarConta(formId, callback) {
         invalidateContas();
 
         if (acao === 'salvar-adicionar-outro') {
-          mostrarNotificacao(`Conta "${nomeConta}" adicionada com sucesso!`);
+          notificarOperacao(notificacaoConta);
           form.reset();
         } else if (window.location.pathname.includes('adicionar-conta')) {
-          persistirNotificacaoParaProximaTela(
-            `Conta "${nomeConta}" adicionada com sucesso!`
-          );
+          agendarNotificacaoOperacao(notificacaoConta);
           window.location.href = '/html/contas.html';
         } else {
-          mostrarNotificacao(`Conta "${nomeConta}" adicionada com sucesso!`);
+          notificarOperacao(notificacaoConta);
         }
 
         if (callback) await callback();

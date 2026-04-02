@@ -42,6 +42,11 @@ export async function abrirModalEditarConta(
       await executarAcaoModal({
         acao: () => updateConta(id, { nome: novoNome, tipo: novoTipo }),
         mensagemErro: 'Erro ao atualizar conta',
+        notificacaoSucesso: {
+          objeto: `Conta "${novoNome}"`,
+          acao: 'atualizacao',
+          genero: 'feminino',
+        },
         onAtualizar: async () => {
           fecharModal();
           await carregarERenderizarContas();
@@ -53,8 +58,11 @@ export async function abrirModalEditarConta(
 
 export async function abrirModalDeletarConta(
   id,
-  { carregarERenderizarContas }
+  { obterContas, carregarERenderizarContas }
 ) {
+  const contas = await obterContas();
+  const conta = contas.find((item) => item._id === id);
+
   abrirModalConfirmacao({
     titulo: 'Confirmar exclusão',
     mensagem: 'Tem certeza que deseja deletar esta conta?',
@@ -62,6 +70,11 @@ export async function abrirModalDeletarConta(
       await executarAcaoModal({
         acao: () => deleteConta(id),
         mensagemErro: 'Erro ao excluir conta',
+        notificacaoSucesso: {
+          objeto: conta?.nome ? `Conta "${conta.nome}"` : 'Conta',
+          acao: 'delecao',
+          genero: 'feminino',
+        },
         onAtualizar: async () => {
           fecharModal();
           await carregarERenderizarContas();
@@ -120,6 +133,16 @@ export async function abrirModalTransferirConta(
           }
         },
         mensagemErro: 'Erro ao transferir',
+        notificacaoSucesso: {
+          objeto:
+            destino === VALOR_CARTEIRA
+              ? `Transferência da conta "${contaOrigem.nome}" para a carteira`
+              : `Transferência da conta "${contaOrigem.nome}" para a conta "${
+                  contas.find((conta) => conta._id === destino)?.nome || ''
+                }"`,
+          acao: 'transferencia',
+          genero: 'feminino',
+        },
         onAtualizar: async () => {
           fecharModal();
           await atualizarSaldosTela();

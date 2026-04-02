@@ -8,7 +8,12 @@ import {
 } from './modal.js';
 import { initFormDesejos } from './form.js';
 import { initFiltroCategoriaDesejo, initOrdenacaoDesejos } from './filters.js';
-import { mostrarNotificacao, tratarErro } from '../notification.js';
+import {
+  mostrarNotificacao,
+  notificarOperacao,
+  agendarNotificacaoOperacao,
+  tratarErro,
+} from '../notification.js';
 import { $ } from '../helpers/index.js';
 
 const state = createDesejosState({ onPageChange: renderPaginaDesejos });
@@ -70,22 +75,24 @@ export async function initDesejos() {
           return;
         }
 
+        const notificacaoDesejo = {
+          objeto: `Desejo "${novoDesejo.titulo}"`,
+          acao: 'criacao',
+          genero: 'masculino',
+        };
+
         if (action === 'salvar-redirect') {
-          // redireciona para a lista de desejos após gravar
+          agendarNotificacaoOperacao(notificacaoDesejo);
           window.location.href = '/html/lista-desejos.html';
           return;
         }
 
         if (keepForm) {
-          mostrarNotificacao(
-            `Desejo "${novoDesejo.titulo}" adicionado com sucesso!`
-          );
+          notificarOperacao(notificacaoDesejo);
           return;
         }
 
-        mostrarNotificacao(
-          `Desejo "${novoDesejo.titulo}" adicionado com sucesso!`
-        );
+        notificarOperacao(notificacaoDesejo);
         formController?.resetForm?.();
         renderPaginaDesejos();
       },

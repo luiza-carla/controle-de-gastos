@@ -7,7 +7,7 @@ import {
   invalidarEListarSalarios,
   extractSalarioAction,
   extractSalarioId,
-  extractSalarioMeta,
+  extractSalarioDados,
 } from './render.js';
 import { abrirModalEditarSalario, abrirModalDeletarSalario } from './modal.js';
 
@@ -32,13 +32,13 @@ function bindSalarioAcoes() {
     if (!action || !id) return;
 
     if (action === 'editar') {
-      const meta = extractSalarioMeta(event);
+      const dadosSalario = extractSalarioDados(event);
       const contas = await listarContas();
       await abrirModalEditarSalario({
         id,
-        valor: meta.valor,
-        diaRecebimento: meta.dia,
-        destinoAtual: meta.destino,
+        valor: dadosSalario.valor,
+        diaRecebimento: dadosSalario.dia,
+        destinoAtual: dadosSalario.destino,
         contas,
         onAtualizar: async () => {
           await invalidarEListarSalarios();
@@ -49,8 +49,10 @@ function bindSalarioAcoes() {
     }
 
     if (action === 'deletar') {
+      const dadosSalario = extractSalarioDados(event);
       await abrirModalDeletarSalario({
         id,
+        valor: dadosSalario.valor,
         onAtualizar: async () => {
           await invalidarEListarSalarios();
           await atualizarVisoesRelacionadas();

@@ -51,6 +51,11 @@ export async function abrirModalAdicionarDinheiro({ onAtualizar } = {}) {
       await executarAcaoModal({
         acao: () => atualizarCarteira(valorResult.valor),
         mensagemErro: 'Erro ao adicionar dinheiro',
+        notificacaoSucesso: {
+          objeto: 'Dinheiro na carteira',
+          acao: 'adicao',
+          genero: 'masculino',
+        },
         onAtualizar: async () => {
           invalidateCarteira();
           fecharModal();
@@ -93,6 +98,11 @@ export async function abrirModalRemoverDinheiro({ onAtualizar } = {}) {
       await executarAcaoModal({
         acao: () => atualizarCarteira(-valorResult.valor),
         mensagemErro: 'Erro ao remover dinheiro',
+        notificacaoSucesso: {
+          objeto: 'Dinheiro da carteira',
+          acao: 'remocao',
+          genero: 'masculino',
+        },
         onAtualizar: async () => {
           invalidateCarteira();
           fecharModal();
@@ -153,9 +163,16 @@ export async function abrirModalTransferencia({ onAtualizar } = {}) {
         return;
       }
 
+      const contaDestino = contas.find((conta) => conta._id === contaId);
+
       await executarAcaoModal({
         acao: () => transferirParaConta(contaId, valorResult.valor),
         mensagemErro: 'Erro ao transferir dinheiro',
+        notificacaoSucesso: {
+          objeto: `Transferência da carteira para ${contaDestino?.nome ? `a conta "${contaDestino.nome}"` : 'uma conta'}`,
+          acao: 'transferencia',
+          genero: 'feminino',
+        },
         onAtualizar: async () => {
           invalidateCarteira();
           fecharModal();

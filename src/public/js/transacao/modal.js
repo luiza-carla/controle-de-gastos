@@ -1,7 +1,6 @@
 import { apiFetch } from '../config.js';
 import { abrirModal, fecharModal, mostrarErroInline } from '../modalEditar.js';
 import { abrirModalConfirmacao } from '../modalDeletar.js';
-import { mostrarNotificacao, tratarErro } from '../notification.js';
 import {
   showElement,
   hideElement,
@@ -11,9 +10,11 @@ import {
   carregarSubcategorias,
   setupSubcategoriaAutocomplete,
   obterSubcategoriaParaEnviar,
+  executarAcaoModal,
 } from '../helpers/index.js';
 import { templateEditarTransacaoModal } from './templates.js';
 import {
+  carregarTransacoes,
   atualizarTransacao,
   deletarTransacao as deletarTransacaoService,
 } from './service.js';
@@ -26,7 +27,7 @@ const URL_CONTAS = `${window.location.origin}/contas`;
 export const editarTransacao = async (id) => {
   const transacao =
     obterTransacaoPorId(id) ||
-    (await listarTransacoes()).find((t) => t._id === id);
+    (await carregarTransacoes()).find((t) => t._id === id);
   const categorias = await apiFetch(URL_CATEGORIAS);
   const contas = await apiFetch(URL_CONTAS);
 
@@ -80,15 +81,19 @@ export const editarTransacao = async (id) => {
         dados.tipoDespesa = novoTipoDespesa || undefined;
       }
 
-      try {
-        await atualizarTransacao(id, dados);
-
-        fecharModal();
-        listarTransacoes();
-      } catch (erro) {
-        const msg = tratarErro(erro, 'Erro ao atualizar transação');
-        mostrarErroInline(msg);
-      }
+      await executarAcaoModal({
+        acao: () => atualizarTransacao(id, dados),
+        mensagemErro: 'Erro ao atualizar transação',
+        notificacaoSucesso: {
+          objeto: `Transação "${novoTitulo}"`,
+          acao: 'atualizacao',
+          genero: 'feminino',
+        },
+        onAtualizar: async () => {
+          fecharModal();
+          await listarTransacoes();
+        },
+      });
     },
   });
 
@@ -171,18 +176,29 @@ export const editarTransacao = async (id) => {
 };
 
 export const deletarTransacao = async (id) => {
+  const transacao =
+    obterTransacaoPorId(id) ||
+    (await carregarTransacoes()).find((item) => item._id === id);
+
   abrirModalConfirmacao({
     titulo: 'Confirmar exclusão',
     mensagem: 'Tem certeza que deseja deletar esta transação?',
     onConfirmar: async () => {
-      try {
-        await deletarTransacaoService(id);
-        fecharModal();
-        listarTransacoes();
-      } catch (err) {
-        const msg = tratarErro(err, 'Erro ao deletar transação');
-        mostrarNotificacao(msg, 'erro');
-      }
+      await executarAcaoModal({
+        acao: () => deletarTransacaoService(id),
+        mensagemErro: 'Erro ao deletar transação',
+        notificacaoSucesso: {
+          objeto: transacao?.titulo
+            ? `Transação "${transacao.titulo}"`
+            : 'Transação',
+          acao: 'delecao',
+          genero: 'feminino',
+        },
+        onAtualizar: async () => {
+          fecharModal();
+          await listarTransacoes();
+        },
+      });
     },
   });
 };

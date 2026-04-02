@@ -84,7 +84,7 @@ async function desfazerAcao(historicoId) {
         const resultado = await desfazerHistorico(historicoId);
 
         mostrarNotificacao(
-          resultado.message || 'Ação desfeita com sucesso',
+          resultado.message || 'Ação desfeita com sucesso!',
           'sucesso'
         );
 
