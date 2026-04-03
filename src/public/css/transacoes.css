@@ -135,38 +135,10 @@
 
 .filters-section {
   margin-top: 14px;
-  background: var(--gray-50);
-  border: 1px solid var(--divider);
-  border-radius: 12px;
-  padding: 12px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: flex-end;
 }
 
 .filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
   min-width: 220px;
-}
-
-.filter-group label {
-  font-weight: 600;
-  color: var(--gray-700);
-  font-size: 13px;
-}
-
-.filter-group input {
-  width: 100%;
-}
-
-.filtro-actions {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
 }
 
 .pagination-listagem {
@@ -376,13 +348,5 @@
 @media (max-width: 1200px) {
   #transacoes {
     grid-template-columns: 1fr;
-  }
-
-  .filtro-actions {
-    width: 100%;
-  }
-
-  .filtro-actions button {
-    flex: 1;
   }
 }

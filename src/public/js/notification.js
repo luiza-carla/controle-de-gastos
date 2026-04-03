@@ -1,4 +1,5 @@
 import { error as loggerError } from './helpers/logger.js';
+import { $ } from './helpers/dom.js';
 
 const ICONES_NOTIFICACAO = {
   sucesso: 'fa-circle-check',
@@ -22,8 +23,15 @@ const MENSAGENS_ERRO_INLINE_CONHECIDAS = new Set([
   'Saldo insuficiente na carteira',
 ]);
 
+// Extrai uma mensagem textual utilizavel a partir de um erro.
+function obterMensagemErro(error) {
+  const mensagem = error?.message?.trim();
+  return mensagem || null;
+}
+
+// Garante a existencia do container global de notificacoes.
 function obterContainerNotificacoes() {
-  let container = document.getElementById(ID_CONTAINER_NOTIFICACOES);
+  let container = $(ID_CONTAINER_NOTIFICACOES);
   if (container) return container;
 
   container = document.createElement('div');
@@ -49,12 +57,26 @@ function isErroUsuario(error) {
   return !!(error && error.__mostrarAoUsuario);
 }
 
-export function extrairMensagemErroInline(error) {
+// Resolve a mensagem que deve ser mostrada para erros de usuario.
+function extrairMensagemErroUsuario(error) {
   if (isErroUsuario(error)) {
-    return error.message || null;
+    return obterMensagemErro(error);
   }
 
-  const mensagem = error?.message?.trim();
+  if (isErroHttpUsuario(error)) {
+    return obterMensagemErro(error);
+  }
+
+  return null;
+}
+
+// Retorna mensagens que devem ser exibidas inline em formularios/modais.
+export function extrairMensagemErroInline(error) {
+  if (isErroUsuario(error)) {
+    return obterMensagemErro(error);
+  }
+
+  const mensagem = obterMensagemErro(error);
   if (!mensagem) return null;
 
   return MENSAGENS_ERRO_INLINE_CONHECIDAS.has(mensagem) ? mensagem : null;
@@ -68,12 +90,13 @@ export function extrairMensagemErroInline(error) {
  * @param {string} mensagemPadrao - Texto a ser usado se não houver mensagem no erro
  */
 export function tratarErro(error, mensagemPadrao = 'Ocorreu um erro') {
+  const mensagemUsuario = extrairMensagemErroUsuario(error);
   const mensagemInline = extrairMensagemErroInline(error);
-  const isUsuario = !!mensagemInline;
-  const isEsperado = isUsuario || isErroHttpUsuario(error);
-  const mensagem = mensagemInline || mensagemPadrao;
+  const isUsuario = !!mensagemUsuario;
+  const isEsperado = isUsuario || !!mensagemInline;
+  const mensagem = mensagemUsuario || mensagemPadrao;
 
-  if (isUsuario) {
+  if (isErroUsuario(error)) {
     mostrarNotificacao(mensagem, 'erro');
   } else if (!isEsperado) {
     loggerError('Erro interno:', 'notification', error);
@@ -141,6 +164,7 @@ export function notificarOperacao(opcoes, duracao = 3000) {
   return mensagem;
 }
 
+// Persiste uma notificacao para ser exibida apos redirecionamento.
 export function persistirNotificacaoParaProximaTela(
   mensagem,
   tipo = 'sucesso',
@@ -158,12 +182,14 @@ export function persistirNotificacaoParaProximaTela(
   }
 }
 
+// Agenda uma notificacao de sucesso para a proxima tela.
 export function agendarNotificacaoOperacao(opcoes, duracao = 3000) {
   const mensagem = criarMensagemOperacao(opcoes);
   persistirNotificacaoParaProximaTela(mensagem, 'sucesso', duracao);
   return mensagem;
 }
 
+// Reexibe notificacoes persistidas apos navegacao entre telas.
 function exibirNotificacaoPersistida() {
   try {
     const bruto = sessionStorage.getItem(CHAVE_NOTIFICACAO_PENDENTE);

@@ -5,6 +5,19 @@ import {
   formatarCategoriaComSubcategoria,
 } from './formatters.js';
 
+// Monta o texto exibido com o periodo atual do resumo.
+function obterTextoPeriodo(periodo) {
+  if (!periodo?.dataInicio || !periodo?.dataFim) {
+    return '';
+  }
+
+  const inicio = formatarData(periodo.dataInicio);
+  const fim = formatarData(periodo.dataFim);
+
+  return `Período filtrado: ${inicio} até ${fim}`;
+}
+
+// Cria um item de lista para o detalhamento de saldos.
 function criarItemDetalhe({ nome, valor }) {
   const li = document.createElement('li');
   const nomeEl = document.createElement('span');
@@ -18,6 +31,7 @@ function criarItemDetalhe({ nome, valor }) {
   return li;
 }
 
+// Cria uma linha da tabela para entradas e saídas.
 function criarLinhaMovimento({ data, categoria, subcategoria, nome, valor }) {
   const tr = document.createElement('tr');
   const dataTd = document.createElement('td');
@@ -37,6 +51,7 @@ function criarLinhaMovimento({ data, categoria, subcategoria, nome, valor }) {
   return tr;
 }
 
+// Renderiza a lista de detalhes de saldo no card principal.
 export function renderDetalhesLista(ul, itens = []) {
   if (!ul) return;
   clearElement(ul);
@@ -45,6 +60,7 @@ export function renderDetalhesLista(ul, itens = []) {
   ul.appendChild(fragment);
 }
 
+// Renderiza a tabela de movimentos de entradas ou saídas.
 export function renderMovimentosTabela(tbody, itens = []) {
   if (!tbody) return;
   clearElement(tbody);
@@ -53,8 +69,27 @@ export function renderMovimentosTabela(tbody, itens = []) {
   tbody.appendChild(fragment);
 }
 
+// Atualiza os valores e detalhes do resumo financeiro na tela.
 export function renderResumo(dados, els) {
   if (!dados || !els) return;
+
+  const filtroAtivo = Boolean(dados.periodo?.filtroAtivo);
+
+  if (els.saldoTituloTexto) {
+    els.saldoTituloTexto.textContent = filtroAtivo
+      ? 'Saldo do período'
+      : 'Saldo atual';
+  }
+
+  if (els.saldoCalculadoLabel) {
+    els.saldoCalculadoLabel.textContent = filtroAtivo
+      ? 'Saldo líquido do período:'
+      : 'Saldo calculado:';
+  }
+
+  if (els.resumoPeriodoInfo) {
+    els.resumoPeriodoInfo.textContent = obterTextoPeriodo(dados.periodo);
+  }
 
   if (els.saldoAtual)
     els.saldoAtual.textContent = formatarValor(dados.saldoAtual);
@@ -70,10 +105,16 @@ export function renderResumo(dados, els) {
   renderMovimentosTabela(els.detSaidasLista, dados.detalhesSaidas);
 }
 
+// Atualiza os valores exibidos no modal de projeção.
 export function renderProjecao(dados, els) {
   if (!dados || !els) return;
   if (els.projSaldoAtual)
     els.projSaldoAtual.textContent = formatarValor(dados.saldoAtual);
+  if (els.projSaidasLabel) {
+    els.projSaidasLabel.textContent = dados.periodo?.filtroAtivo
+      ? 'Saídas pendentes no período:'
+      : 'Saídas pendentes:';
+  }
   if (els.projSaidasPendentes)
     els.projSaidasPendentes.textContent = formatarValor(dados.saidasPendentes);
   if (els.projSaldoFinal) {
@@ -89,6 +130,7 @@ export function renderProjecao(dados, els) {
   }
 }
 
+// Esconde o modal de projeção quando ele é fechado.
 export function hideProjecao(els) {
   if (els?.modalProjecao) {
     hideElement(els.modalProjecao);

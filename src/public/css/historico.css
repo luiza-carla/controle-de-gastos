@@ -35,7 +35,6 @@
 }
 
 /* Blocos internos do container principal */
-.filters-section,
 .historico-section {
   background: var(--gray-50);
   border: 1px solid var(--divider);
@@ -45,24 +44,11 @@
 
 .filters-section {
   margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: flex-end;
+  padding: 16px;
 }
 
 .filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
   min-width: 160px;
-}
-
-.filter-group label {
-  font-weight: 600;
-  color: var(--gray-700);
-  font-size: 13px;
 }
 
 .filter-group select {

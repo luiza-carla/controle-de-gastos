@@ -1,3 +1,42 @@
+.resumo-filtros {
+  background: linear-gradient(135deg, var(--gray-50) 0%, var(--color-white) 100%);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.resumo-filtros .filter-group {
+  min-width: 180px;
+}
+
+.resumo-periodo-info {
+  margin: 0 0 14px;
+  color: var(--gray-600);
+  font-size: 14px;
+}
+
+.resumo-filtros-atalhos {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: -2px 0 14px;
+}
+
+.btn-atalho-periodo {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 1px solid var(--divider);
+}
+
+.btn-atalho-periodo:hover {
+  background: var(--gray-50);
+}
+
+.btn-atalho-periodo.is-active {
+  background: var(--brand-primary);
+  color: var(--gray-900);
+  border-color: var(--brand-primary);
+}
+
 #btnProjecao {
   margin-top: 15px;
   background: var(--brand-primary);
@@ -57,4 +96,10 @@
   transition:
     background 0.2s,
     font-weight 0.2s;
+}
+
+@media (max-width: 640px) {
+  .resumo-filtros-atalhos .btn {
+    flex: 1 1 100%;
+  }
 }

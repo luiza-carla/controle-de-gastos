@@ -3,6 +3,8 @@ const Transacao = require('../models/Transacao');
 const Conta = require('../models/Conta');
 const Carteira = require('../models/Carteira');
 const categoriaHelpers = require('../utils/categoriaHelpers');
+const { transacao: popularTransacao } = require('../utils/populateHelpers');
+const { obterInicioMes } = require('../utils/salarioHelpers');
 const {
   somarCampo,
   totaisTransacoes,
@@ -10,61 +12,109 @@ const {
 } = require('../utils/resumoHelpers');
 
 class ResumoService {
-  // Busca salários ativos do usuário com base na categoria de salário
-  async buscarSalariosAtivos(usuarioId, refs) {
-    const { filtroUsuario: filtroSalario } =
-      categoriaHelpers.obterFiltrosSalario(refs, usuarioId);
+  obterPeriodoResumo(periodo = null) {
+    if (periodo?.dataInicio && periodo?.dataFim) {
+      return {
+        filtroAtivo: true,
+        dataInicio: periodo.dataInicio,
+        dataFim: periodo.dataFim,
+      };
+    }
 
-    if (!filtroSalario) return [];
+    const hoje = new Date();
 
-    return Transacao.find({ ...filtroSalario, ativa: true }).setOptions({
-      sanitizeFilter: false,
-    });
+    return {
+      filtroAtivo: false,
+      dataInicio: obterInicioMes(hoje),
+      dataFim: hoje,
+    };
   }
 
-  // Adiciona exclusão da categoria de salário ao filtro quando houver categoria
-  adicionarExclusaoCategoriaSalario(filtro, refs) {
-    return categoriaHelpers.adicionarExclusaoCategoriaSalario(filtro, refs);
+  criarFiltroTransacoes(usuarioId, periodo, status = 'pago') {
+    return {
+      usuario: usuarioId,
+      ativa: true,
+      status,
+      data: mongoose.trusted({
+        $gte: periodo.dataInicio,
+        $lte: periodo.dataFim,
+      }),
+    };
   }
 
-  // Calcula data de vencimento de salário no mês
-  calcularDataVencimentoNoMes(transacaoSalario, referencia) {
-    const ano = referencia.getFullYear();
-    const mes = referencia.getMonth();
-    const ultimoDiaDoMes = new Date(ano, mes + 1, 0).getDate();
-    const diaRecebimento = transacaoSalario.diaRecebimento || 5;
-    const diaVencimento = Math.min(diaRecebimento, ultimoDiaDoMes);
+  obterNomeOrigemSaldo(transacao) {
+    if (transacao?.fonteSaldo === 'carteira') {
+      return 'Carteira';
+    }
 
-    return new Date(ano, mes, diaVencimento, 0, 0, 0, 0);
+    return transacao?.conta?.nome || 'Conta';
   }
 
-  // Valida se salário está ativo na data de vencimento
-  salarioEstaValidoNoVencimento(transacaoSalario) {
-    // Transação de salário está ativa se ativa === true
-    return transacaoSalario.ativa;
-  }
+  calcularDetalhesSaldoDoPeriodo(transacoes = []) {
+    const totaisPorOrigem = new Map();
 
-  // Calcula total de salários que já venceram até hoje
-  calcularSalariosDevidosAteHoje(transacoesSalario, hoje) {
-    const salariosVencidos = transacoesSalario.filter((salario) => {
-      const dataVencimento = this.calcularDataVencimentoNoMes(salario, hoje);
-      const jaVenceuNoMes = dataVencimento <= hoje;
-      const validoNoVencimento = this.salarioEstaValidoNoVencimento(salario);
+    transacoes.forEach((transacao) => {
+      const nomeOrigem = this.obterNomeOrigemSaldo(transacao);
+      const valorAtual = totaisPorOrigem.get(nomeOrigem) || 0;
+      const valorTransacao = Number(transacao?.valor || 0);
+      const valorLiquido =
+        transacao?.tipo === 'entrada' ? valorTransacao : -valorTransacao;
 
-      return jaVenceuNoMes && validoNoVencimento;
-    });
-
-    return somarCampo(salariosVencidos, 'valor');
-  }
-
-  // Calcula quanto dos salários já foi processado no mês atual
-  calcularSalariosProcessadosNoMes(salarios, inicioMes) {
-    const salariosProcessados = salarios.filter((s) => {
-      const ultimoProc = s.dataUltimoProcessamento;
-      return ultimoProc && new Date(ultimoProc) >= inicioMes;
+      totaisPorOrigem.set(nomeOrigem, valorAtual + valorLiquido);
     });
 
-    return somarCampo(salariosProcessados, 'valor');
+    return Array.from(totaisPorOrigem.entries())
+      .map(([nome, valor]) => ({ nome, valor }))
+      .sort((a, b) => a.valor - b.valor);
+  }
+
+  montarDetalhesMovimentos(transacoes = [], tipo) {
+    return transacoes
+      .filter((transacao) => transacao.tipo === tipo)
+      .map((transacao) => ({
+        data: transacao.data,
+        categoria: transacao.categoria ? transacao.categoria.nome : '',
+        subcategoria: transacao.subcategoria ? transacao.subcategoria.nome : '',
+        nome: transacao.titulo,
+        valor: Number(transacao.valor || 0),
+      }))
+      .sort((a, b) => a.valor - b.valor);
+  }
+
+  formatarPeriodoResposta(periodo) {
+    return {
+      filtroAtivo: periodo.filtroAtivo,
+      dataInicio: periodo.dataInicio,
+      dataFim: periodo.dataFim,
+    };
+  }
+
+  async carregarSaldosAtuais(usuarioId) {
+    const contas = await Conta.find({ usuario: usuarioId });
+    const carteira = await Carteira.findOne({ usuario: usuarioId });
+
+    const saldoContas = somarCampo(contas, 'saldo');
+    const saldoCarteira = carteira?.saldo || 0;
+    const detalhesSaldo = contas.map((conta) => ({
+      nome: conta.nome,
+      valor: Number(conta.saldo || 0),
+    }));
+
+    if (carteira) {
+      detalhesSaldo.push({
+        nome: 'Carteira',
+        valor: Number(carteira.saldo || 0),
+      });
+    }
+
+    detalhesSaldo.sort((a, b) => a.valor - b.valor);
+
+    return {
+      saldoContas,
+      saldoCarteira,
+      saldoAtual: saldoContas + saldoCarteira,
+      detalhesSaldo,
+    };
   }
 
   // Gera resumo financeiro atual do usuário
@@ -73,85 +123,34 @@ class ResumoService {
   //   - entradas: total de entradas do mês
   //   - saidas: total de saídas do mês
   //   - saldoCalculado: saldoAtual + entradas - saidas
-  async gerarResumo(usuarioId) {
-    const hoje = new Date();
-    const inicioMes = new Date(
-      hoje.getFullYear(),
-      hoje.getMonth(),
-      1,
-      0,
-      0,
-      0,
-      0
+  async gerarResumo(usuarioId, periodoSelecionado = null) {
+    const periodo = this.obterPeriodoResumo(periodoSelecionado);
+    const filtroTransacoes = this.criarFiltroTransacoes(usuarioId, periodo);
+
+    const transacoesPeriodo = await popularTransacao(
+      Transacao.find(filtroTransacoes).setOptions({ sanitizeFilter: false })
     );
 
-    // somente precisamos das contas e da carteira para o resumo simplificado
-    const contas = await Conta.find({ usuario: usuarioId });
-    const carteira = await Carteira.findOne({ usuario: usuarioId });
+    const { entradas, saidas } = totaisTransacoes(transacoesPeriodo);
+    const detalhesEntradas = this.montarDetalhesMovimentos(
+      transacoesPeriodo,
+      'entrada'
+    );
+    const detalhesSaidas = this.montarDetalhesMovimentos(
+      transacoesPeriodo,
+      'saida'
+    );
 
-    const saldoContas = somarCampo(contas, 'saldo');
-    const saldoCarteira = carteira?.saldo || 0;
+    let saldoContas = 0;
+    let saldoCarteira = 0;
+    let saldoAtual = entradas - saidas;
+    let detalhesSaldo = this.calcularDetalhesSaldoDoPeriodo(transacoesPeriodo);
 
-    // Saldo atual é a soma de todas as contas e da carteira
-    const saldoAtual = saldoContas + saldoCarteira;
-
-    // prepara detalhamento de saldos
-    const detalhesSaldo = contas.map((c) => ({
-      nome: c.nome,
-      valor: Number(c.saldo || 0),
-    }));
-    if (carteira) {
-      detalhesSaldo.push({
-        nome: 'Carteira',
-        valor: Number(carteira.saldo || 0),
-      });
+    if (!periodo.filtroAtivo) {
+      ({ saldoContas, saldoCarteira, saldoAtual, detalhesSaldo } =
+        await this.carregarSaldosAtuais(usuarioId));
     }
 
-    // Transações do mês que já foram pagas (não considera lançamentos futuros)
-    // Isso evita exibir salários que ainda não caíram na conta.
-    const filtroTransacoes = {
-      usuario: usuarioId,
-      ativa: true,
-      status: 'pago',
-      data: mongoose.trusted({
-        $gte: inicioMes,
-        $lte: hoje,
-      }),
-    };
-
-    // incluir nome da categoria para exibição
-    const transacoesMes = await Transacao.find(filtroTransacoes)
-      .setOptions({ sanitizeFilter: false })
-      .populate('categoria', 'nome');
-
-    // Entradas e saídas do mês
-    const { entradas, saidas } = totaisTransacoes(transacoesMes);
-
-    // detalhamento de entradas e saídas usando título da transação
-    const detalhesEntradas = transacoesMes
-      .filter((t) => t.tipo === 'entrada')
-      .map((t) => ({
-        data: t.data,
-        categoria: t.categoria ? t.categoria.nome : '',
-        nome: t.titulo,
-        valor: Number(t.valor || 0),
-      }));
-    const detalhesSaidas = transacoesMes
-      .filter((t) => t.tipo === 'saida')
-      .map((t) => ({
-        data: t.data,
-        categoria: t.categoria ? t.categoria.nome : '',
-        nome: t.titulo,
-        valor: Number(t.valor || 0),
-      }));
-
-    // ordenar valores menores para maiores
-    detalhesSaldo.sort((a, b) => a.valor - b.valor);
-    detalhesEntradas.sort((a, b) => a.valor - b.valor);
-    detalhesSaidas.sort((a, b) => a.valor - b.valor);
-
-    // Saldo calculado atualmente reflete o saldo atual armazenado
-    // (as transações pagas já são aplicadas às contas/carteira).
     const saldoCalculado = saldoAtual;
 
     return {
@@ -159,17 +158,22 @@ class ResumoService {
       entradas,
       saidas,
       saldoCalculado,
+      saldoContas,
+      saldoCarteira,
       detalhesSaldo,
       detalhesEntradas,
       detalhesSaidas,
+      periodo: this.formatarPeriodoResposta(periodo),
     };
   }
 
   // Gera projeção financeira considerando transações pendentes
-  async gerarProjecao(usuarioId) {
+  async gerarProjecao(usuarioId, periodoSelecionado = null) {
+    const periodo = this.obterPeriodoResumo(periodoSelecionado);
+
     // reutiliza o resumo para obter o saldo calculado do mês atual;
     // essa é a base usada na tela de resumo e deve ser exibida na projeção.
-    const resumo = await this.gerarResumo(usuarioId);
+    const resumo = await this.gerarResumo(usuarioId, periodoSelecionado);
     const saldoAtual = resumo.saldoCalculado;
 
     const refs = await categoriaHelpers.buscarSalario();
@@ -178,7 +182,22 @@ class ResumoService {
     const { filtroExclusao: filtroPendentesSemSalario } =
       categoriaHelpers.obterFiltrosSalario(refs, usuarioId);
 
-    const pendentes = await Transacao.find(filtroPendentesSemSalario);
+    const filtroPendentes = {
+      ...filtroPendentesSemSalario,
+      status: 'pendente',
+      ativa: true,
+    };
+
+    if (periodo.filtroAtivo) {
+      filtroPendentes.data = mongoose.trusted({
+        $gte: periodo.dataInicio,
+        $lte: periodo.dataFim,
+      });
+    }
+
+    const pendentes = await Transacao.find(filtroPendentes).setOptions({
+      sanitizeFilter: false,
+    });
     const saidasPendentes = somaSaidas(pendentes);
 
     const saldoProjetado = saldoAtual - saidasPendentes;
@@ -188,6 +207,7 @@ class ResumoService {
       saldoProjetado,
       saidasPendentes,
       saldoCarteira: resumo.saldoCarteira || 0,
+      periodo: this.formatarPeriodoResposta(periodo),
       // salariosPendentesLancamento: undefined, // disponível se necessário
     };
   }

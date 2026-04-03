@@ -13,9 +13,61 @@
       <div class="container">
         <h2>Resumo Financeiro</h2>
 
+        <form id="formFiltroResumo" class="filters-section resumo-filtros">
+          <div class="filter-group">
+            <label for="filtroDataInicio">Data de início</label>
+            <input type="date" id="filtroDataInicio" name="dataInicio" />
+          </div>
+
+          <div class="filter-group">
+            <label for="filtroDataFim">Data de fim</label>
+            <input type="date" id="filtroDataFim" name="dataFim" />
+          </div>
+
+          <div class="filtro-actions">
+            <button type="submit" class="btn btn-primary">Aplicar filtro</button>
+            <button
+              id="btnLimparFiltroResumo"
+              type="button"
+              class="btn btn-secondary"
+            >
+              Limpar
+            </button>
+          </div>
+        </form>
+
+        <div class="resumo-filtros-atalhos" aria-label="Atalhos de período">
+          <button
+            type="button"
+            class="btn btn-secondary btn-atalho-periodo"
+            data-periodo="ultimo-mes"
+          >
+            No último mês
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary btn-atalho-periodo"
+            data-periodo="ultimo-ano"
+          >
+            No último ano
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary btn-atalho-periodo"
+            data-periodo="esse-ano"
+          >
+            Esse ano
+          </button>
+        </div>
+
+        <p id="resumoPeriodoInfo" class="resumo-periodo-info"></p>
+
         <div class="resumo-financeiro">
           <div class="card" id="cardSaldo">
-            <h3><i class="fa-solid fa-coins"></i> Saldo atual</h3>
+            <h3>
+              <i class="fa-solid fa-coins"></i>
+              <span id="saldoTituloTexto">Saldo atual</span>
+            </h3>
             <details id="boxSaldoAtual">
               <summary>
                 <span>Visualizar detalhes</span>
@@ -74,7 +126,10 @@
           </div>
 
           <p class="text-lg">
-            <b>Saldo calculado: R$ <span id="saldoCalculado">0,00</span></b>
+            <b
+              ><span id="saldoCalculadoLabel">Saldo calculado:</span> R$
+              <span id="saldoCalculado">0,00</span></b
+            >
           </p>
 
           <button id="btnProjecao">Ver projeção com pendentes</button>
@@ -89,7 +144,7 @@
               </p>
 
               <p>
-                Saídas pendentes:
+                <span id="projSaidasLabel">Saídas pendentes:</span>
                 <b>R$ <span id="projSaidasPendentes">0,00</span></b>
               </p>
 
