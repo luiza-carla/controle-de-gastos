@@ -30,7 +30,6 @@ Além do CRUD financeiro básico, o sistema inclui automações úteis para o di
 - [Documentação da API](#documentação-da-api)
 - [Exemplos de Uso](#exemplos-de-uso)
 - [Screenshots](#screenshots)
-- [Licença](#licença)
 
 ## Quick Start
 
