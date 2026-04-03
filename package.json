@@ -26,12 +26,13 @@
     "prettier": "^3.8.1"
   },
   "scripts": {
-    "dev": "nodemon src/server.js",
+    "dev": "node scripts/generate-category-theme.js && nodemon src/server.js",
     "copy:fontawesome": "node scripts/copy-fontawesome.js",
     "copy:imask": "node scripts/copy-imask.js",
-    "postinstall": "npm run copy:fontawesome && npm run copy:imask",
+    "generate:category-theme": "node scripts/generate-category-theme.js",
+    "postinstall": "npm run generate:category-theme && npm run copy:fontawesome && npm run copy:imask",
     "fix": "prettier . --write && eslint . --fix",
-    "seed": "node src/utils/seedDB.js"
+    "seed": "npm run generate:category-theme && node src/utils/seedDB.js"
   },
   "overrides": {
     "path-to-regexp": "8.4.0"

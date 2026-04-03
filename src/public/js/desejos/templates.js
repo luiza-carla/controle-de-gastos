@@ -23,7 +23,7 @@ export function buildEditarDesejoHTML(desejo) {
         <div id="modalDropdownCategoriaDesejo" class="dropdown-categorias"></div>
       </div>
     </div>
-    <div class="form-group" id="modalSubcategoriaGroupDesejo" style="display: none">
+    <div class="form-group is-hidden" id="modalSubcategoriaGroupDesejo">
       <label>Subcategoria (opcional)</label>
       <div class="categoria-autocomplete">
         <input type="text" id="modalBuscaSubcategoriaDesejo" placeholder="Buscar subcategoria..." autocomplete="off">
@@ -60,7 +60,7 @@ export function buildRealizarDesejoHTML(desejo, contas, carteiraLabel) {
     .join('');
 
   return `
-    <p style="margin-bottom: 16px; color: var(--text-secondary);">
+    <p class="mb-16 text-secondary">
       Transformar <strong>${escaparHtml(desejo.titulo)}</strong> em uma transacao real.
     </p>
     <div class="form-group">

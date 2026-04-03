@@ -5,11 +5,6 @@ const HIDDEN_CLASS = 'is-hidden';
 export function toggleElemento(el, mostrar) {
   if (!el) return;
   el.classList.toggle(HIDDEN_CLASS, !mostrar);
-  if (mostrar) {
-    el.style.display = '';
-  } else {
-    el.style.display = 'none';
-  }
 }
 
 export function getElemento(id) {
@@ -20,14 +15,12 @@ export function esconderSubcategoriaGroup(groupId) {
   const group = getElemento(groupId);
   if (!group) return;
   group.classList.add(HIDDEN_CLASS);
-  group.style.display = 'none';
 }
 
 export function mostrarSubcategoriaGroup(groupId) {
   const group = getElemento(groupId);
   if (!group) return;
   group.classList.remove(HIDDEN_CLASS);
-  group.style.display = '';
 }
 
 export function limparAutocomplete(autocomplete) {

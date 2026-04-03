@@ -1,14 +1,42 @@
 import { logout } from './logout.js';
 import { abrirModalConfirmacao, fecharModal } from './modalDeletar.js';
 import { $, addClass, getPaginaAtual, setHTMLById } from './helpers/index.js';
+import { mostrarNotificacao, tratarErro } from './notification.js';
 import * as logger from './helpers/logger.js';
 
-const MENU_CACHE_KEY = 'menuHtmlCacheV1';
+const MENU_CACHE_KEY = 'menuHtmlCacheV2';
 const MENU_MAX_TENTATIVAS = 2;
+
+function isMenuCacheValido(html) {
+  if (!html || !html.trim()) {
+    return false;
+  }
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const sidebar = doc.querySelector('.sidebar');
+    const modalGlobal = doc.querySelector('#modalGlobal');
+    const loadingOverlay = doc.querySelector('#loadingOverlay');
+    const modalGlobalValido =
+      modalGlobal?.classList.contains('modal-overlay') &&
+      modalGlobal.classList.contains('is-hidden');
+    const loadingOverlayValido =
+      loadingOverlay?.classList.contains('modal-overlay') &&
+      loadingOverlay.classList.contains('is-hidden');
+
+    return Boolean(sidebar && modalGlobalValido && loadingOverlayValido);
+  } catch (error) {
+    logger.warn('Nao foi possivel validar cache do menu', 'menu', error);
+    return false;
+  }
+}
 
 function lerMenuDoCache() {
   try {
-    return sessionStorage.getItem(MENU_CACHE_KEY);
+    const html = sessionStorage.getItem(MENU_CACHE_KEY);
+    return isMenuCacheValido(html) ? html : null;
   } catch (error) {
     logger.warn('Nao foi possivel ler cache do menu', 'menu', error);
     return null;
@@ -41,6 +69,10 @@ async function carregarHtmlMenu() {
       const html = await res.text();
       if (!html || !html.trim()) {
         throw new Error('HTML do menu veio vazio');
+      }
+
+      if (!isMenuCacheValido(html)) {
+        throw new Error('HTML do menu veio em formato inesperado');
       }
 
       salvarMenuNoCache(html);
@@ -82,6 +114,8 @@ export async function adicionarMenu() {
       setHTMLById('menu', html);
     } catch (error) {
       renderizarFallbackMenu(menuDiv);
+      const mensagem = tratarErro(error, 'Nao foi possivel carregar o menu');
+      mostrarNotificacao(mensagem, 'erro');
       throw error;
     }
   }

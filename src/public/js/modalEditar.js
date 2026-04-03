@@ -81,11 +81,11 @@ export function abrirModalErro(mensagem) {
 
   setHTMLById(
     'modalTitulo',
-    '<i class="fa-solid fa-circle-xmark" style="color: var(--btn-danger);"></i> Erro'
+    '<i class="fa-solid fa-circle-xmark modal-icon-danger"></i> Erro'
   );
   setHTMLById(
     'modalConteudo',
-    '<p id="modalConteudoErroTexto" style="margin: 0; padding: 10px 0; color: var(--text-secondary); line-height: 1.6;"></p>'
+    '<p id="modalConteudoErroTexto" class="modal-copy"></p>'
   );
   setTextById('modalConteudoErroTexto', mensagem);
 

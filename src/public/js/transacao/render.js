@@ -13,6 +13,8 @@ import { mostrarNotificacao, tratarErro } from '../notification.js';
 import { carregarTransacoes as carregarTransacoesService } from './service.js';
 import { initTransacaoFilters } from './filters.js';
 
+let transacoesClickHandlerBound = false;
+
 const paginacaoTransacoes = criarPaginacao({
   containerId: 'paginationTransacoes',
   prevButtonId: 'btnAnteriorTransacoes',
@@ -73,6 +75,30 @@ function renderizarPaginaTransacoes() {
   controladorListagemTransacoes.render();
 }
 
+function bindTransacaoActions() {
+  const container = $('transacoes');
+  if (!container || transacoesClickHandlerBound) return;
+
+  container.addEventListener('click', async (event) => {
+    const button = event.target.closest('button[data-action][data-id]');
+    if (!button) return;
+
+    const { action, id } = button.dataset;
+    if (!action || !id) return;
+
+    if (action === 'editar') {
+      await window.editarTransacao?.(id);
+      return;
+    }
+
+    if (action === 'deletar') {
+      await window.deletarTransacao?.(id);
+    }
+  });
+
+  transacoesClickHandlerBound = true;
+}
+
 export async function listarTransacoes() {
   const container = $('transacoes');
   // Gera HTML de um card de transacao
@@ -91,6 +117,7 @@ export async function initTransacoesList() {
   const container = $('transacoes');
   if (!container) return;
 
+  bindTransacaoActions();
   paginacaoTransacoes.init();
   await initTransacaoFilters({
     state: stateTransacoes,

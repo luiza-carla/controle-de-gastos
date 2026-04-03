@@ -11,6 +11,7 @@ import {
   setupSubcategoriaAutocomplete,
   obterSubcategoriaParaEnviar,
   executarAcaoModal,
+  applyCategoryTheme,
 } from '../helpers/index.js';
 import { templateEditarTransacaoModal } from './templates.js';
 import {
@@ -106,8 +107,9 @@ export const editarTransacao = async (id) => {
 
   const modalSubGroup = $('modalSubcategoriaGroup');
   const atualizarVisibilidadeModal = (lista) => {
-    if (modalSubGroup)
-      modalSubGroup.style.display = lista && lista.length ? '' : 'none';
+    if (modalSubGroup) {
+      modalSubGroup.classList.toggle('is-hidden', !(lista && lista.length));
+    }
   };
 
   // inicializa autocomplete de categoria para o modal
@@ -143,8 +145,10 @@ export const editarTransacao = async (id) => {
     if (inputBusca && inputHidden) {
       inputBusca.value = transacao.categoria.nome;
       inputHidden.value = transacao.categoria._id;
-      const cor = transacao.categoria.cor || '';
-      inputBusca.style.boxShadow = cor ? `inset 4px 0 0 ${cor}` : '';
+      applyCategoryTheme(inputBusca, transacao.categoria.cor, {
+        accent: true,
+        categoryName: transacao.categoria.nome,
+      });
     }
     // carregar lista de subcategorias existente para pré‑selecionar
     const subs = await carregarSubcategorias(transacao.categoria._id);

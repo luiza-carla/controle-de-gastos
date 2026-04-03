@@ -18,6 +18,7 @@ import {
   inicializarEditorTags,
   parseCurrency,
   executarAcaoModal,
+  applyCategoryTheme,
 } from '../helpers/index.js';
 import { buildEditarDesejoHTML, buildRealizarDesejoHTML } from './templates.js';
 
@@ -82,8 +83,10 @@ function inicializarModalEditarDesejo({ desejo, categorias, tags }) {
     if (inputBusca && inputHidden) {
       inputBusca.value = desejo.categoria.nome;
       inputHidden.value = desejo.categoria._id;
-      const cor = desejo.categoria.cor || '';
-      inputBusca.style.boxShadow = cor ? `inset 4px 0 0 ${cor}` : '';
+      applyCategoryTheme(inputBusca, desejo.categoria.cor, {
+        accent: true,
+        categoryName: desejo.categoria.nome,
+      });
     }
 
     carregarSubcategorias(desejo.categoria._id).then((subs) => {

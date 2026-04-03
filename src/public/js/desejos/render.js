@@ -8,6 +8,7 @@ import {
   criarBadgesCategoriaSubcategoriaSeparados,
   gerarTags,
   setTextById,
+  getCategoryThemeClass,
 } from '../helpers/index.js';
 
 const ACTIONS = {
@@ -18,11 +19,10 @@ const ACTIONS = {
 
 export function buildDesejoCard(desejo) {
   const card = document.createElement('div');
-  card.className = 'transacao-card transacao-saida';
-  card.style.setProperty(
-    '--cor-categoria',
-    desejo.categoria?.cor || 'var(--gray-700)'
-  );
+  card.className = `transacao-card transacao-saida ${getCategoryThemeClass(
+    desejo.categoria?.cor,
+    desejo.categoria?.nome
+  )}`;
 
   const tipoDespesa = desejo.tipoDespesa ? capitalizar(desejo.tipoDespesa) : '';
   const valorFormatado = formatarValor(desejo.valor);

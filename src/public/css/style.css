@@ -1,3 +1,5 @@
+@import url('/css/generated-category-themes.css');
+
 * {
   margin: 0;
   padding: 0;
@@ -96,6 +98,43 @@
 /* Utilities */
 .is-hidden {
   display: none !important;
+}
+
+.actions-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.spacer-16 {
+  margin-top: 16px;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-lg {
+  font-size: 18px;
+}
+
+.modal-icon-danger {
+  color: var(--btn-danger);
+}
+
+.modal-copy {
+  margin: 0;
+  padding: 10px 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.input-categoria-accent {
+  box-shadow: inset 4px 0 0 var(--input-accent-color, transparent);
 }
 
 body {

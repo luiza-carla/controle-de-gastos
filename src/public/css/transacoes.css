@@ -51,6 +51,7 @@
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
+  background: var(--categoria-dot, var(--gray-700));
 }
 
 .categoria-nome {
@@ -329,7 +330,7 @@
   font-size: 12px;
   background: var(--color-white);
   color: var(--text-secondary);
-  border: 1px solid var(--categoria-cor);
+  border: 1px solid var(--categoria-cor, var(--gray-700));
 }
 
 .categoria-badge::before {
@@ -337,7 +338,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--categoria-cor);
+  background: var(--categoria-cor, var(--gray-700));
 }
 
 /* Quando houver duas badges consecutivas (categoria + subcategoria)

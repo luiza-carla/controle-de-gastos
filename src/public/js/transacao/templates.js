@@ -6,6 +6,7 @@ import {
   criarBotoesAcao,
   criarBadgesCategoriaSubcategoriaSeparados,
   gerarTags,
+  getCategoryThemeClass,
 } from '../helpers/index.js';
 
 export function templateTransacaoCard(t) {
@@ -34,7 +35,7 @@ export function templateTransacaoCard(t) {
 
   const { categoriaBadge, subcategoriaBadge } =
     criarBadgesCategoriaSubcategoriaSeparados(t.categoria, t.subcategoria);
-  const corCategoria = t.categoria?.cor || 'var(--gray-700)';
+  const themeClass = getCategoryThemeClass(t.categoria?.cor, t.categoria?.nome);
 
   const tags = gerarTags(t.tags);
   const dataCriacao = formatarData(t.createdAt || t.data);
@@ -43,7 +44,7 @@ export function templateTransacaoCard(t) {
   const totalParcelas = t.parcelamento?.totalParcelas || 1;
 
   return `
-    <div class="transacao-card ${tipoClasse}" style="--cor-categoria:${corCategoria};">
+    <div class="transacao-card ${tipoClasse} ${themeClass}">
 
       <div class="transacao-header">
         <div class="transacao-titulo">
@@ -132,13 +133,19 @@ export function templateTransacaoCard(t) {
         ${criarBotoesAcao([
           {
             classe: 'secondary',
-            onclick: `editarTransacao('${t._id}')`,
+            dataAttributes: {
+              action: 'editar',
+              id: t._id,
+            },
             icone: 'fa-pen',
             title: 'Editar',
           },
           {
             classe: 'danger',
-            onclick: `deletarTransacao('${t._id}')`,
+            dataAttributes: {
+              action: 'deletar',
+              id: t._id,
+            },
             icone: 'fa-trash',
             title: 'Deletar',
           },
@@ -164,9 +171,9 @@ export function templateEditarTransacaoModal(transacao, contas) {
     .join('');
 
   const tipoDespesaField = `
-    <div class="form-group" id="modalGrupoTipoDespesa" style="display: ${
-      transacao.tipo === 'saida' ? '' : 'none'
-    };">
+    <div class="form-group ${
+      transacao.tipo === 'saida' ? '' : 'is-hidden'
+    }" id="modalGrupoTipoDespesa">
       <label>Tipo de Despesa</label>
       <select id="modalTipoDespesa">
         <option value="">Selecione o tipo de despesa</option>

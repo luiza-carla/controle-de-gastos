@@ -96,7 +96,7 @@ export function templateTransferirConta(
       <input type="text" inputmode="decimal" data-moeda id="modalValorTransferenciaConta" min="0" required>
     </div>
     <div class="form-group">
-      <small style="color: var(--text-secondary);">Saldo disponível: R$ ${saldoFormatado}</small>
+      <small class="text-secondary">Saldo disponível: R$ ${saldoFormatado}</small>
     </div>
   `;
 }

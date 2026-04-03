@@ -7,7 +7,25 @@ import { initTransacoes } from './transacao/index.js';
 import { initSalario } from './salario/index.js';
 import { $, bindCurrencyInputs } from './helpers/index.js';
 
+function bindNavigationTargets() {
+  document.querySelectorAll('[data-nav-target]').forEach((element) => {
+    if (element.dataset.navBound === 'true') {
+      return;
+    }
+
+    element.dataset.navBound = 'true';
+    element.addEventListener('click', () => {
+      const target = element.getAttribute('data-nav-target');
+      if (target) {
+        window.location.href = target;
+      }
+    });
+  });
+}
+
 async function initApp() {
+  bindNavigationTargets();
+
   const autenticado = await verificarAutenticacao();
   if (!autenticado) return;
 

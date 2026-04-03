@@ -21,7 +21,8 @@
         <div class="card card-atalho-adicionar">
           <button
             class="btn btn-primary"
-            onclick="window.location.href = '/html/adicionar-lista-desejo.html'"
+            type="button"
+            data-nav-target="/html/adicionar-lista-desejo.html"
           >
             <i class="fa-solid fa-plus"></i> Adicionar novo desejo
           </button>
@@ -93,8 +94,7 @@
 
         <div
           id="paginationDesejos"
-          class="pagination-listagem"
-          style="display: none"
+          class="pagination-listagem is-hidden"
         >
           <button
             id="btnAnteriorDesejos"

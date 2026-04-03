@@ -7,6 +7,9 @@ import {
   $,
   showElement,
   hideElement,
+  getCategoryThemeClass,
+  applyCategoryTheme,
+  clearCategoryTheme,
 } from './index.js';
 import * as logger from './logger.js';
 
@@ -39,10 +42,13 @@ export function setupCategoriaAutocomplete(
 
   const aplicarCor = (cor = '') => {
     if (!cor) {
-      inputBusca.style.boxShadow = '';
+      clearCategoryTheme(inputBusca);
       return;
     }
-    inputBusca.style.boxShadow = `inset 4px 0 0 ${cor}`;
+    applyCategoryTheme(inputBusca, cor, {
+      accent: true,
+      categoryName: categoriaSelecionada?.nome || '',
+    });
   };
 
   const selecionarCategoria = (id, nome, cor) => {
@@ -69,7 +75,7 @@ export function setupCategoriaAutocomplete(
       .map(
         (cat) =>
           `<div class="categoria-item" data-id="${escaparHtml(String(cat._id ?? ''))}" data-nome="${escaparHtml(cat.nome)}" data-cor="${escaparHtml(String(cat.cor ?? ''))}">
-        <span class="categoria-cor" style="background:${escaparHtml(String(cat.cor ?? ''))};"></span>
+        <span class="categoria-cor ${getCategoryThemeClass(cat.cor, cat.nome)}"></span>
         <span class="categoria-nome">${escaparHtml(cat.nome)}</span>
       </div>`
       )

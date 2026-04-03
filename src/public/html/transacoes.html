@@ -22,7 +22,8 @@
         <div class="card card-atalho-adicionar">
           <button
             class="btn btn-primary"
-            onclick="window.location.href = '/html/adicionar-transacao.html'"
+            type="button"
+            data-nav-target="/html/adicionar-transacao.html"
           >
             <i class="fa-solid fa-plus"></i> Adicionar nova transação
           </button>
@@ -111,8 +112,7 @@
 
         <div
           id="paginationTransacoes"
-          class="pagination-listagem"
-          style="display: none"
+          class="pagination-listagem is-hidden"
         >
           <button
             id="btnAnteriorTransacoes"

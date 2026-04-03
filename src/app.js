@@ -8,58 +8,72 @@ const errorHandler = require('./middlewares/errorHandler');
 // Inicialização da aplicação
 const app = express();
 
+const cspDirectives = {
+  defaultSrc: ["'self'"],
+  baseUri: ["'self'"],
+  connectSrc: ["'self'"],
+  fontSrc: ["'self'", 'data:'],
+  formAction: ["'self'"],
+  frameAncestors: ["'none'"],
+  imgSrc: ["'self'", 'data:', 'blob:'],
+  objectSrc: ["'none'"],
+  scriptSrc: ["'self'"],
+  scriptSrcAttr: ["'none'"],
+  styleSrc: ["'self'"],
+};
+
 const corsOrigins = (process.env.CORS_ORIGINS || '')
-	.split(',')
-	.map((origin) => origin.trim())
-	.filter(Boolean);
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 function getRequestOrigin(req) {
-	const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-	return `${protocol}://${req.get('host')}`;
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  return `${protocol}://${req.get('host')}`;
 }
 
 function corsOriginValidator(origin, callback) {
-	if (!origin) {
-		callback(null, true);
-		return;
-	}
+  if (!origin) {
+    callback(null, true);
+    return;
+  }
 
-	const allowedOrigins = new Set(corsOrigins);
+  const allowedOrigins = new Set(corsOrigins);
 
-	callback(null, allowedOrigins.has(origin));
+  callback(null, allowedOrigins.has(origin));
 }
 
 function corsOptionsDelegate(req, callback) {
-	const origin = req.header('Origin');
-	const requestOrigin = origin ? getRequestOrigin(req) : null;
+  const origin = req.header('Origin');
+  const requestOrigin = origin ? getRequestOrigin(req) : null;
 
-	if (!origin || origin === requestOrigin) {
-		callback(null, {
-			credentials: true,
-			methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-			origin: true,
-		});
-		return;
-	}
+  if (!origin || origin === requestOrigin) {
+    callback(null, {
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      origin: true,
+    });
+    return;
+  }
 
-	corsOriginValidator(origin, (error, isAllowed) => {
-		callback(error, {
-			credentials: true,
-			methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-			origin: isAllowed,
-		});
-	});
+  corsOriginValidator(origin, (error, isAllowed) => {
+    callback(error, {
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      origin: isAllowed,
+    });
+  });
 }
 
 // Middlewares globais
 app.use(
-	helmet({
-		contentSecurityPolicy: false,
-	})
+  helmet({
+    contentSecurityPolicy: {
+      directives: cspDirectives,
+    },
+  })
 );
-app.use(
-	cors(corsOptionsDelegate)
-);
+app.use(cors(corsOptionsDelegate));
 app.use(express.json({ limit: '100kb' }));
 
 // Arquivos estáticos (frontend)

@@ -26,12 +26,12 @@ export function setHTMLById(id, html) {
 
 // Mostra elemento (remove display none)
 export function showElement(el) {
-  if (el) el.style.display = '';
+  if (el) el.classList.remove('is-hidden');
 }
 
 // Oculta elemento
 export function hideElement(el) {
-  if (el) el.style.display = 'none';
+  if (el) el.classList.add('is-hidden');
 }
 
 // Limpa conteudo HTML de elemento
@@ -69,13 +69,13 @@ export function setDisabledById(id, disabled) {
 // Mostra modal global
 export function showModal() {
   const modal = document.getElementById('modalGlobal');
-  if (modal) modal.style.display = 'flex';
+  showElement(modal);
 }
 
 // Oculta modal global
 export function hideModal() {
   const modal = document.getElementById('modalGlobal');
-  if (modal) modal.style.display = 'none';
+  hideElement(modal);
 }
 
 // Mostra overlay global de carregamento (p.ex. "Enviando...")
@@ -86,14 +86,14 @@ export function showLoadingOverlay(message = 'Enviando...') {
   const titleEl = overlay.querySelector('.loading-title');
   if (titleEl) titleEl.textContent = message;
 
-  overlay.style.display = 'flex';
+  showElement(overlay);
 }
 
 // Oculta overlay global de carregamento
 export function hideLoadingOverlay() {
   const overlay = document.getElementById('loadingOverlay');
   if (!overlay) return;
-  overlay.style.display = 'none';
+  hideElement(overlay);
 }
 
 // Adiciona evento a elemento por ID
