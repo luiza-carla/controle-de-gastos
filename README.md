@@ -224,7 +224,6 @@ gastos/
 - `src/routes`: organiza os endpoints por domínio funcional.
 - `src/public`: contém a interface web servida estaticamente pela aplicação.
 - `scripts`: reúne geração de CSS temático, cópia de vendors e seed da base.
-- `md`: documentação interna de suporte ao desenvolvimento.
 
 ## Pré-requisitos
 
