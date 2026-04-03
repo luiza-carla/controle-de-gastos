@@ -35,7 +35,8 @@ class HistoricoController {
     const { entidade, entidadeId } = req.params;
     const historicos = await HistoricoService.buscarPorEntidade(
       entidade,
-      entidadeId
+      entidadeId,
+      req.user.id
     );
 
     res.json({

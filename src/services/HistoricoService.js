@@ -210,7 +210,8 @@ class HistoricoService {
 
     const objetoRelacionado = await this._buscarObjetoRelacionado(
       historico.entidade,
-      historico.entidadeId
+      historico.entidadeId,
+      historico.usuario
     );
 
     if (objetoRelacionado) {
@@ -528,23 +529,40 @@ class HistoricoService {
   }
 
   // Busca o objeto relacionado ao histórico
-  static async _buscarObjetoRelacionado(entidade, entidadeId) {
+  static async _buscarObjetoRelacionado(
+    entidade,
+    entidadeId,
+    usuarioId = null
+  ) {
     if (!entidadeId) {
       return null;
     }
 
     try {
+      const filtroPorUsuario = usuarioId ? { usuario: usuarioId } : {};
+
       if (entidade === 'transacao' || entidade === 'salario') {
-        return await populateTransacao(Transacao.findById(entidadeId)).lean();
+        return await populateTransacao(
+          Transacao.findOne({ _id: entidadeId, ...filtroPorUsuario })
+        ).lean();
       }
 
       switch (entidade) {
         case 'conta':
-          return await Conta.findById(entidadeId).lean();
+          return await Conta.findOne({
+            _id: entidadeId,
+            ...filtroPorUsuario,
+          }).lean();
         case 'carteira':
-          return await Carteira.findById(entidadeId).lean();
+          return await Carteira.findOne({
+            _id: entidadeId,
+            ...filtroPorUsuario,
+          }).lean();
         case 'listaDesejo':
-          return await ListaDesejo.findById(entidadeId)
+          return await ListaDesejo.findOne({
+            _id: entidadeId,
+            ...filtroPorUsuario,
+          })
             .populate('categoria', 'nome cor tipo')
             .populate('subcategoria', 'nome')
             .lean();
@@ -627,16 +645,21 @@ class HistoricoService {
   }
 
   // Busca histórico de uma entidade específica
-  static async buscarPorEntidade(entidade, entidadeId) {
+  static async buscarPorEntidade(entidade, entidadeId, usuarioId) {
     const historicos = await Historico.find({
       entidade,
       entidadeId,
+      usuario: usuarioId,
     })
       .sort({ createdAt: -1 })
       .lean();
 
     // Busca o objeto relacionado uma única vez
-    const objeto = await this._buscarObjetoRelacionado(entidade, entidadeId);
+    const objeto = await this._buscarObjetoRelacionado(
+      entidade,
+      entidadeId,
+      usuarioId
+    );
 
     return Promise.all(
       historicos.map(async (historico) => {
