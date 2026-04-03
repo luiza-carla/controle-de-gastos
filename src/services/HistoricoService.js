@@ -670,35 +670,6 @@ class HistoricoService {
     );
   }
 
-  // Limpa histórico antigo após a conta completar X dias de criação.
-  static async limparAntigo(dias = 30) {
-    if (dias <= 0) {
-      throw criarErro(400, 'Dias deve ser um número positivo');
-    }
-
-    const dataLimite = new Date();
-    dataLimite.setDate(dataLimite.getDate() - dias);
-
-    // Só participa da limpeza quem já tem conta criada há pelo menos X dias.
-    const usuariosElegiveis = await Usuario.find(
-      { createdAt: { $lte: dataLimite } },
-      { _id: 1 }
-    ).lean();
-
-    if (usuariosElegiveis.length === 0) {
-      return 0;
-    }
-
-    const usuariosIds = usuariosElegiveis.map((usuario) => usuario._id);
-
-    const resultado = await Historico.deleteMany({
-      usuario: { $in: usuariosIds },
-      createdAt: { $lt: dataLimite },
-    });
-
-    return resultado.deletedCount;
-  }
-
   // Limpa histórico a cada X dias desde a última limpeza (ou criação da conta).
   static async calcularDiasRestantesParaLimpeza(diasCiclo = 30) {
     const agora = new Date();

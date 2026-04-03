@@ -57,18 +57,6 @@ class HistoricoController {
       message: resultado.message,
     });
   }
-
-  // Limpa histórico antigo (endpoint de manutenção)
-  async limparAntigo(req, res) {
-    const dias = parseQueryInt(req.query.dias, 30);
-    const deletados = await HistoricoService.limparAntigo(dias);
-
-    res.json({
-      success: true,
-      message: `${deletados} registros de histórico removidos (retenção: ${dias} dias)`,
-      deletados,
-    });
-  }
 }
 
 module.exports = new HistoricoController();

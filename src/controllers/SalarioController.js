@@ -11,10 +11,18 @@ const {
   extrairContaId,
   extrairDestinoSaldo,
 } = require('../utils/salarioHelpers');
+const { selecionarCamposPermitidos } = require('../utils/payloadHelpers');
 
 const MENSAGEM_CATEGORIA_SALARIO_NAO_ENCONTRADA =
   'Categoria Salário não encontrada';
 const MENSAGEM_SALARIO_NAO_ENCONTRADO = 'Salário não encontrado';
+const CAMPOS_PERMITIDOS_SALARIO = [
+  'titulo',
+  'valor',
+  'conta',
+  'diaRecebimento',
+  'frequencia',
+];
 
 function montarDescricaoHistoricoSalario(acao, salario) {
   const descricaoBase = HistoricoService.formatarDescricao(acao, 'salario');
@@ -115,18 +123,22 @@ class SalarioController {
     const refs = await this.buscarCategoriaSalarioOuResponder();
     if (!refs) return;
 
-    const destinoSaldo = this.normalizarDestinoSaldo(req.body);
+    const payload = selecionarCamposPermitidos(
+      req.body,
+      CAMPOS_PERMITIDOS_SALARIO
+    );
+    const destinoSaldo = this.normalizarDestinoSaldo(payload);
 
     const hoje = new Date();
 
     const salario = await Transacao.create({
-      ...req.body,
+      ...payload,
       ...destinoSaldo,
       usuario: req.user.id,
       categoria: refs.categoria._id,
       subcategoria: refs.subcategoria?._id || null,
       tipo: 'entrada',
-      titulo: req.body.titulo || 'Salário',
+      titulo: payload.titulo || 'Salário',
       status: 'pendente',
       ativa: true,
     });
@@ -188,10 +200,13 @@ class SalarioController {
       hoje
     );
 
-    const payloadAtualizacao = { ...req.body };
+    const payloadAtualizacao = selecionarCamposPermitidos(
+      req.body,
+      CAMPOS_PERMITIDOS_SALARIO
+    );
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'conta')) {
-      const destinoSaldo = this.normalizarDestinoSaldo(req.body);
+      const destinoSaldo = this.normalizarDestinoSaldo(payloadAtualizacao);
       payloadAtualizacao.conta = destinoSaldo.conta;
       payloadAtualizacao.fonteSaldo = destinoSaldo.fonteSaldo;
     }

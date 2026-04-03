@@ -14,6 +14,4 @@ router.get('/:entidade/:entidadeId', historicoHandler('buscarPorEntidade'));
 
 router.post('/:id/desfazer', historicoHandler('desfazer'));
 
-router.delete('/limpar', historicoHandler('limparAntigo'));
-
 module.exports = router;

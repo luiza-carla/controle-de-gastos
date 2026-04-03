@@ -1,9 +1,16 @@
 const ContaService = require('../services/ContaService');
+const { selecionarCamposPermitidos } = require('../utils/payloadHelpers');
+
+const CAMPOS_PERMITIDOS_CONTA_CRIACAO = ['nome', 'tipo', 'saldo'];
+const CAMPOS_PERMITIDOS_CONTA_ATUALIZACAO = ['nome', 'tipo'];
 
 class ContaController {
   // Cria nova conta
   async criar(req, res) {
-    const dados = { ...req.body, usuario: req.user.id };
+    const dados = {
+      ...selecionarCamposPermitidos(req.body, CAMPOS_PERMITIDOS_CONTA_CRIACAO),
+      usuario: req.user.id,
+    };
     const conta = await ContaService.criar(dados);
     res.status(201).json(conta);
   }
@@ -19,7 +26,7 @@ class ContaController {
     const conta = await ContaService.atualizar(
       req.params.id,
       req.user.id,
-      req.body
+      selecionarCamposPermitidos(req.body, CAMPOS_PERMITIDOS_CONTA_ATUALIZACAO)
     );
     res.json(conta);
   }

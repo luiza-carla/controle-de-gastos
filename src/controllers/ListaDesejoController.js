@@ -9,9 +9,18 @@ const SaldoService = require('../services/SaldoService');
 const { formatarMoeda } = require('../utils/stringHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
 const { criarErro } = require('../utils/errorHelpers');
+const { selecionarCamposPermitidos } = require('../utils/payloadHelpers');
 
 const MENSAGEM_ITEM_NAO_ENCONTRADO = 'Item da lista de desejos nao encontrado';
 const PROJECAO_CATEGORIA = 'nome cor tipo';
+const CAMPOS_PERMITIDOS_LISTA_DESEJO_ATUALIZACAO = [
+  'titulo',
+  'valor',
+  'categoria',
+  'subcategoria',
+  'tags',
+  'tipoDespesa',
+];
 
 function popularCategoria(query) {
   return query
@@ -32,7 +41,10 @@ function buscarItemDoUsuario(itemId, usuarioId) {
 }
 
 function montarUpdateData(body) {
-  const updateData = { ...body };
+  const updateData = selecionarCamposPermitidos(
+    body,
+    CAMPOS_PERMITIDOS_LISTA_DESEJO_ATUALIZACAO
+  );
 
   // Se subcategoria foi enviada como string vazia, consideramos como remoção.
   if ('subcategoria' in updateData && !updateData.subcategoria) {

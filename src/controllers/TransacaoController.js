@@ -8,8 +8,23 @@ const {
 } = require('../utils/subcategoriaUtils');
 const { criarErro } = require('../utils/errorHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
+const { selecionarCamposPermitidos } = require('../utils/payloadHelpers');
 
 const MENSAGEM_TRANSACAO_NAO_ENCONTRADA = 'Transação não encontrada';
+const CAMPOS_PERMITIDOS_TRANSACAO_ATUALIZACAO = [
+  'conta',
+  'titulo',
+  'valor',
+  'tipo',
+  'categoria',
+  'subcategoria',
+  'data',
+  'status',
+  'recorrencia',
+  'parcelamento',
+  'tags',
+  'tipoDespesa',
+];
 
 // funções de saldo foram movidas para SaldoService; validação de carteira permanece
 
@@ -189,7 +204,10 @@ class TransacaoController {
     }
 
     // normaliza os dados vindos do cliente
-    const updateData = { ...req.body };
+    const updateData = selecionarCamposPermitidos(
+      req.body,
+      CAMPOS_PERMITIDOS_TRANSACAO_ATUALIZACAO
+    );
 
     // se precisamos apagar algum campo, acumulamos as operações em $unset
     const unsetOps = {};
