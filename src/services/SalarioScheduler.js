@@ -1,4 +1,5 @@
 const cron = require('node-cron');
+const mongoose = require('mongoose');
 const Transacao = require('../models/Transacao');
 const categoriaHelpers = require('../utils/categoriaHelpers');
 const { formatarMoeda } = require('../utils/stringHelpers');
@@ -55,19 +56,20 @@ class SalarioScheduler {
       const filtroBase = {
         ativa: true,
         frequencia: 'mensal',
-        diaRecebimento: { $lte: diaAtual },
+        diaRecebimento: mongoose.trusted({ $lte: diaAtual }),
         $or: [
           { fonteSaldo: 'carteira' },
-          { conta: { $exists: true, $ne: null } },
+          { conta: mongoose.trusted({ $exists: true, $ne: null }) },
         ],
       };
 
       const { filtroCategoria } = categoriaHelpers.obterFiltrosSalario(refs);
-      const filtro = {
+      const filtro = mongoose.trusted({
         $and: [filtroBase, filtroCategoria],
-      };
+      });
 
       const salarios = await Transacao.find(filtro)
+        .setOptions({ sanitizeFilter: false })
         .populate('usuario')
         .populate('conta');
 

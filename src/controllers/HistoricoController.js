@@ -9,8 +9,8 @@ class HistoricoController {
       acao: req.query.acao,
       desfeito: req.query.desfeito,
       ordenarPor: req.query.ordenarPor || req.query.sortBy,
-      limit: parseQueryInt(req.query.limit, 50),
-      skip: parseQueryInt(req.query.skip, 0),
+      limit: parseQueryInt(req.query.limit, 50, { min: 1, max: 100 }),
+      skip: parseQueryInt(req.query.skip, 0, { min: 0, max: 10000 }),
     };
 
     const resultado = await HistoricoService.buscarPorUsuario(

@@ -29,7 +29,7 @@ class UsuarioService {
     const { nome, email, senha, salario } = dados;
 
     // Valida se email já existe
-    const usuarioExistente = await Usuario.findOne({ email });
+    const usuarioExistente = await Usuario.findOne({ email: String(email) });
     if (usuarioExistente) {
       throw criarErro(409, 'Email já cadastrado');
     }
@@ -54,7 +54,7 @@ class UsuarioService {
     const { email, senha } = dados;
 
     // Busca usuário por email
-    const usuario = await Usuario.findOne({ email });
+    const usuario = await Usuario.findOne({ email: String(email) });
     if (!usuario) {
       throw criarErro(401, 'Credenciais inválidas');
     }

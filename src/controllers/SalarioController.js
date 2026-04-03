@@ -62,7 +62,9 @@ class SalarioController {
     const filtroBase = { _id: id, usuario: usuarioId };
     if (!filtroUsuario) return Transacao.findOne(filtroBase);
 
-    return Transacao.findOne({ ...filtroBase, ...filtroUsuario });
+    return Transacao.findOne({ ...filtroBase, ...filtroUsuario }).setOptions({
+      sanitizeFilter: false,
+    });
   }
 
   // Verifica se salário deve ser processado na data informada
@@ -112,7 +114,9 @@ class SalarioController {
     }
 
     const salarios = await populateSalario(
-      Transacao.find(filtroSalario).sort({ data: -1, createdAt: -1 })
+      Transacao.find(filtroSalario)
+        .setOptions({ sanitizeFilter: false })
+        .sort({ data: -1, createdAt: -1 })
     );
 
     res.json(salarios);

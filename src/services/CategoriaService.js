@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Categoria = require('../models/Categoria');
 
 class CategoriaService {
@@ -5,8 +6,10 @@ class CategoriaService {
   async listar() {
     return Categoria.find({
       ativa: true,
-      nome: { $ne: 'Salário' },
-    }).select('-__v');
+      nome: mongoose.trusted({ $ne: 'Salário' }),
+    })
+      .setOptions({ sanitizeFilter: false })
+      .select('-__v');
   }
 }
 

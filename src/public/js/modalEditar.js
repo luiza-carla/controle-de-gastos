@@ -1,5 +1,6 @@
 import {
   setHTMLById,
+  setTextById,
   showElement,
   hideElement,
   showModal,
@@ -84,8 +85,9 @@ export function abrirModalErro(mensagem) {
   );
   setHTMLById(
     'modalConteudo',
-    `<p style="margin: 0; padding: 10px 0; color: var(--text-secondary); line-height: 1.6;">${mensagem}</p>`
+    '<p id="modalConteudoErroTexto" style="margin: 0; padding: 10px 0; color: var(--text-secondary); line-height: 1.6;"></p>'
   );
+  setTextById('modalConteudoErroTexto', mensagem);
 
   definirFooterModal('erro');
 
@@ -99,7 +101,7 @@ export function mostrarErroInline(
   mensagemId = 'modalMensagemErro'
 ) {
   const erroEl = $(erroId);
-  setHTMLById(mensagemId, mensagem);
+  setTextById(mensagemId, mensagem);
   if (erroEl) {
     addClass(erroEl, 'ativo');
     requestAnimationFrame(() => rolarParaErroInline(erroEl));
@@ -113,7 +115,7 @@ export function limparErroInline(
 ) {
   const erroEl = $(erroId);
   if (erroEl) removeClass(erroEl, 'ativo');
-  setHTMLById(mensagemId, '');
+  setTextById(mensagemId, '');
 }
 
 // Garante estrutura de erro inline no elemento informado

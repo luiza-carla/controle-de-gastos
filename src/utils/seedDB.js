@@ -57,7 +57,10 @@ async function limparDadosPorUsuarios(usuariosIds) {
 
   await Promise.all(
     MODELS_LIMPEZA.map((Model) =>
-      Model.deleteMany({ usuario: { $in: usuariosIds } })
+      Model.deleteMany(
+        { usuario: mongoose.trusted({ $in: usuariosIds }) },
+        { sanitizeFilter: false }
+      )
     )
   );
 }

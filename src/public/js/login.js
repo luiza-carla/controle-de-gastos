@@ -1,4 +1,4 @@
-import { setToken, apiFetch } from './config.js';
+import { apiFetch, clearLegacyAuthState } from './config.js';
 import {
   $,
   configurarToggleSenha,
@@ -45,16 +45,14 @@ if (formLogin) {
           return;
         }
 
-        // Faz requisição de login
         const data = await apiFetch(`${baseUrlUsuarios}/login`, {
           skipAuthRedirect: true,
           method: 'POST',
           body: JSON.stringify({ email, senha }),
         });
 
-        // Salva token e redireciona se sucesso
-        if (data.token) {
-          setToken(data.token);
+        if (data?.usuario) {
+          clearLegacyAuthState();
           window.location.href = '/html/inicio.html';
         }
       } catch (err) {

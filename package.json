@@ -6,11 +6,14 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.2",
+    "helmet": "^8.1.0",
     "imask": "^7.6.1",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.1.0",
     "mongoose": "^9.2.4",
-    "node-cron": "^4.2.1"
+    "node-cron": "^4.2.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -29,5 +32,8 @@
     "postinstall": "npm run copy:fontawesome && npm run copy:imask",
     "fix": "prettier . --write && eslint . --fix",
     "seed": "node src/utils/seedDB.js"
+  },
+  "overrides": {
+    "path-to-regexp": "8.4.0"
   }
 }

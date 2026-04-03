@@ -18,7 +18,8 @@ function errorHandler(err, req, res, next) {
     logarErro('errorHandler', err);
   }
 
-  const mensagem = err.message || 'Erro interno do servidor';
+  const mensagem =
+    status >= 500 ? 'Erro interno do servidor' : err.message || 'Requisição inválida';
   return res.status(status).json({ mensagem });
 }
 

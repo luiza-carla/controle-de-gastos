@@ -68,8 +68,8 @@ export function setupCategoriaAutocomplete(
     const html = categoriasFiltradas
       .map(
         (cat) =>
-          `<div class="categoria-item" data-id="${cat._id}" data-nome="${escaparHtml(cat.nome)}" data-cor="${cat.cor}">
-        <span class="categoria-cor" style="background:${cat.cor};"></span>
+          `<div class="categoria-item" data-id="${escaparHtml(String(cat._id ?? ''))}" data-nome="${escaparHtml(cat.nome)}" data-cor="${escaparHtml(String(cat.cor ?? ''))}">
+        <span class="categoria-cor" style="background:${escaparHtml(String(cat.cor ?? ''))};"></span>
         <span class="categoria-nome">${escaparHtml(cat.nome)}</span>
       </div>`
       )

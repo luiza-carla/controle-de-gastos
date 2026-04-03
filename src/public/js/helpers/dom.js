@@ -1,6 +1,10 @@
+import { escaparHtml } from './format.js';
+
 // Cria opcao HTML para select
 export function criarOpcao(valor, texto) {
-  return `<option value="${valor}">${texto}</option>`;
+  return `<option value="${escaparHtml(String(valor ?? ''))}">${escaparHtml(
+    String(texto ?? '')
+  )}</option>`;
 }
 
 // Transforma array de itens em HTML de cards
@@ -115,7 +119,9 @@ export function criarOptionsHTML(items, valueFn, textFn, optionAtual = null) {
       const valor = valueFn ? valueFn(item) : item._id;
       const texto = textFn ? textFn(item) : item.nome || '';
       const selected = optionAtual === valor ? 'selected' : '';
-      return `<option value="${valor}" ${selected}>${texto}</option>`;
+      return `<option value="${escaparHtml(String(valor ?? ''))}" ${selected}>${escaparHtml(String(
+        texto ?? ''
+      ))}</option>`;
     })
     .join('');
 }
@@ -131,12 +137,17 @@ export function criarBotoesAcao(acoes) {
 
       const dataAttrs = acao.dataAttributes
         ? Object.entries(acao.dataAttributes)
-            .map(([key, value]) => ` data-${key}="${value}"`)
+            .map(
+              ([key, value]) =>
+                ` data-${escaparHtml(String(key))}="${escaparHtml(String(value ?? ''))}"`
+            )
             .join('')
         : '';
 
-      const titleAttr = acao.title ? ` title="${acao.title}"` : '';
-      const text = acao.texto ? ` ${acao.texto}` : '';
+      const titleAttr = acao.title
+        ? ` title="${escaparHtml(String(acao.title))}"`
+        : '';
+      const text = acao.texto ? ` ${escaparHtml(String(acao.texto))}` : '';
       const onclick = acao.onclick ? ` onclick="${acao.onclick}"` : '';
 
       return `

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Transacao = require('../models/Transacao');
 const Conta = require('../models/Conta');
 const Carteira = require('../models/Carteira');
@@ -16,7 +17,9 @@ class ResumoService {
 
     if (!filtroSalario) return [];
 
-    return Transacao.find({ ...filtroSalario, ativa: true });
+    return Transacao.find({ ...filtroSalario, ativa: true }).setOptions({
+      sanitizeFilter: false,
+    });
   }
 
   // Adiciona exclusão da categoria de salário ao filtro quando houver categoria
@@ -110,17 +113,16 @@ class ResumoService {
       usuario: usuarioId,
       ativa: true,
       status: 'pago',
-      data: {
+      data: mongoose.trusted({
         $gte: inicioMes,
         $lte: hoje,
-      },
+      }),
     };
 
     // incluir nome da categoria para exibição
-    const transacoesMes = await Transacao.find(filtroTransacoes).populate(
-      'categoria',
-      'nome'
-    );
+    const transacoesMes = await Transacao.find(filtroTransacoes)
+      .setOptions({ sanitizeFilter: false })
+      .populate('categoria', 'nome');
 
     // Entradas e saídas do mês
     const { entradas, saidas } = totaisTransacoes(transacoesMes);

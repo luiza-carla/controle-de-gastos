@@ -2,14 +2,65 @@ const express = require('express');
 const path = require('path');
 require('dotenv').config();
 const cors = require('cors');
+const helmet = require('helmet');
 const errorHandler = require('./middlewares/errorHandler');
 
 // Inicialização da aplicação
 const app = express();
 
+const corsOrigins = (process.env.CORS_ORIGINS || '')
+	.split(',')
+	.map((origin) => origin.trim())
+	.filter(Boolean);
+
+function getRequestOrigin(req) {
+	const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+	return `${protocol}://${req.get('host')}`;
+}
+
+function corsOriginValidator(origin, callback) {
+	if (!origin) {
+		callback(null, true);
+		return;
+	}
+
+	const allowedOrigins = new Set(corsOrigins);
+
+	callback(null, allowedOrigins.has(origin));
+}
+
+function corsOptionsDelegate(req, callback) {
+	const origin = req.header('Origin');
+	const requestOrigin = origin ? getRequestOrigin(req) : null;
+
+	if (!origin || origin === requestOrigin) {
+		callback(null, {
+			credentials: true,
+			methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+			origin: true,
+		});
+		return;
+	}
+
+	corsOriginValidator(origin, (error, isAllowed) => {
+		callback(error, {
+			credentials: true,
+			methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+			origin: isAllowed,
+		});
+	});
+}
+
 // Middlewares globais
-app.use(cors());
-app.use(express.json());
+app.use(
+	helmet({
+		contentSecurityPolicy: false,
+	})
+);
+app.use(
+	cors(corsOptionsDelegate)
+);
+app.use(express.json({ limit: '100kb' }));
 
 // Arquivos estáticos (frontend)
 app.use(express.static(path.join(__dirname, 'public')));

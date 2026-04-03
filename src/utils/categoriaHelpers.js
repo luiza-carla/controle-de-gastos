@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Categoria = require('../models/Categoria');
 
 // helpers para trabalhar com categorias de forma centralizada
@@ -79,7 +80,7 @@ function montarFiltroCategoriaSalario(refs) {
       categoria: refs.categoriaRenda._id,
       $or: [
         { subcategoria: refs.subcategoria._id },
-        { subcategoria: { $exists: false } },
+        { subcategoria: mongoose.trusted({ $exists: false }) },
         { subcategoria: null },
       ],
     };
@@ -97,7 +98,7 @@ function montarFiltroCategoriaSalario(refs) {
   }
 
   return categoriasSalario.length > 1
-    ? { categoria: { $in: categoriasSalario } }
+    ? { categoria: mongoose.trusted({ $in: categoriasSalario }) }
     : { categoria: categoriasSalario[0] };
 }
 
@@ -155,7 +156,7 @@ function adicionarExclusaoCategoriaSalario(filtro, refs) {
 
   return {
     ...filtro,
-    categoria: { $nin: categoriasSalario },
+    categoria: mongoose.trusted({ $nin: categoriasSalario }),
   };
 }
 

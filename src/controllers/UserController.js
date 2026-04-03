@@ -1,16 +1,28 @@
 const UserService = require('../services/UserService');
+const { setAuthCookie, clearAuthCookie } = require('../utils/authCookie');
 
 class UserController {
   // Registra novo usuário
   async registrar(req, res) {
-    const usuario = await UserService.registrar(req.body);
-    return res.status(201).json(usuario);
+    const resultado = await UserService.registrar(req.body);
+    setAuthCookie(res, resultado.token);
+    return res.status(201).json({ usuario: resultado.usuario });
   }
 
   // Realiza login do usuário
   async login(req, res) {
     const resultado = await UserService.login(req.body);
-    return res.json(resultado);
+    setAuthCookie(res, resultado.token);
+    return res.json({ usuario: resultado.usuario });
+  }
+
+  async sessao(req, res) {
+    return res.json({ autenticado: true });
+  }
+
+  async logout(req, res) {
+    clearAuthCookie(res);
+    return res.json({ success: true });
   }
 
   // Lista todos os usuários

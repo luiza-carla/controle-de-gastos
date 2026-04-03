@@ -13,6 +13,8 @@ import {
   parseCurrency,
   createFormSubmitGuard,
   formatarValor,
+  criarOptionsHTML,
+  formatarItemComTipo,
   $,
   resetFormWithMasks,
 } from '../helpers/index.js';
@@ -56,12 +58,11 @@ async function popularSelectDestinoSalario(selectId = 'contaSalario') {
   try {
     const contas = await listarContas();
 
-    const optionsContas = (contas || [])
-      .map(
-        (conta) =>
-          `<option value="${conta._id}">${conta.nome} (${conta.tipo})</option>`
-      )
-      .join('');
+    const optionsContas = criarOptionsHTML(
+      contas || [],
+      (conta) => conta._id,
+      (conta) => formatarItemComTipo(conta)
+    );
 
     select.innerHTML = `
       <option value="" selected>Selecione a conta ou carteira</option>

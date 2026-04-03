@@ -185,7 +185,7 @@ class TransacaoController {
     const sort = ordenarPor === 'nome' ? { titulo: 1 } : { data: -1 };
 
     const transacoes = await populateTransacao(
-      Transacao.find(filtro).sort(sort)
+      Transacao.find(filtro).setOptions({ sanitizeFilter: false }).sort(sort)
     );
 
     res.json(transacoes);

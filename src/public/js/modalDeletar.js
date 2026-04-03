@@ -1,5 +1,6 @@
 import {
   setHTMLById,
+  setTextById,
   showElement,
   hideElement,
   showModal,
@@ -22,8 +23,9 @@ export function abrirModalConfirmacao({ titulo, mensagem, onConfirmar }) {
   );
   setHTMLById(
     'modalConteudo',
-    `<p style="margin: 0; padding: 10px 0; color: var(--text-secondary);">${mensagem}</p>`
+    '<p id="modalConfirmacaoMensagem" style="margin: 0; padding: 10px 0; color: var(--text-secondary);"></p>'
   );
+  setTextById('modalConfirmacaoMensagem', mensagem);
 
   // Define callback de confirmacao
   confirmarCallback = onConfirmar;

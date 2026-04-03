@@ -96,10 +96,14 @@ export function mostrarNotificacao(mensagem, tipo = 'sucesso', duracao = 3000) {
 
   const icone = ICONES_NOTIFICACAO[tipo] || ICONES_NOTIFICACAO.sucesso;
 
-  notificacao.innerHTML = `
-    <i class="fa-solid ${icone}"></i>
-    <span>${mensagem}</span>
-  `;
+  const iconeEl = document.createElement('i');
+  iconeEl.className = `fa-solid ${icone}`;
+
+  const textoEl = document.createElement('span');
+  textoEl.textContent = mensagem;
+
+  notificacao.appendChild(iconeEl);
+  notificacao.appendChild(textoEl);
 
   container.prepend(notificacao);
 

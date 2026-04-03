@@ -5,7 +5,13 @@ import {
   limparErroInline,
 } from '../modalEditar.js';
 import { abrirModalConfirmacao } from '../modalDeletar.js';
-import { executarAcaoModal, parseCurrency, $ } from '../helpers/index.js';
+import {
+  executarAcaoModal,
+  parseCurrency,
+  criarOptionsHTML,
+  formatarItemComTipo,
+  $,
+} from '../helpers/index.js';
 import {
   updateConta,
   deleteConta,
@@ -96,10 +102,12 @@ export async function abrirModalTransferirConta(
 
   const outrasContas = contas.filter((c) => c._id !== contaOrigemId);
 
-  const optionsCarteira = `<option value="${VALOR_CARTEIRA}">Dinheiro físico</option>`;
-  const optionsContas = outrasContas
-    .map((c) => `<option value="${c._id}">${c.nome} (${c.tipo})</option>`)
-    .join('');
+  const optionsCarteira = '<option value="carteira">Dinheiro físico</option>';
+  const optionsContas = criarOptionsHTML(
+    outrasContas,
+    (conta) => conta._id,
+    (conta) => formatarItemComTipo(conta)
+  );
 
   abrirModal({
     titulo: 'Transferir de conta',

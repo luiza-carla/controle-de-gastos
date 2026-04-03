@@ -1,19 +1,28 @@
 const jwt = require('jsonwebtoken');
 const { criarErro } = require('../utils/errorHelpers');
+const { extractAuthToken } = require('../utils/authCookie');
+
+function extrairTokenDoHeader(authHeader) {
+  if (!authHeader) {
+    return null;
+  }
+
+  const [scheme, token] = authHeader.split(' ');
+  if (scheme !== 'Bearer' || !token) {
+    return null;
+  }
+
+  return token;
+}
 
 // Middleware para verificar autenticação via token JWT
 function autenticacao(req, res, next) {
-  // Extrai header de autorização
-  const authHeader = req.headers.authorization;
+  const token =
+    extrairTokenDoHeader(req.headers.authorization) || extractAuthToken(req);
 
-  // Valida se token foi fornecido
-  if (!authHeader) {
-    const mensagem = `Token não fornecido (${req.method} ${req.originalUrl})`;
-    return next(criarErro(401, mensagem));
+  if (!token) {
+    return next(criarErro(401, 'Não autenticado'));
   }
-
-  // Extrai token do formato "Bearer <token>"
-  const token = authHeader.split(' ')[1];
 
   try {
     // Verifica e decodifica o token

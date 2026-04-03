@@ -3,6 +3,7 @@ import {
   criarCardsHTML,
   criarBotoesAcao,
   setHTMLById,
+  escaparHtml,
   $,
 } from '../helpers/index.js';
 import {
@@ -27,7 +28,7 @@ function criarItemSalario(s) {
 
       <div>
         <div class="salario-valor">R$ ${formatarValor(s.valor)}</div>
-        <div class="salario-conta">Conta: ${contaNome}</div>
+        <div class="salario-conta">Conta: ${escaparHtml(contaNome)}</div>
         <div class="salario-dia">Recebimento: Todo dia ${diaRecebimento}</div>
       </div>
 

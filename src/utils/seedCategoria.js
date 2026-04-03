@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Categoria = require('../models/Categoria');
 const Subcategoria = require('../models/Subcategoria');
 
@@ -179,7 +180,11 @@ async function garantirCategoriasPadrao() {
   }
 
   // desativa categorias que não estão na lista padrão
-  await Categoria.updateMany({ nome: { $nin: nomesPadrao } }, { ativa: false });
+  await Categoria.updateMany(
+    { nome: mongoose.trusted({ $nin: nomesPadrao }) },
+    { ativa: false },
+    { sanitizeFilter: false }
+  );
 
   // log de confirmação
   // logger.info('Categorias e subcategorias padrao garantidas', 'seedCategoria');

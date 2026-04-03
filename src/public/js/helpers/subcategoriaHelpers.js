@@ -64,7 +64,7 @@ export function setupSubcategoriaAutocomplete(
     const html = lista
       .map(
         (sub) =>
-          `<div class="categoria-item" data-id="${sub._id}" data-nome="${escaparHtml(sub.nome)}">
+          `<div class="categoria-item" data-id="${escaparHtml(String(sub._id ?? ''))}" data-nome="${escaparHtml(sub.nome)}">
         <span class="categoria-nome">${escaparHtml(sub.nome)}</span>
       </div>`
       )

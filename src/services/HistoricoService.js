@@ -1,6 +1,7 @@
 const Historico = require('../models/Historico');
 const Usuario = require('../models/Usuario');
 const logger = require('../utils/logger');
+const mongoose = require('mongoose');
 const Transacao = require('../models/Transacao');
 const Conta = require('../models/Conta');
 const Carteira = require('../models/Carteira');
@@ -739,18 +740,20 @@ class HistoricoService {
     // - limpeza normal (primeiraLimpezaHistorico false) e passou X dias desde a última limpeza.
     const usuariosPrimeira = await Usuario.find(
       {
-        primeiraLimpezaHistorico: { $ne: false },
-        createdAt: { $lte: dataLimiteCiclo },
+        primeiraLimpezaHistorico: mongoose.trusted({ $ne: false }),
+        createdAt: mongoose.trusted({ $lte: dataLimiteCiclo }),
       },
-      { _id: 1 }
+      { _id: 1 },
+      { sanitizeFilter: false }
     ).lean();
 
     const usuariosCiclo = await Usuario.find(
       {
         primeiraLimpezaHistorico: false,
-        ultimaLimpezaHistorico: { $lte: dataLimiteCiclo },
+        ultimaLimpezaHistorico: mongoose.trusted({ $lte: dataLimiteCiclo }),
       },
-      { _id: 1 }
+      { _id: 1 },
+      { sanitizeFilter: false }
     ).lean();
 
     const usuariosPrimeiraLimpezaIds = usuariosPrimeira.map((u) => u._id);
@@ -764,37 +767,44 @@ class HistoricoService {
 
     // Para a primeira limpeza do usuário: remove TODO o histórico dele.
     if (usuariosPrimeiraLimpezaIds.length) {
-      const resultado = await Historico.deleteMany({
-        usuario: { $in: usuariosPrimeiraLimpezaIds },
-      });
+      const resultado = await Historico.deleteMany(
+        { usuario: mongoose.trusted({ $in: usuariosPrimeiraLimpezaIds }) },
+        { sanitizeFilter: false }
+      );
       totalRemovidos += resultado.deletedCount;
 
       await Usuario.updateMany(
-        { _id: { $in: usuariosPrimeiraLimpezaIds } },
+        { _id: mongoose.trusted({ $in: usuariosPrimeiraLimpezaIds }) },
         {
           $set: {
             primeiraLimpezaHistorico: false,
             ultimaLimpezaHistorico: hoje,
           },
-        }
+        },
+        { sanitizeFilter: false }
       );
     }
 
     // Para limpezas de ciclo subsequentes: respeita retenção (se configurada).
     if (usuariosCicloIds.length) {
-      const filtro = { usuario: { $in: usuariosCicloIds } };
+      const filtro = {
+        usuario: mongoose.trusted({ $in: usuariosCicloIds }),
+      };
       if (diasRetencao > 0) {
         const dataLimiteRetencao = new Date();
         dataLimiteRetencao.setDate(dataLimiteRetencao.getDate() - diasRetencao);
-        filtro.createdAt = { $lt: dataLimiteRetencao };
+        filtro.createdAt = mongoose.trusted({ $lt: dataLimiteRetencao });
       }
 
-      const resultado = await Historico.deleteMany(filtro);
+      const resultado = await Historico.deleteMany(filtro, {
+        sanitizeFilter: false,
+      });
       totalRemovidos += resultado.deletedCount;
 
       await Usuario.updateMany(
-        { _id: { $in: usuariosCicloIds } },
-        { $set: { ultimaLimpezaHistorico: hoje } }
+        { _id: mongoose.trusted({ $in: usuariosCicloIds }) },
+        { $set: { ultimaLimpezaHistorico: hoje } },
+        { sanitizeFilter: false }
       );
     }
 
