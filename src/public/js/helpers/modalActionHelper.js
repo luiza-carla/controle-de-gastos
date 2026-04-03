@@ -4,7 +4,12 @@ import {
   tratarErro,
   extrairMensagemErroInline,
 } from '../notification.js';
-import { mostrarErroInline } from '../modalEditar.js';
+import { fecharModal, mostrarErroInline } from '../modalEditar.js';
+
+export function notificarErroModal(mensagem) {
+  fecharModal();
+  mostrarNotificacao(mensagem, 'erro');
+}
 
 /**
  * Executa uma ação de modal com tratamento de erro padrão.
@@ -41,13 +46,18 @@ export async function executarAcaoModal({
 
     return resultado;
   } catch (err) {
-    const mensagemInline = extrairMensagemErroInline(err);
-    if (mensagemInline) {
-      mostrarErroInline(mensagemInline);
+    const mensagemUsuario =
+      extrairMensagemErroInline(err) ||
+      ((err?.statusCode || 0) >= 400 && (err?.statusCode || 0) < 500
+        ? err?.message?.trim()
+        : null);
+
+    if (mensagemUsuario) {
+      mostrarErroInline(mensagemUsuario);
       return;
     }
 
     const msg = tratarErro(err, mensagemErro);
-    mostrarErroInline(msg);
+    notificarErroModal(msg);
   }
 }

@@ -46,6 +46,12 @@ function validarContasTransferencia(contaOrigem, contaDestino, valor) {
   }
 }
 
+function validarContaEncontrada(conta) {
+  if (!conta) {
+    throw criarErro(404, 'Conta não encontrada');
+  }
+}
+
 class ContaService {
   // Cria nova conta
   async criar(dados) {
@@ -72,21 +78,24 @@ class ContaService {
   }
 
   // Atualiza dados de uma conta
-  async atualizar(id, dados) {
-    const contaAntiga = await Conta.findById(id);
-    const conta = await Conta.findByIdAndUpdate(id, dados, {
+  async atualizar(id, usuarioId, dados) {
+    const filtro = { _id: id, usuario: usuarioId };
+    const contaAntiga = await Conta.findOne(filtro);
+    validarContaEncontrada(contaAntiga);
+
+    const conta = await Conta.findOneAndUpdate(filtro, dados, {
       returnDocument: 'after',
     });
 
-    if (conta && contaAntiga) {
-      await registrarHistoricoConta({
-        usuario: conta.usuario,
-        conta,
-        acao: 'edicao',
-        dadosAnteriores: contaAntiga.toObject(),
-        dadosNovos: conta.toObject(),
-      });
-    }
+    validarContaEncontrada(conta);
+
+    await registrarHistoricoConta({
+      usuario: conta.usuario,
+      conta,
+      acao: 'edicao',
+      dadosAnteriores: contaAntiga.toObject(),
+      dadosNovos: conta.toObject(),
+    });
 
     return conta;
   }
@@ -117,21 +126,23 @@ class ContaService {
         );
       }
 
-      throw criarErro(400, MENSAGEM_CONTA_EM_USO);
+      throw criarErro(409, MENSAGEM_CONTA_EM_USO);
     }
 
-    const conta = await Conta.findById(id);
-    const resultado = await Conta.findByIdAndDelete(id);
+    const filtro = { _id: id, usuario: usuarioId };
+    const conta = await Conta.findOne(filtro);
+    validarContaEncontrada(conta);
 
-    if (conta) {
-      await registrarHistoricoConta({
-        usuario: usuarioId,
-        conta,
-        contaId: id,
-        acao: 'delecao',
-        dadosAnteriores: conta.toObject(),
-      });
-    }
+    const resultado = await Conta.findOneAndDelete(filtro);
+    validarContaEncontrada(resultado);
+
+    await registrarHistoricoConta({
+      usuario: usuarioId,
+      conta,
+      contaId: id,
+      acao: 'delecao',
+      dadosAnteriores: conta.toObject(),
+    });
 
     return resultado;
   }

@@ -6,14 +6,16 @@ function errorHandler(err, req, res, next) {
     return next(err);
   }
 
-  // Loga erro padronizado antes de responder
-  logarErro('errorHandler', err);
-
   let status = err.statusCode || err.status || 500;
 
   // Erros de validação/cast do Mongoose devem retornar 400
   if (err.name === 'ValidationError' || err.name === 'CastError') {
     status = 400;
+  }
+
+  // Só loga erros internos da aplicação; erros 4xx são esperados pelo fluxo.
+  if (status >= 500) {
+    logarErro('errorHandler', err);
   }
 
   const mensagem = err.message || 'Erro interno do servidor';

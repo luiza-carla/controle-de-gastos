@@ -12,7 +12,7 @@ import {
 import { tratarErro } from './notification.js';
 
 // Referência do formulário e URL da API
-const formLogin = document.getElementById('formLogin');
+const formLogin = $('formLogin');
 const baseUrlUsuarios = window.location.origin + '/usuarios';
 if (formLogin) formLogin.noValidate = true;
 
@@ -47,6 +47,7 @@ if (formLogin) {
 
         // Faz requisição de login
         const data = await apiFetch(`${baseUrlUsuarios}/login`, {
+          skipAuthRedirect: true,
           method: 'POST',
           body: JSON.stringify({ email, senha }),
         });

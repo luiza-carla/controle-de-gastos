@@ -1,5 +1,9 @@
-import { criarPaginacao } from '../helpers/index.js';
-import { showElement, hideElement } from '../helpers/index.js';
+import {
+  criarPaginacao,
+  showElement,
+  hideElement,
+  $,
+} from '../helpers/index.js';
 import { criarHistoricoState } from './state.js';
 import { fetchHistoricos, desfazerHistorico } from './api.js';
 import { criarControladorHistorico } from './render.js';
@@ -62,8 +66,8 @@ async function carregarHistorico() {
 }
 
 function mostrarLoading(mostrar) {
-  const loading = document.getElementById('loading');
-  const lista = document.getElementById('historico-lista');
+  const loading = $('loading');
+  const lista = $('historico-lista');
 
   if (mostrar) {
     showElement(loading);

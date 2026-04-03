@@ -31,7 +31,7 @@ class UsuarioService {
     // Valida se email já existe
     const usuarioExistente = await Usuario.findOne({ email });
     if (usuarioExistente) {
-      throw criarErro(400, 'Email já cadastrado');
+      throw criarErro(409, 'Email já cadastrado');
     }
 
     // Cria hash da senha
@@ -56,13 +56,13 @@ class UsuarioService {
     // Busca usuário por email
     const usuario = await Usuario.findOne({ email });
     if (!usuario) {
-      throw criarErro(400, 'Credenciais inválidas');
+      throw criarErro(401, 'Credenciais inválidas');
     }
 
     // Valida senha com hash
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
     if (!senhaValida) {
-      throw criarErro(400, 'Credenciais inválidas');
+      throw criarErro(401, 'Credenciais inválidas');
     }
 
     const token = this.gerarToken(usuario._id);

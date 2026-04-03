@@ -77,7 +77,7 @@ async function popularSelectDestinoSalario(selectId = 'contaSalario') {
 }
 
 export function criarSalario(formId, callback) {
-  const form = document.getElementById(formId);
+  const form = $(formId);
   if (!form) return;
 
   // Evita anexar o listener várias vezes (p.ex. se criarSalario for chamado novamente)

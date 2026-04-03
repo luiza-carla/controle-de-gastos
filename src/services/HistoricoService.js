@@ -228,13 +228,17 @@ class HistoricoService {
       return null;
     }
 
-    const contaId = extrairContaId(historico.dadosAnteriores?.conta);
-    if (!contaId) {
+    const snapshotTransacao = this._normalizarSnapshotTransacao(
+      historico.dadosAnteriores
+    );
+    const destino = extrairDestinoSaldo(snapshotTransacao);
+
+    if (destino.tipo !== 'conta' || !destino.contaId) {
       return null;
     }
 
     const contaExiste = await this._contaExisteParaUsuario(
-      contaId,
+      destino.contaId,
       historico.usuario
     );
 
@@ -384,6 +388,63 @@ class HistoricoService {
     if (!dadosAnteriores) {
       throw criarErro(400, 'Dados anteriores não disponíveis');
     }
+  }
+
+  static _normalizarObjectIdSnapshot(referencia) {
+    if (!referencia) {
+      return referencia || null;
+    }
+
+    const idExtraido = extrairContaId(referencia);
+    if (idExtraido) {
+      return idExtraido;
+    }
+
+    if (typeof referencia === 'string') {
+      return referencia;
+    }
+
+    if (
+      typeof referencia === 'object' &&
+      Object.getPrototypeOf(referencia) === Object.prototype
+    ) {
+      if (
+        Object.prototype.hasOwnProperty.call(referencia, '_id') &&
+        referencia._id != null
+      ) {
+        return this._normalizarObjectIdSnapshot(referencia._id);
+      }
+
+      if (
+        Object.prototype.hasOwnProperty.call(referencia, 'id') &&
+        referencia.id != null
+      ) {
+        return this._normalizarObjectIdSnapshot(referencia.id);
+      }
+    }
+
+    if (typeof referencia?.toString === 'function') {
+      const valor = referencia.toString();
+      const id = extrairContaId(valor);
+      return id || valor;
+    }
+
+    return referencia;
+  }
+
+  static _normalizarSnapshotTransacao(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') {
+      return snapshot;
+    }
+
+    return {
+      ...snapshot,
+      _id: this._normalizarObjectIdSnapshot(snapshot._id),
+      usuario: this._normalizarObjectIdSnapshot(snapshot.usuario),
+      conta: this._normalizarObjectIdSnapshot(snapshot.conta),
+      categoria: this._normalizarObjectIdSnapshot(snapshot.categoria),
+      subcategoria: this._normalizarObjectIdSnapshot(snapshot.subcategoria),
+    };
   }
 
   static async _reverterCrudBasico(Model, acao, entidadeId, dadosAnteriores) {
@@ -847,7 +908,12 @@ class HistoricoService {
 
     switch (entidade) {
       case 'transacao':
-        await this._reverterTransacao(acao, entidadeId, dadosAnteriores);
+        await this._reverterTransacao(
+          acao,
+          entidadeId,
+          dadosAnteriores,
+          usuario
+        );
         break;
       case 'conta':
         await this._reverterConta(acao, entidadeId, dadosAnteriores, usuario);
@@ -883,14 +949,23 @@ class HistoricoService {
   // também valida que a conta associada ainda existe antes de efetuar
   // a restauração, evitando transações "ócas" que aparecem sem conta
   // no front-end.
-  static async _reverterTransacao(acao, entidadeId, dadosAnteriores) {
+  static async _reverterTransacao(
+    acao,
+    entidadeId,
+    dadosAnteriores,
+    usuarioId
+  ) {
+    const snapshotTransacao =
+      this._normalizarSnapshotTransacao(dadosAnteriores);
+
     // para edição e exclusão, checar se o documento anterior
     // fazia referência a uma conta e, em caso afirmativo, se essa conta
     // ainda está presente no banco.
     if (acao === 'delecao' || acao === 'edicao') {
       const motivoBloqueioDesfazer = await this._obterMotivoBloqueioTransacao({
         acao,
-        dadosAnteriores,
+        usuario: usuarioId,
+        dadosAnteriores: snapshotTransacao,
       });
 
       if (motivoBloqueioDesfazer) {
@@ -902,7 +977,7 @@ class HistoricoService {
       Transacao,
       acao,
       entidadeId,
-      dadosAnteriores
+      snapshotTransacao
     );
   }
 
@@ -914,6 +989,11 @@ class HistoricoService {
     dadosAnteriores,
     dadosNovos
   ) {
+    const dadosAnterioresNormalizados =
+      this._normalizarSnapshotTransacao(dadosAnteriores);
+    const dadosNovosNormalizados =
+      this._normalizarSnapshotTransacao(dadosNovos);
+
     // helper local para calcular delta e aplicar
     const aplicarDelta = async (transacao, sinal = 1) => {
       if (!transacao || transacao.status !== 'pago') return;
@@ -932,17 +1012,17 @@ class HistoricoService {
     switch (acao) {
       case 'criacao':
         // desfaz criação: remove movimento aplicado originalmente
-        await aplicarDelta(dadosNovos, -1);
+        await aplicarDelta(dadosNovosNormalizados, -1);
         break;
       case 'edicao':
         // desfaz edição: primeiro reverte o movimento novo, depois reaplica o
         // antigo
-        await aplicarDelta(dadosNovos, -1);
-        await aplicarDelta(dadosAnteriores, 1);
+        await aplicarDelta(dadosNovosNormalizados, -1);
+        await aplicarDelta(dadosAnterioresNormalizados, 1);
         break;
       case 'delecao':
         // desfaz exclusão: reaplica o movimento que havia sido retirado
-        await aplicarDelta(dadosAnteriores, 1);
+        await aplicarDelta(dadosAnterioresNormalizados, 1);
         break;
       default:
         break;

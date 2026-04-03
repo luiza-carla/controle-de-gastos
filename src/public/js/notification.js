@@ -17,15 +17,32 @@ const RADICAIS_OPERACAO = {
 };
 
 const CHAVE_NOTIFICACAO_PENDENTE = 'notificacaoPendente';
+const ID_CONTAINER_NOTIFICACOES = 'notificacoesContainer';
 const MENSAGENS_ERRO_INLINE_CONHECIDAS = new Set([
   'Saldo insuficiente na carteira',
 ]);
+
+function obterContainerNotificacoes() {
+  let container = document.getElementById(ID_CONTAINER_NOTIFICACOES);
+  if (container) return container;
+
+  container = document.createElement('div');
+  container.id = ID_CONTAINER_NOTIFICACOES;
+  container.className = 'notificacoes-container';
+  document.body.appendChild(container);
+  return container;
+}
 
 //Erro que pode ser mostrado ao usuário
 export function erroUsuario(mensagem) {
   const erro = new Error(mensagem);
   erro.__mostrarAoUsuario = true;
   return erro;
+}
+
+function isErroHttpUsuario(error) {
+  const statusCode = Number(error?.statusCode);
+  return statusCode >= 400 && statusCode < 500;
 }
 
 function isErroUsuario(error) {
@@ -53,11 +70,12 @@ export function extrairMensagemErroInline(error) {
 export function tratarErro(error, mensagemPadrao = 'Ocorreu um erro') {
   const mensagemInline = extrairMensagemErroInline(error);
   const isUsuario = !!mensagemInline;
+  const isEsperado = isUsuario || isErroHttpUsuario(error);
   const mensagem = mensagemInline || mensagemPadrao;
 
   if (isUsuario) {
     mostrarNotificacao(mensagem, 'erro');
-  } else {
+  } else if (!isEsperado) {
     loggerError('Erro interno:', 'notification', error);
   }
 
@@ -72,7 +90,7 @@ export function tratarErro(error, mensagemPadrao = 'Ocorreu um erro') {
  */
 
 export function mostrarNotificacao(mensagem, tipo = 'sucesso', duracao = 3000) {
-  // Criar container da notificação
+  const container = obterContainerNotificacoes();
   const notificacao = document.createElement('div');
   notificacao.className = `notificacao notificacao-${tipo}`;
 
@@ -83,19 +101,22 @@ export function mostrarNotificacao(mensagem, tipo = 'sucesso', duracao = 3000) {
     <span>${mensagem}</span>
   `;
 
-  // Adicionar à página
-  document.body.appendChild(notificacao);
+  container.prepend(notificacao);
 
   // Animar entrada
-  setTimeout(() => {
+  requestAnimationFrame(() => {
     notificacao.classList.add('notificacao-visivel');
-  }, 10);
+  });
 
   // Remover notificação após duração
   setTimeout(() => {
     notificacao.classList.remove('notificacao-visivel');
     setTimeout(() => {
       notificacao.remove();
+
+      if (!container.childElementCount) {
+        container.remove();
+      }
     }, 300);
   }, duracao);
 }

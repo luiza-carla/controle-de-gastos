@@ -5,14 +5,14 @@ import {
   limparErroInline,
 } from '../modalEditar.js';
 import { abrirModalConfirmacao } from '../modalDeletar.js';
-import { executarAcaoModal } from '../helpers/index.js';
-import { parseCurrency } from '../helpers/index.js';
+import { executarAcaoModal, parseCurrency, $ } from '../helpers/index.js';
 import {
   updateConta,
   deleteConta,
   transferirEntreContas,
   transferirParaCarteira,
 } from './api.js';
+import { invalidateContas } from './service.js';
 import { templateEditarConta, templateTransferirConta } from './templates.js';
 
 const VALOR_CARTEIRA = 'carteira';
@@ -31,8 +31,8 @@ export async function abrirModalEditarConta(
     onSalvar: async () => {
       limparErroInline();
 
-      const novoNome = document.getElementById('modalNomeConta')?.value;
-      const novoTipo = document.getElementById('modalTipoConta')?.value;
+      const novoNome = $('modalNomeConta')?.value;
+      const novoTipo = $('modalTipoConta')?.value;
 
       if (!novoNome || !novoTipo) {
         mostrarErroInline('Por favor, preencha todos os campos obrigatórios');
@@ -48,6 +48,7 @@ export async function abrirModalEditarConta(
           genero: 'feminino',
         },
         onAtualizar: async () => {
+          invalidateContas();
           fecharModal();
           await carregarERenderizarContas();
         },
@@ -76,6 +77,7 @@ export async function abrirModalDeletarConta(
           genero: 'feminino',
         },
         onAtualizar: async () => {
+          invalidateContas();
           fecharModal();
           await carregarERenderizarContas();
         },
@@ -107,10 +109,8 @@ export async function abrirModalTransferirConta(
       contaOrigem.saldo
     ),
     onSalvar: async () => {
-      const destino = document.getElementById('modalContaDestino')?.value;
-      const valor = parseCurrency(
-        document.getElementById('modalValorTransferenciaConta')?.value
-      );
+      const destino = $('modalContaDestino')?.value;
+      const valor = parseCurrency($('modalValorTransferenciaConta')?.value);
 
       limparErroInline();
 
@@ -144,6 +144,7 @@ export async function abrirModalTransferirConta(
           genero: 'feminino',
         },
         onAtualizar: async () => {
+          invalidateContas();
           fecharModal();
           await atualizarSaldosTela();
         },

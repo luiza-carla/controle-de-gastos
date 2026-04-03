@@ -16,7 +16,11 @@ class ContaController {
 
   // Atualiza conta existente
   async atualizar(req, res) {
-    const conta = await ContaService.atualizar(req.params.id, req.body);
+    const conta = await ContaService.atualizar(
+      req.params.id,
+      req.user.id,
+      req.body
+    );
     res.json(conta);
   }
 

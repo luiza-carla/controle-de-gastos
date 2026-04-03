@@ -13,6 +13,7 @@ import {
   parseCurrency,
   createFormSubmitGuard,
   resetFormWithMasks,
+  $,
 } from '../helpers/index.js';
 import { createConta } from './api.js';
 import { invalidateContas } from './service.js';
@@ -21,7 +22,7 @@ const FORM_ERRO_ID = 'formErroInlineConta';
 const FORM_MSG_ERRO_ID = 'formMensagemErroConta';
 
 export async function criarConta(formId, callback) {
-  const form = document.getElementById(formId);
+  const form = $(formId);
   if (!form) return;
 
   // Evita anexar o listener várias vezes (p.ex. se criarConta for chamado novamente)

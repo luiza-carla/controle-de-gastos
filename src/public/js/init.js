@@ -15,9 +15,9 @@ async function initApp() {
   const tarefasIniciais = [import('./modalEditar.js')];
 
   const precisaCategorias =
-    document.getElementById('buscaCategoria') ||
-    document.getElementById('filtroBuscaCategoriaDesejo') ||
-    document.getElementById('filtroCategoriaDesejo');
+    $('buscaCategoria') ||
+    $('filtroBuscaCategoriaDesejo') ||
+    $('filtroCategoriaDesejo');
 
   if (precisaCategorias) {
     tarefasIniciais.push(inicializarCategorias());
