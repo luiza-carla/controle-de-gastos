@@ -16,7 +16,7 @@ function normalizarEntidadeHistorico(entidade) {
     conta: 'conta',
     carteira: 'carteira',
     salario: 'salário',
-    listaDesejo: 'lista de desejos',
+    listaDesejo: 'desejo',
   };
 
   return mapa[entidade] || entidade;

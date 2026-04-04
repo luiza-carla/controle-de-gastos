@@ -28,7 +28,7 @@ export function abrirModalEditarDesejo({ desejo, categorias, tags, onSave }) {
   limparErroInline();
 
   abrirModal({
-    titulo: 'Editar item da lista de desejos',
+    titulo: 'Editar desejo',
     conteudoHTML: buildEditarDesejoHTML(desejo),
     onSalvar: () => onSave?.(),
   });
@@ -248,7 +248,7 @@ export async function abrirModalConfirmarRemoverDesejo({
 
   abrirModalConfirmacao({
     titulo: 'Confirmar exclusao',
-    mensagem: 'Tem certeza que deseja deletar este item da lista de desejos?',
+    mensagem: 'Tem certeza que deseja deletar este desejo?',
     onConfirmar: async () => {
       await executarAcaoModal({
         acao: async () => {

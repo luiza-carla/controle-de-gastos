@@ -197,7 +197,7 @@ class ListaDesejoController {
       dadosAnteriores: item.toObject(),
     });
 
-    res.json({ mensagem: 'Item da lista de desejos deletado' });
+    res.json({ mensagem: 'Desejo deletado' });
   }
 
   // Realiza desejo: cria transação e remove item em uma ação única de histórico
@@ -270,17 +270,20 @@ class ListaDesejoController {
 
     await ListaDesejo.findByIdAndDelete(item._id);
 
+    const snapshotDesejoRealizado = {
+      ...item.toObject(),
+      transacaoId: novaTransacao._id,
+      conta: fonteSaldo === 'carteira' ? 'carteira' : conta,
+      valor: valorFinal,
+      status: statusFinal,
+    };
+
     await registrarHistoricoDaRequisicao(req, 'listaDesejo', {
       entidadeId: item._id,
       acao: 'realizacao',
       descricao: `Desejo realizado: ${item.titulo} (${formatarMoeda(valorFinal)})`,
       dadosAnteriores: item.toObject(),
-      dadosNovos: {
-        transacaoId: novaTransacao._id,
-        conta: fonteSaldo === 'carteira' ? 'carteira' : conta,
-        valor: valorFinal,
-        status: statusFinal,
-      },
+      dadosNovos: snapshotDesejoRealizado,
     });
 
     const transacaoCompleta = await populateTransacao(

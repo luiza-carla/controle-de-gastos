@@ -1,7 +1,14 @@
 // Conjuga a ação no gênero gramatical correto da entidade
 function conjugarAcao(acao, entidade) {
-  const masculinas = ['salario'];
-  const terminacao = masculinas.includes(entidade) ? 'o' : 'a';
+  const generoPorEntidade = {
+    transacao: 'feminino',
+    conta: 'feminino',
+    carteira: 'feminino',
+    salario: 'masculino',
+    listaDesejo: 'masculino',
+  };
+
+  const terminacao = generoPorEntidade[entidade] === 'feminino' ? 'a' : 'o';
 
   const conjugacoes = {
     criacao: `criad${terminacao}`,

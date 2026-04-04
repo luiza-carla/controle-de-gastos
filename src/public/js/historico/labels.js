@@ -4,7 +4,7 @@ export function traduzirEntidade(entidade) {
     conta: 'Conta',
     carteira: 'Carteira',
     salario: 'Salário',
-    listaDesejo: 'Lista de Desejo',
+    listaDesejo: 'Desejo',
   };
   return traducoes[entidade] || entidade;
 }

@@ -3,8 +3,10 @@ const HistoricoService = require('./HistoricoService');
 const logger = require('../utils/logger');
 
 const DIAS_CICLO = Number(process.env.HISTORICO_CICLO_DIAS || 30);
-// Por padrão, limpamos todo o histórico quando o ciclo se completa.
-const DIAS_RETENCAO = Number(process.env.HISTORICO_RETENCAO_DIAS || 0);
+
+function descreverPoliticaLimpeza(diasCiclo) {
+  return `limpeza completa a cada ${diasCiclo} dias`;
+}
 
 class HistoricoCleanupScheduler {
   constructor() {
@@ -20,20 +22,21 @@ class HistoricoCleanupScheduler {
 
     const { countElegiveis, minDiasRestantes } =
       await HistoricoService.calcularDiasRestantesParaLimpeza(DIAS_CICLO);
+    const politicaLimpeza = descreverPoliticaLimpeza(DIAS_CICLO);
 
     if (countElegiveis > 0) {
       logger.info(
-        `Agendador de limpeza de historico iniciado (ciclo: ${DIAS_CICLO} dias, retencao: ${DIAS_RETENCAO} dias) - ${countElegiveis} usuário(s) já elegível(is)`,
+        `Agendador de limpeza de historico iniciado (${politicaLimpeza}) - ${countElegiveis} usuário(s) já elegível(is)`,
         'HistoricoCleanup'
       );
     } else if (minDiasRestantes !== null) {
       logger.info(
-        `Agendador de limpeza de historico iniciado (ciclo: ${DIAS_CICLO} dias, retencao: ${DIAS_RETENCAO} dias) - próxima limpeza em ${minDiasRestantes} dia(s)`,
+        `Agendador de limpeza de historico iniciado (${politicaLimpeza}) - próxima limpeza em ${minDiasRestantes} dia(s)`,
         'HistoricoCleanup'
       );
     } else {
       logger.info(
-        `Agendador de limpeza de historico iniciado (ciclo: ${DIAS_CICLO} dias, retencao: ${DIAS_RETENCAO} dias) - nenhum usuário cadastrado`,
+        `Agendador de limpeza de historico iniciado (${politicaLimpeza}) - nenhum usuário cadastrado`,
         'HistoricoCleanup'
       );
     }
@@ -48,17 +51,16 @@ class HistoricoCleanupScheduler {
     logger.info('Agendador de limpeza de historico parado', 'HistoricoCleanup');
   }
 
-  async executarLimpeza(diasCiclo = DIAS_CICLO, diasRetencao = DIAS_RETENCAO) {
+  async executarLimpeza(diasCiclo = DIAS_CICLO) {
     try {
+      const politicaLimpeza = descreverPoliticaLimpeza(diasCiclo);
+
       logger.info(
-        `Executando limpeza de historico (ciclo: ${diasCiclo} dias, retencao: ${diasRetencao} dias)`,
+        `Executando limpeza de historico (${politicaLimpeza})`,
         'HistoricoCleanup'
       );
 
-      const removidos = await HistoricoService.limparPorCiclo(
-        diasCiclo,
-        diasRetencao
-      );
+      const removidos = await HistoricoService.limparPorCiclo(diasCiclo);
 
       if (removidos > 0) {
         logger.info(

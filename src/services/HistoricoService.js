@@ -21,6 +21,7 @@ const FONTE_DADOS_PRIORITARIA_POR_ACAO = {
   criacao: 'dadosNovos',
   edicao: 'dadosNovos',
   delecao: 'dadosAnteriores',
+  realizacao: 'dadosNovos',
 };
 
 // helpers de population reutilizados entre módulos
@@ -157,7 +158,7 @@ class HistoricoService {
         conta: 'a conta foi removida',
         carteira: 'a carteira foi removida',
         salario: 'o salário foi removido',
-        listaDesejo: 'o item da lista de desejos foi removido',
+        listaDesejo: 'o desejo foi removido',
       }[entidade] || 'o item foi removido'
     );
   }
@@ -723,12 +724,9 @@ class HistoricoService {
     };
   }
 
-  static async limparPorCiclo(diasCiclo = 30, diasRetencao = 0) {
-    if (diasCiclo <= 0 || diasRetencao < 0) {
-      throw criarErro(
-        400,
-        'Dias de ciclo e retenção devem ser números positivos'
-      );
+  static async limparPorCiclo(diasCiclo = 30) {
+    if (diasCiclo <= 0) {
+      throw criarErro(400, 'Dias de ciclo deve ser um número positivo');
     }
 
     const hoje = new Date();
@@ -785,20 +783,16 @@ class HistoricoService {
       );
     }
 
-    // Para limpezas de ciclo subsequentes: respeita retenção (se configurada).
+    // Para limpezas de ciclo subsequentes: remove todo o histórico do usuário.
     if (usuariosCicloIds.length) {
-      const filtro = {
-        usuario: mongoose.trusted({ $in: usuariosCicloIds }),
-      };
-      if (diasRetencao > 0) {
-        const dataLimiteRetencao = new Date();
-        dataLimiteRetencao.setDate(dataLimiteRetencao.getDate() - diasRetencao);
-        filtro.createdAt = mongoose.trusted({ $lt: dataLimiteRetencao });
-      }
-
-      const resultado = await Historico.deleteMany(filtro, {
-        sanitizeFilter: false,
-      });
+      const resultado = await Historico.deleteMany(
+        {
+          usuario: mongoose.trusted({ $in: usuariosCicloIds }),
+        },
+        {
+          sanitizeFilter: false,
+        }
+      );
       totalRemovidos += resultado.deletedCount;
 
       await Usuario.updateMany(
@@ -1260,7 +1254,7 @@ class HistoricoService {
         conta: 'Conta',
         carteira: 'Carteira',
         salario: 'Salário',
-        listaDesejo: 'Lista de Desejo',
+        listaDesejo: 'Desejo',
       }[entidade] || entidade;
 
     const acaoNome = conjugarAcao(acao, entidade);

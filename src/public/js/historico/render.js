@@ -29,6 +29,7 @@ const FONTE_DADOS_PRIORITARIA_POR_ACAO = {
   criacao: 'dadosNovos',
   edicao: 'dadosNovos',
   delecao: 'dadosAnteriores',
+  realizacao: 'dadosNovos',
 };
 
 export function criarControladorHistorico({
@@ -289,7 +290,7 @@ function obterSufixoGeneroEntidade(entidade) {
     conta: 'a',
     carteira: 'a',
     salario: 'o',
-    listaDesejo: 'a',
+    listaDesejo: 'o',
   };
 
   return sufixos[entidade] || 'o';
