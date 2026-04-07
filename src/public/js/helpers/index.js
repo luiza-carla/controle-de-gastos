@@ -12,3 +12,4 @@ export * from './subcategoriaHelpers.js';
 export * from './inputHelpers.js';
 export * from './formHelpers.js';
 export * from './modalActionHelper.js';
+export * from './contaHelpers.js';

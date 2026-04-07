@@ -79,7 +79,10 @@ export function calcularAlteracoes(
 function deveOcultarCampo(chave, contexto = {}) {
   const ultimaParte = chave.split('.').pop();
 
-  if (CAMPOS_OCULTOS_GERAIS.has(chave) || CAMPOS_OCULTOS_GERAIS.has(ultimaParte)) {
+  if (
+    CAMPOS_OCULTOS_GERAIS.has(chave) ||
+    CAMPOS_OCULTOS_GERAIS.has(ultimaParte)
+  ) {
     return true;
   }
 
@@ -91,7 +94,7 @@ function deveOcultarCampo(chave, contexto = {}) {
 
   return Boolean(
     ocultosPorAcao &&
-      (ocultosPorAcao.has(chave) || ocultosPorAcao.has(ultimaParte))
+    (ocultosPorAcao.has(chave) || ocultosPorAcao.has(ultimaParte))
   );
 }
 

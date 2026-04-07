@@ -24,6 +24,37 @@ const ContaSchema = new mongoose.Schema(
       default: 0,
     },
 
+    limite: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    limiteDisponivel: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    diaFechamento: {
+      type: Number,
+      min: 1,
+      max: 31,
+      default: 10,
+    },
+
+    diaVencimento: {
+      type: Number,
+      min: 1,
+      max: 31,
+      default: 17,
+    },
+
+    dataUltimoFechamento: {
+      type: Date,
+      default: null,
+    },
+
     ativa: {
       type: Boolean,
       default: true,

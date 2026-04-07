@@ -119,9 +119,9 @@ export function criarOptionsHTML(items, valueFn, textFn, optionAtual = null) {
       const valor = valueFn ? valueFn(item) : item._id;
       const texto = textFn ? textFn(item) : item.nome || '';
       const selected = optionAtual === valor ? 'selected' : '';
-      return `<option value="${escaparHtml(String(valor ?? ''))}" ${selected}>${escaparHtml(String(
-        texto ?? ''
-      ))}</option>`;
+      return `<option value="${escaparHtml(String(valor ?? ''))}" ${selected}>${escaparHtml(
+        String(texto ?? '')
+      )}</option>`;
     })
     .join('');
 }

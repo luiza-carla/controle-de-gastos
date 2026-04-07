@@ -1,7 +1,12 @@
 const Carteira = require('../models/Carteira');
 const Conta = require('../models/Conta');
 const HistoricoService = require('./HistoricoService');
+const SaldoService = require('./SaldoService');
 const { criarErro } = require('../utils/errorHelpers');
+const { contaEhCredito } = require('../utils/contaHelpers');
+
+const MENSAGEM_TRANSFERENCIA_CREDITO =
+  'Transferências com cartão de crédito não são permitidas';
 
 class CarteiraService {
   // Obtém ou cria carteira do usuário
@@ -58,13 +63,13 @@ class CarteiraService {
       throw criarErro(404, 'Conta não encontrada');
     }
 
+    if (contaEhCredito(conta)) {
+      throw criarErro(400, MENSAGEM_TRANSFERENCIA_CREDITO);
+    }
+
     // Valida saldos
     if (direcao === 'carteira-para-conta' && carteira.saldo < valor) {
       throw criarErro(400, 'Saldo insuficiente na carteira');
-    }
-
-    if (direcao === 'conta-para-carteira' && conta.saldo < valor) {
-      throw criarErro(400, 'Saldo insuficiente na conta');
     }
 
     // Executa transferência
@@ -73,14 +78,21 @@ class CarteiraService {
 
     if (direcao === 'carteira-para-conta') {
       carteira.saldo -= valor;
-      conta.saldo += valor;
+      await SaldoService.aplicarDeltaContas(
+        { [conta._id]: Number(valor) },
+        usuarioId
+      );
     } else {
       carteira.saldo += valor;
-      conta.saldo -= valor;
+      await SaldoService.aplicarDeltaContas(
+        { [conta._id]: -Number(valor) },
+        usuarioId
+      );
     }
 
     await carteira.save();
-    await conta.save();
+
+    const contaAtualizada = await Conta.findById(conta._id);
 
     // Registra transferência no histórico
     await HistoricoService.registrar({
@@ -102,14 +114,14 @@ class CarteiraService {
       dadosNovos: {
         carteiraSaldo: carteira.saldo,
         contaId: conta._id,
-        contaSaldo: conta.saldo,
+        contaSaldo: contaAtualizada.saldo,
         direcao,
       },
     });
 
     return {
       carteira,
-      conta,
+      conta: contaAtualizada,
       mensagem: 'Transferência realizada com sucesso',
     };
   }

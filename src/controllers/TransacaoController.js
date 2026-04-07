@@ -1,6 +1,8 @@
 const Transacao = require('../models/Transacao');
+const Conta = require('../models/Conta');
 const HistoricoService = require('../services/HistoricoService');
 const SaldoService = require('../services/SaldoService');
+const FaturaService = require('../services/FaturaService');
 const categoriaHelpers = require('../utils/categoriaHelpers');
 const {
   validarSubcategoriaParaCategoria,
@@ -9,6 +11,7 @@ const {
 const { criarErro } = require('../utils/errorHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
 const { selecionarCamposPermitidos } = require('../utils/payloadHelpers');
+const { contaEhCredito } = require('../utils/contaHelpers');
 
 const MENSAGEM_TRANSACAO_NAO_ENCONTRADA = 'Transação não encontrada';
 const CAMPOS_PERMITIDOS_TRANSACAO_ATUALIZACAO = [
@@ -22,39 +25,27 @@ const CAMPOS_PERMITIDOS_TRANSACAO_ATUALIZACAO = [
   'status',
   'recorrencia',
   'parcelamento',
+  'dataPrimeiraParcela',
   'tags',
   'tipoDespesa',
 ];
 
-// funções de saldo foram movidas para SaldoService; validação de carteira permanece
+function construirTransacaoProjetada(transacaoAntiga, updateData = {}) {
+  const contaAntiga = transacaoAntiga?.conta?._id || transacaoAntiga?.conta;
+  const contaAtualizada = Object.prototype.hasOwnProperty.call(
+    updateData,
+    'conta'
+  )
+    ? updateData.conta
+    : contaAntiga;
+  const fonteSaldo = updateData.fonteSaldo || transacaoAntiga.fonteSaldo;
 
-async function validarCarteiraNaoNegativaEmAtualizacao(
-  usuarioId,
-  transacaoAntiga,
-  updateData
-) {
-  // simula os dados após atualização
-  const transacaoSimulada = {
+  return {
     ...transacaoAntiga.toObject(),
     ...updateData,
+    conta: fonteSaldo === 'carteira' ? null : contaAtualizada,
+    fonteSaldo,
   };
-
-  const deltaAntigo = SaldoService.obterDeltaAplicadoCarteira(transacaoAntiga);
-  const deltaNovo = SaldoService.obterDeltaAplicadoCarteira(transacaoSimulada);
-
-  const deltaLiquidoCarteira = -deltaAntigo + deltaNovo;
-
-  if (deltaLiquidoCarteira >= 0) {
-    return;
-  }
-
-  // validação centralizada para garantir que queda não deixe saldo negativo
-  await SaldoService.validarSaldoDisponivel({
-    usuarioId,
-    contaId: null,
-    fonteSaldo: 'carteira',
-    valor: -deltaLiquidoCarteira,
-  });
 }
 
 // helpers de população agora vêm do utilitário central
@@ -67,6 +58,74 @@ async function buscarTransacaoDoUsuario(transacaoId, usuarioId) {
       usuario: usuarioId,
     })
   );
+}
+
+async function buscarContaDaTransacao(transacao, usuarioId) {
+  const contaId = transacao?.conta?._id || transacao?.conta;
+  if (!contaId) {
+    return null;
+  }
+
+  return Conta.findOne({ _id: contaId, usuario: usuarioId });
+}
+
+async function validarSaldosProjetados({
+  usuarioId,
+  transacaoAnterior,
+  transacaoNova,
+}) {
+  const contaAnterior = await buscarContaDaTransacao(
+    transacaoAnterior,
+    usuarioId
+  );
+  const contaNova = await buscarContaDaTransacao(transacaoNova, usuarioId);
+
+  const envolveCredito =
+    contaEhCredito(contaAnterior) || contaEhCredito(contaNova);
+  const envolveSaldoTradicional =
+    transacaoAnterior?.fonteSaldo === 'carteira' ||
+    transacaoNova?.fonteSaldo === 'carteira' ||
+    (transacaoAnterior?.fonteSaldo === 'conta' &&
+      !contaEhCredito(contaAnterior)) ||
+    (transacaoNova?.fonteSaldo === 'conta' && !contaEhCredito(contaNova));
+
+  if (envolveCredito) {
+    await FaturaService.validarTransacaoProjetada({
+      usuarioId,
+      transacaoAnterior,
+      transacaoNova,
+    });
+  }
+
+  if (envolveSaldoTradicional) {
+    await SaldoService.validarTransacaoProjetada({
+      usuarioId,
+      transacaoAnterior,
+      transacaoNova,
+    });
+  }
+}
+
+async function aplicarMovimentoTransacao(transacao, usuarioId) {
+  const conta = await buscarContaDaTransacao(transacao, usuarioId);
+
+  if (contaEhCredito(conta)) {
+    await FaturaService.aplicarCompra(transacao, usuarioId);
+    return;
+  }
+
+  await SaldoService.aplicarMovimento(transacao, usuarioId);
+}
+
+async function reverterMovimentoTransacao(transacao, usuarioId) {
+  const conta = await buscarContaDaTransacao(transacao, usuarioId);
+
+  if (contaEhCredito(conta)) {
+    await FaturaService.reverterCompra(transacao, usuarioId);
+    return;
+  }
+
+  await SaldoService.reverterMovimento(transacao, usuarioId);
 }
 
 class TransacaoController {
@@ -84,6 +143,7 @@ class TransacaoController {
       status,
       recorrencia,
       parcelamento,
+      dataPrimeiraParcela,
       tags,
       tipoDespesa,
     } = req.body;
@@ -95,19 +155,16 @@ class TransacaoController {
       throw criarErro(400, 'Conta é obrigatória');
     }
 
-    // evita envio de saída paga que deixaria a carteira negativa
-    if (
-      fonteSaldo === 'carteira' &&
-      statusFinal === 'pago' &&
-      tipo === 'saida'
-    ) {
-      await SaldoService.validarSaldoDisponivel({
-        usuarioId: req.user.id,
-        contaId: conta,
+    await validarSaldosProjetados({
+      usuarioId: req.user.id,
+      transacaoNova: {
+        conta: fonteSaldo === 'carteira' ? null : conta,
         fonteSaldo,
         valor,
-      });
-    }
+        tipo,
+        status: statusFinal,
+      },
+    });
 
     // Cria nova transação no banco
     // se foi informada subcategoria, garante que ela pertence à categoria
@@ -145,13 +202,14 @@ class TransacaoController {
         totalParcelas: parcelamento?.totalParcelas || 1,
         parcelaAtual: parcelamento?.parcelaAtual || 1,
       },
+      dataPrimeiraParcela,
       tags: tags || [],
       tipoDespesa: tipoDespesaFinal,
     });
 
     // Atualiza saldo da conta se transação foi marcada como paga
     if (statusFinal === 'pago') {
-      await SaldoService.aplicarMovimento(novaTransacao, req.user.id);
+      await aplicarMovimentoTransacao(novaTransacao, req.user.id);
     }
 
     // Recupera transação completa com relações populadas
@@ -243,11 +301,16 @@ class TransacaoController {
       updateData.fonteSaldo = 'conta';
     }
 
-    await validarCarteiraNaoNegativaEmAtualizacao(
-      req.user.id,
+    const transacaoProjetada = construirTransacaoProjetada(
       transacaoAntiga,
       updateData
     );
+
+    await validarSaldosProjetados({
+      usuarioId: req.user.id,
+      transacaoAnterior: transacaoAntiga,
+      transacaoNova: transacaoProjetada,
+    });
 
     // Remove tipoDespesa se tipo não for saída ou se for vazio
     if (updateData.tipo !== 'saida') {
@@ -263,7 +326,7 @@ class TransacaoController {
 
     // Reverte saldo anterior se transação estava paga
     if (transacaoAntiga.status === 'pago') {
-      await SaldoService.reverterMovimento(transacaoAntiga, req.user.id);
+      await reverterMovimentoTransacao(transacaoAntiga, req.user.id);
     }
 
     // Constrói objeto de atualização para o banco. juntamos $unset se
@@ -283,7 +346,7 @@ class TransacaoController {
     );
 
     if (transacao.status === 'pago') {
-      await SaldoService.aplicarMovimento(transacao, req.user.id);
+      await aplicarMovimentoTransacao(transacao, req.user.id);
     }
 
     // Registra no histórico
@@ -315,7 +378,7 @@ class TransacaoController {
 
     // Reverte saldo da conta se transação estava paga
     if (transacao.status === 'pago') {
-      await SaldoService.reverterMovimento(transacao, req.user.id);
+      await reverterMovimentoTransacao(transacao, req.user.id);
     }
 
     // Remove transação do banco

@@ -107,6 +107,9 @@ app.use('/carteira', carteiraRoutes);
 const historicoRoutes = require('./routes/historico.routes');
 app.use('/historico', historicoRoutes);
 
+const faturaRoutes = require('./routes/fatura.routes');
+app.use('/faturas', faturaRoutes);
+
 // Middleware global de tratamento de erros (deve ficar por último)
 app.use(errorHandler);
 

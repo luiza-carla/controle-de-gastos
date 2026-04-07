@@ -19,7 +19,9 @@ function errorHandler(err, req, res, next) {
   }
 
   const mensagem =
-    status >= 500 ? 'Erro interno do servidor' : err.message || 'Requisição inválida';
+    status >= 500
+      ? 'Erro interno do servidor'
+      : err.message || 'Requisição inválida';
   return res.status(status).json({ mensagem });
 }
 

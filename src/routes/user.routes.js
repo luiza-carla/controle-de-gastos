@@ -10,12 +10,17 @@ const { registrarSchema, loginSchema } = require('../validation/userSchemas');
 const userHandler = asyncHandler.controller(UserController);
 
 router.post(
-	'/registrar',
-	authRateLimit,
-	validateBody(registrarSchema),
-	userHandler('registrar')
+  '/registrar',
+  authRateLimit,
+  validateBody(registrarSchema),
+  userHandler('registrar')
 );
-router.post('/login', authRateLimit, validateBody(loginSchema), userHandler('login'));
+router.post(
+  '/login',
+  authRateLimit,
+  validateBody(loginSchema),
+  userHandler('login')
+);
 router.get('/sessao', autenticacao, userHandler('sessao'));
 router.post('/logout', userHandler('logout'));
 

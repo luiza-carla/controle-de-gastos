@@ -15,6 +15,7 @@ import {
   formatarValor,
   criarOptionsHTML,
   formatarItemComTipo,
+  filtrarContasNaoCredito,
   $,
   resetFormWithMasks,
 } from '../helpers/index.js';
@@ -56,7 +57,7 @@ async function popularSelectDestinoSalario(selectId = 'contaSalario') {
   if (!select) return;
 
   try {
-    const contas = await listarContas();
+    const contas = filtrarContasNaoCredito(await listarContas());
 
     const optionsContas = criarOptionsHTML(
       contas || [],

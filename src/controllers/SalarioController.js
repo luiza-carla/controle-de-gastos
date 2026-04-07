@@ -133,6 +133,12 @@ class SalarioController {
     );
     const destinoSaldo = this.normalizarDestinoSaldo(payload);
 
+    await SaldoService.validarContaAceitaEntrada({
+      usuarioId: req.user.id,
+      contaId: destinoSaldo.conta,
+      fonteSaldo: destinoSaldo.fonteSaldo,
+    });
+
     const hoje = new Date();
 
     const salario = await Transacao.create({
@@ -213,6 +219,12 @@ class SalarioController {
       const destinoSaldo = this.normalizarDestinoSaldo(payloadAtualizacao);
       payloadAtualizacao.conta = destinoSaldo.conta;
       payloadAtualizacao.fonteSaldo = destinoSaldo.fonteSaldo;
+
+      await SaldoService.validarContaAceitaEntrada({
+        usuarioId: req.user.id,
+        contaId: destinoSaldo.conta,
+        fonteSaldo: destinoSaldo.fonteSaldo,
+      });
     }
 
     const salarioPopulado = await populateSalario(

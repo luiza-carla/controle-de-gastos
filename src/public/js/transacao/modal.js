@@ -12,6 +12,7 @@ import {
   obterSubcategoriaParaEnviar,
   executarAcaoModal,
   applyCategoryTheme,
+  contaSelecionadaEhCredito,
 } from '../helpers/index.js';
 import { templateEditarTransacaoModal } from './templates.js';
 import {
@@ -24,6 +25,25 @@ import { obterTransacaoPorId } from './service.js';
 
 const URL_CATEGORIAS = `${window.location.origin}/categorias`;
 const URL_CONTAS = `${window.location.origin}/contas`;
+const MENSAGEM_ENTRADA_CREDITO =
+  'Não é permitido lançar entradas em cartão de crédito';
+
+function sincronizarTipoModalCredito() {
+  const selectConta = $('modalContaTransacao');
+  const selectTipo = $('modalTipoTransacao');
+  const optionEntrada = selectTipo?.querySelector('option[value="entrada"]');
+
+  if (!selectConta || !selectTipo || !optionEntrada) {
+    return;
+  }
+
+  const isCredito = contaSelecionadaEhCredito(selectConta);
+  optionEntrada.disabled = isCredito;
+
+  if (isCredito && selectTipo.value !== 'saida') {
+    selectTipo.value = 'saida';
+  }
+}
 
 export const editarTransacao = async (id) => {
   const transacao =
@@ -67,6 +87,14 @@ export const editarTransacao = async (id) => {
         return;
       }
 
+      if (
+        novoTipo === 'entrada' &&
+        contaSelecionadaEhCredito($('modalContaTransacao'))
+      ) {
+        mostrarErroInline(MENSAGEM_ENTRADA_CREDITO);
+        return;
+      }
+
       const dados = {
         titulo: novoTitulo,
         valor: novoValor,
@@ -80,6 +108,11 @@ export const editarTransacao = async (id) => {
 
       if (novoTipo === 'saida') {
         dados.tipoDespesa = novoTipoDespesa || undefined;
+      }
+
+      const modalDataPrimeiraParcela = $('modalDataPrimeiraParcela');
+      if (modalDataPrimeiraParcela && modalDataPrimeiraParcela.value) {
+        dados.dataPrimeiraParcela = new Date(modalDataPrimeiraParcela.value);
       }
 
       await executarAcaoModal({
@@ -166,6 +199,7 @@ export const editarTransacao = async (id) => {
 
   const selectTipo = $('modalTipoTransacao');
   const despField = $('modalGrupoTipoDespesa');
+  const selectConta = $('modalContaTransacao');
   if (selectTipo && despField) {
     const toggle = () => {
       if (selectTipo.value === 'saida') {
@@ -177,6 +211,10 @@ export const editarTransacao = async (id) => {
     selectTipo.addEventListener('change', toggle);
     toggle();
   }
+
+  selectConta?.addEventListener('change', sincronizarTipoModalCredito);
+  selectTipo?.addEventListener('change', sincronizarTipoModalCredito);
+  sincronizarTipoModalCredito();
 };
 
 export const deletarTransacao = async (id) => {

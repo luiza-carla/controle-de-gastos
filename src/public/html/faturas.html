@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Faturas</title>
+
+    <link rel="stylesheet" href="../css/base.css" />
+    <link rel="stylesheet" href="../css/fatura.css" />
+
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+  </head>
+
+  <body>
+    <div id="menu"></div>
+
+    <main>
+      <div class="container">
+        <h2>
+          <i class="fa-regular fa-credit-card"></i>
+          Faturas do cartão
+        </h2>
+
+        <div class="faturas-resumo-grid">
+          <div class="faturas-resumo-card">
+            <span class="faturas-resumo-label">Total em aberto</span>
+            <strong id="faturasTotalAberto">R$ 0,00</strong>
+          </div>
+
+          <div class="faturas-resumo-card">
+            <span class="faturas-resumo-label">Total pago</span>
+            <strong id="faturasTotalPago">R$ 0,00</strong>
+          </div>
+
+          <div class="faturas-resumo-card">
+            <span class="faturas-resumo-label">Quantidade</span>
+            <strong id="faturasQuantidade">0</strong>
+          </div>
+        </div>
+
+        <div id="faturasEmptyState" class="card is-hidden">
+          Nenhuma fatura encontrada até o momento.
+        </div>
+
+        <div id="faturasContainer" class="faturas-lista"></div>
+      </div>
+    </main>
+
+    <script type="module" src="../js/init.js"></script>
+  </body>
+</html>

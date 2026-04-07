@@ -1,21 +1,47 @@
 import { escaparHtml } from '../helpers/index.js';
-import { formatarValor, formatarItemComTipo } from '../helpers/index.js';
+import {
+  formatarValor,
+  formatarItemComTipo,
+  contaEhCredito,
+} from '../helpers/index.js';
 
 const VALOR_CARTEIRA = 'carteira';
 
+function templateSaldoConta(conta) {
+  if (!contaEhCredito(conta)) {
+    return `<div class="conta-saldo">R$ ${formatarValor(conta.saldo)}</div>`;
+  }
+
+  const limite = Number(conta.limite || 0);
+  const limiteDisponivel = Number(conta.limiteDisponivel ?? limite);
+  const valorEmFatura = Math.max(limite - limiteDisponivel, 0);
+
+  return `
+    <div class="conta-saldo">Fatura atual: R$ ${formatarValor(valorEmFatura)}</div>
+    <div class="conta-meta">Limite: R$ ${formatarValor(limite)}</div>
+    <div class="conta-meta">Disponível: R$ ${formatarValor(limiteDisponivel)}</div>
+  `;
+}
+
 export function templateContaCard(conta) {
+  const transferirButton = contaEhCredito(conta)
+    ? ''
+    : `
+        <button class="btn btn-muted" data-conta-action="transferir" title="Transferir">
+          <i class="fa-solid fa-exchange"></i>
+        </button>
+      `;
+
   return `
     <div class="conta-card" data-conta-id="${conta._id}">
       <div class="conta-nome">${escaparHtml(conta.nome)}</div>
       <div class="conta-tipo">Tipo: ${formatarItemComTipo(conta)}</div>
-      <div class="conta-saldo">R$ ${formatarValor(conta.saldo)}</div>
+      ${templateSaldoConta(conta)}
       <div class="conta-acoes">
         <button class="btn btn-secondary" data-conta-action="editar" title="Editar">
           <i class="fa-solid fa-pen"></i>
         </button>
-        <button class="btn btn-muted" data-conta-action="transferir" title="Transferir">
-          <i class="fa-solid fa-exchange"></i>
-        </button>
+        ${transferirButton}
         <button class="btn btn-danger" data-conta-action="deletar" title="Deletar">
           <i class="fa-solid fa-trash"></i>
         </button>
@@ -34,7 +60,10 @@ export function templateSelectConta(contas, selectId) {
     selectId === 'contaSalario' ? 'selected' : 'selected disabled';
 
   const options = contas
-    .map((c) => `<option value="${c._id}">${formatarItemComTipo(c)}</option>`)
+    .map(
+      (c) =>
+        `<option value="${c._id}" data-tipo="${escaparHtml(c.tipo)}">${formatarItemComTipo(c)}</option>`
+    )
     .join('');
 
   const carteiraOption =
@@ -56,20 +85,6 @@ export function templateEditarConta(conta) {
       <input type="text" id="modalNomeConta" value="${escaparHtml(
         conta.nome
       )}" required>
-    </div>
-    <div class="form-group">
-      <label>Tipo</label>
-      <select id="modalTipoConta" required>
-        <option value="corrente" ${
-          conta.tipo === 'corrente' ? 'selected' : ''
-        }>Corrente</option>
-        <option value="credito" ${
-          conta.tipo === 'credito' ? 'selected' : ''
-        }>Crédito</option>
-        <option value="investimento" ${
-          conta.tipo === 'investimento' ? 'selected' : ''
-        }>Investimento</option>
-      </select>
     </div>
   `;
 }

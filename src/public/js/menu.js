@@ -2,10 +2,22 @@ import { logout } from './logout.js';
 import { abrirModalConfirmacao, fecharModal } from './modalDeletar.js';
 import { $, addClass, getPaginaAtual, setHTMLById } from './helpers/index.js';
 import { mostrarNotificacao, tratarErro } from './notification.js';
-import * as logger from './helpers/logger.js';
 
-const MENU_CACHE_KEY = 'menuHtmlCacheV2';
+const MENU_CACHE_KEY = 'menuHtmlCacheV3';
 const MENU_MAX_TENTATIVAS = 2;
+const MENU_LINKS_OBRIGATORIOS = [
+  'inicio.html',
+  'contas.html',
+  'transacoes.html',
+  'lista-desejos.html',
+  'salario.html',
+  'faturas.html',
+  'historico.html',
+];
+
+function registrarErroInternoMenu(error, mensagemPadrao) {
+  tratarErro(error, mensagemPadrao);
+}
 
 function isMenuCacheValido(html) {
   if (!html || !html.trim()) {
@@ -19,16 +31,29 @@ function isMenuCacheValido(html) {
     const sidebar = doc.querySelector('.sidebar');
     const modalGlobal = doc.querySelector('#modalGlobal');
     const loadingOverlay = doc.querySelector('#loadingOverlay');
+    const hrefsMenu = new Set(
+      [...doc.querySelectorAll('.sidebar a[href]')].map((link) =>
+        link.getAttribute('href')
+      )
+    );
     const modalGlobalValido =
       modalGlobal?.classList.contains('modal-overlay') &&
       modalGlobal.classList.contains('is-hidden');
     const loadingOverlayValido =
       loadingOverlay?.classList.contains('modal-overlay') &&
       loadingOverlay.classList.contains('is-hidden');
+    const linksObrigatoriosPresentes = MENU_LINKS_OBRIGATORIOS.every((href) =>
+      hrefsMenu.has(href)
+    );
 
-    return Boolean(sidebar && modalGlobalValido && loadingOverlayValido);
+    return Boolean(
+      sidebar &&
+      modalGlobalValido &&
+      loadingOverlayValido &&
+      linksObrigatoriosPresentes
+    );
   } catch (error) {
-    logger.warn('Nao foi possivel validar cache do menu', 'menu', error);
+    registrarErroInternoMenu(error, 'Nao foi possivel validar cache do menu');
     return false;
   }
 }
@@ -38,7 +63,7 @@ function lerMenuDoCache() {
     const html = sessionStorage.getItem(MENU_CACHE_KEY);
     return isMenuCacheValido(html) ? html : null;
   } catch (error) {
-    logger.warn('Nao foi possivel ler cache do menu', 'menu', error);
+    registrarErroInternoMenu(error, 'Nao foi possivel ler cache do menu');
     return null;
   }
 }
@@ -47,7 +72,7 @@ function salvarMenuNoCache(html) {
   try {
     sessionStorage.setItem(MENU_CACHE_KEY, html);
   } catch (error) {
-    logger.warn('Nao foi possivel salvar cache do menu', 'menu', error);
+    registrarErroInternoMenu(error, 'Nao foi possivel salvar cache do menu');
   }
 }
 

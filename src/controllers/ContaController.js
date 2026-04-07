@@ -1,8 +1,8 @@
 const ContaService = require('../services/ContaService');
 const { selecionarCamposPermitidos } = require('../utils/payloadHelpers');
 
-const CAMPOS_PERMITIDOS_CONTA_CRIACAO = ['nome', 'tipo', 'saldo'];
-const CAMPOS_PERMITIDOS_CONTA_ATUALIZACAO = ['nome', 'tipo'];
+const CAMPOS_PERMITIDOS_CONTA_CRIACAO = ['nome', 'tipo', 'saldo', 'limite'];
+const CAMPOS_PERMITIDOS_CONTA_ATUALIZACAO = ['nome'];
 
 class ContaController {
   // Cria nova conta

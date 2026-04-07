@@ -3,6 +3,7 @@ import { criarConta, popularSelectContas, listarContas } from './conta.js';
 import { initCarteiraPage } from './carteira.js';
 import { inicializarCategorias } from './categoria.js';
 import { initDesejos } from './listaDesejo.js';
+import { initFaturas } from './fatura/index.js';
 import { initTransacoes } from './transacao/index.js';
 import { initSalario } from './salario/index.js';
 import { $, bindCurrencyInputs } from './helpers/index.js';
@@ -44,6 +45,7 @@ async function initApp() {
   await Promise.all(tarefasIniciais);
 
   await initDesejos();
+  await initFaturas();
   await initTransacoes();
 
   const tarefasConta = [];

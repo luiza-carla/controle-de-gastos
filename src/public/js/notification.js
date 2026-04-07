@@ -21,6 +21,10 @@ const CHAVE_NOTIFICACAO_PENDENTE = 'notificacaoPendente';
 const ID_CONTAINER_NOTIFICACOES = 'notificacoesContainer';
 const MENSAGENS_ERRO_INLINE_CONHECIDAS = new Set([
   'Saldo insuficiente na carteira',
+  'Saldo insuficiente na conta',
+  'Limite insuficiente no cartão de crédito',
+  'Não é permitido lançar entradas em cartão de crédito',
+  'Transferências com cartão de crédito não são permitidas',
 ]);
 
 // Extrai uma mensagem textual utilizavel a partir de um erro.

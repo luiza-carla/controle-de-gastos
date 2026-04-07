@@ -1,11 +1,58 @@
 const Conta = require('../models/Conta');
 const Transacao = require('../models/Transacao');
 const HistoricoService = require('./HistoricoService');
+const SaldoService = require('./SaldoService');
 const { criarErro } = require('../utils/errorHelpers');
+const { contaEhCredito } = require('../utils/contaHelpers');
 const logger = require('../utils/logger');
 
 const MENSAGEM_CONTA_EM_USO =
   'Não é possível apagar a conta pois existem transações ou salários associados.';
+const MENSAGEM_LIMITE_CREDITO_INVALIDO =
+  'Limite do cartão de crédito deve ser maior que zero';
+const MENSAGEM_TRANSFERENCIA_CREDITO =
+  'Transferências com cartão de crédito não são permitidas';
+
+function normalizarDadosConta(dados, contaAtual = null) {
+  const tipoFinal = dados.tipo || contaAtual?.tipo;
+  const payload = { ...dados };
+
+  if (contaEhCredito(tipoFinal)) {
+    const limite = Number(
+      Object.prototype.hasOwnProperty.call(payload, 'limite')
+        ? payload.limite
+        : contaAtual?.limite || 0
+    );
+
+    if (!(limite > 0)) {
+      throw criarErro(400, MENSAGEM_LIMITE_CREDITO_INVALIDO);
+    }
+
+    payload.limite = limite;
+    payload.limiteDisponivel = contaAtual
+      ? Number(contaAtual.limiteDisponivel ?? limite)
+      : limite;
+    payload.diaFechamento = Number(
+      payload.diaFechamento || contaAtual?.diaFechamento || 10
+    );
+    payload.diaVencimento = Number(
+      payload.diaVencimento || contaAtual?.diaVencimento || 17
+    );
+
+    if (!contaAtual) {
+      payload.saldo = 0;
+    }
+
+    return payload;
+  }
+
+  payload.limite = 0;
+  payload.limiteDisponivel = 0;
+  payload.diaFechamento = null;
+  payload.diaVencimento = null;
+  payload.dataUltimoFechamento = null;
+  return payload;
+}
 
 async function registrarHistoricoConta({
   usuario,
@@ -32,17 +79,13 @@ function validarDadosTransferencia(contaDestinoId, valor) {
   }
 }
 
-function validarContasTransferencia(contaOrigem, contaDestino, valor) {
+function validarContasTransferencia(contaOrigem, contaDestino) {
   if (!contaOrigem) {
     throw criarErro(404, 'Conta de origem não encontrada');
   }
 
   if (!contaDestino) {
     throw criarErro(404, 'Conta de destino não encontrada');
-  }
-
-  if (contaOrigem.saldo < valor) {
-    throw criarErro(400, 'Saldo insuficiente na conta de origem');
   }
 }
 
@@ -55,7 +98,7 @@ function validarContaEncontrada(conta) {
 class ContaService {
   // Cria nova conta
   async criar(dados) {
-    const conta = await Conta.create(dados);
+    const conta = await Conta.create(normalizarDadosConta(dados));
 
     await registrarHistoricoConta({
       usuario: dados.usuario,
@@ -83,9 +126,13 @@ class ContaService {
     const contaAntiga = await Conta.findOne(filtro);
     validarContaEncontrada(contaAntiga);
 
-    const conta = await Conta.findOneAndUpdate(filtro, dados, {
-      returnDocument: 'after',
-    });
+    const conta = await Conta.findOneAndUpdate(
+      filtro,
+      normalizarDadosConta(dados, contaAntiga),
+      {
+        returnDocument: 'after',
+      }
+    );
 
     validarContaEncontrada(conta);
 
@@ -161,16 +208,25 @@ class ContaService {
       usuario: usuarioId,
     });
 
-    validarContasTransferencia(contaOrigem, contaDestino, valor);
+    validarContasTransferencia(contaOrigem, contaDestino);
+
+    if (contaEhCredito(contaOrigem) || contaEhCredito(contaDestino)) {
+      throw criarErro(400, MENSAGEM_TRANSFERENCIA_CREDITO);
+    }
+
+    await SaldoService.aplicarDeltaContas(
+      {
+        [contaOrigem._id]: -Number(valor),
+        [contaDestino._id]: Number(valor),
+      },
+      usuarioId
+    );
+
+    const contaOrigemAtualizada = await Conta.findById(contaOrigem._id);
+    const contaDestinoAtualizada = await Conta.findById(contaDestino._id);
 
     const saldoOrigemAnterior = contaOrigem.saldo;
     const saldoDestinoAnterior = contaDestino.saldo;
-
-    contaOrigem.saldo -= valor;
-    contaDestino.saldo += valor;
-
-    await contaOrigem.save();
-    await contaDestino.save();
 
     // Registra transferência como ação única no histórico
     await HistoricoService.registrar({
@@ -179,8 +235,8 @@ class ContaService {
       entidadeId: contaOrigem._id,
       acao: 'transferencia',
       descricao: HistoricoService.formatarDescricaoTransferenciaConta(
-        contaOrigem,
-        contaDestino,
+        contaOrigemAtualizada,
+        contaDestinoAtualizada,
         valor
       ),
       dadosAnteriores: {
@@ -192,15 +248,15 @@ class ContaService {
       dadosNovos: {
         contaOrigemId: contaOrigem._id,
         contaDestinoId: contaDestino._id,
-        saldoOrigem: contaOrigem.saldo,
-        saldoDestino: contaDestino.saldo,
+        saldoOrigem: contaOrigemAtualizada.saldo,
+        saldoDestino: contaDestinoAtualizada.saldo,
       },
     });
 
     return {
       mensagem: 'Transferência realizada com sucesso',
-      contaOrigem,
-      contaDestino,
+      contaOrigem: contaOrigemAtualizada,
+      contaDestino: contaDestinoAtualizada,
     };
   }
 }

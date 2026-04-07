@@ -118,6 +118,19 @@ export function templateTransacaoCard(t) {
           </div>`
               : ''
           }
+
+          ${
+            temRecorrencia
+              ? `<div class="info-linha">
+            <span class="info-label">Data da primeira parcela:</span>
+            <span class="info-valor">${
+              t.dataPrimeiraParcela
+                ? formatarData(t.dataPrimeiraParcela)
+                : 'Não definida'
+            }</span>
+          </div>`
+              : ''
+          }
         </div>
 
         ${
@@ -164,7 +177,9 @@ export function templateEditarTransacaoModal(transacao, contas) {
   const optionsContas = (contas || [])
     .map((conta) => {
       const selecionada = conta._id === destinoAtual ? 'selected' : '';
-      return `<option value="${conta._id}" ${selecionada}>${escaparHtml(
+      return `<option value="${conta._id}" data-tipo="${escaparHtml(
+        conta.tipo
+      )}" ${selecionada}>${escaparHtml(
         conta.nome
       )} (${capitalizar(conta.tipo)})</option>`;
     })
@@ -241,7 +256,7 @@ export function templateEditarTransacaoModal(transacao, contas) {
          <div id="modalDropdownCategoriaTransacao" class="dropdown-categorias"></div>
        </div>
     </div>      <div class="form-group" id="modalSubcategoriaGroup">
-      <label>Subcategoria (opcional)</label>
+      <label>Subcategoria</label>
       <div class="categoria-autocomplete">
         <input type="text" id="modalBuscaSubcategoriaTransacao" placeholder="Buscar ou selecionar subcategoria..." autocomplete="off">
         <input type="hidden" id="modalSubcategoriaTransacao">
@@ -258,5 +273,17 @@ export function templateEditarTransacaoModal(transacao, contas) {
       </div>
     </div>
     ${tipoDespesaField}
+    ${
+      transacao.recorrencia && transacao.recorrencia !== 'nenhuma'
+        ? `<div class="form-group">
+      <label>Data da primeira parcela</label>
+      <input type="date" id="modalDataPrimeiraParcela" value="${
+        transacao.dataPrimeiraParcela
+          ? new Date(transacao.dataPrimeiraParcela).toISOString().split('T')[0]
+          : ''
+      }" />
+    </div>`
+        : ''
+    }
   `;
 }

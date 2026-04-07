@@ -6,17 +6,17 @@ export async function fetchContas() {
   return apiFetch(BASE_URL);
 }
 
-export async function createConta({ nome, tipo, saldo }) {
+export async function createConta({ nome, tipo, saldo, limite }) {
   return apiFetch(BASE_URL, {
     method: 'POST',
-    body: JSON.stringify({ nome, tipo, saldo }),
+    body: JSON.stringify({ nome, tipo, saldo, limite }),
   });
 }
 
-export async function updateConta(id, { nome, tipo }) {
+export async function updateConta(id, { nome }) {
   return apiFetch(`${BASE_URL}/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ nome, tipo }),
+    body: JSON.stringify({ nome }),
   });
 }
 

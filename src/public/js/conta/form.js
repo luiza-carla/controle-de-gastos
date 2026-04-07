@@ -13,6 +13,9 @@ import {
   parseCurrency,
   createFormSubmitGuard,
   resetFormWithMasks,
+  showElement,
+  hideElement,
+  contaEhCredito,
   $,
 } from '../helpers/index.js';
 import { createConta } from './api.js';
@@ -20,6 +23,37 @@ import { invalidateContas } from './service.js';
 
 const FORM_ERRO_ID = 'formErroInlineConta';
 const FORM_MSG_ERRO_ID = 'formMensagemErroConta';
+
+function sincronizarCamposContaCredito(form) {
+  const isCredito = contaEhCredito(form.tipo?.value);
+  const grupoSaldo = $('saldoInicialGroup');
+  const grupoLimite = $('limiteCreditoGroup');
+  const inputLimite = $('limiteCredito');
+  const inputSaldo = $('saldoInicial');
+
+  if (isCredito) {
+    hideElement(grupoSaldo);
+    showElement(grupoLimite);
+    if (inputSaldo) {
+      inputSaldo.value = '';
+      inputSaldo.disabled = true;
+    }
+    if (inputLimite) {
+      inputLimite.disabled = false;
+    }
+    return;
+  }
+
+  showElement(grupoSaldo);
+  hideElement(grupoLimite);
+  if (inputSaldo) {
+    inputSaldo.disabled = false;
+  }
+  if (inputLimite) {
+    inputLimite.value = '';
+    inputLimite.disabled = true;
+  }
+}
 
 export async function criarConta(formId, callback) {
   const form = $(formId);
@@ -31,6 +65,10 @@ export async function criarConta(formId, callback) {
 
   form.noValidate = true;
   garantirErroInline(form, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
+  sincronizarCamposContaCredito(form);
+  form.tipo?.addEventListener('change', () => {
+    sincronizarCamposContaCredito(form);
+  });
 
   const guardSubmit = createFormSubmitGuard(form);
 
@@ -59,11 +97,28 @@ export async function criarConta(formId, callback) {
         return;
       }
 
+      if (
+        contaEhCredito(tipoConta) &&
+        !(parseCurrency(form.limiteCredito.value || 0) > 0)
+      ) {
+        abrirModalErro(
+          'Informe um limite válido para o cartão de crédito',
+          FORM_ERRO_ID,
+          FORM_MSG_ERRO_ID
+        );
+        return;
+      }
+
       try {
         await createConta({
           nome: nomeConta,
           tipo: tipoConta,
-          saldo: parseCurrency(form.saldoInicial.value || 0) || 0,
+          saldo: contaEhCredito(tipoConta)
+            ? 0
+            : parseCurrency(form.saldoInicial.value || 0) || 0,
+          limite: contaEhCredito(tipoConta)
+            ? parseCurrency(form.limiteCredito.value || 0) || 0
+            : 0,
         });
 
         invalidateContas();
@@ -71,6 +126,7 @@ export async function criarConta(formId, callback) {
         if (acao === 'salvar-adicionar-outro') {
           notificarOperacao(notificacaoConta);
           resetFormWithMasks(form);
+          sincronizarCamposContaCredito(form);
         } else if (window.location.pathname.includes('adicionar-conta')) {
           agendarNotificacaoOperacao(notificacaoConta);
           window.location.href = '/html/contas.html';

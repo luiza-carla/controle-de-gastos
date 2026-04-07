@@ -12,11 +12,7 @@ function clearCategoryTheme(element) {
   element.classList.remove(...CATEGORY_THEME_CLASSES, 'input-categoria-accent');
 }
 
-function applyCategoryTheme(
-  element,
-  color,
-  { accent = false } = {}
-) {
+function applyCategoryTheme(element, color, { accent = false } = {}) {
   if (!element) return;
   clearCategoryTheme(element);
   element.classList.add(getCategoryThemeClass(color));
@@ -25,8 +21,4 @@ function applyCategoryTheme(
   }
 }
 
-export {
-  getCategoryThemeClass,
-  applyCategoryTheme,
-  clearCategoryTheme,
-};
+export { getCategoryThemeClass, applyCategoryTheme, clearCategoryTheme };

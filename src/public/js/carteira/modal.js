@@ -11,6 +11,7 @@ import {
   capitalizar,
   escaparHtml,
   criarOptionsHTML,
+  filtrarContasNaoCredito,
   $,
 } from '../helpers/index.js';
 import {
@@ -118,8 +119,9 @@ export async function abrirModalTransferencia({ onAtualizar } = {}) {
 
   const carteira = await obterCarteira();
   const contas = await apiFetch(URL_CONTAS);
+  const contasDisponiveis = filtrarContasNaoCredito(contas || []);
 
-  if (!contas || contas.length === 0) {
+  if (!contasDisponiveis.length) {
     mostrarNotificacao(
       'Você precisa ter pelo menos uma conta para transferir',
       'erro'
@@ -129,7 +131,7 @@ export async function abrirModalTransferencia({ onAtualizar } = {}) {
 
   const saldoFormatado = carteira ? formatarValor(carteira.saldo) : '0,00';
   const contasOptionsHtml = criarOptionsHTML(
-    contas,
+    contasDisponiveis,
     (c) => c._id,
     (c) => `${escaparHtml(c.nome)} (${capitalizar(c.tipo)})`
   );
@@ -163,7 +165,9 @@ export async function abrirModalTransferencia({ onAtualizar } = {}) {
         return;
       }
 
-      const contaDestino = contas.find((conta) => conta._id === contaId);
+      const contaDestino = contasDisponiveis.find(
+        (conta) => conta._id === contaId
+      );
 
       await executarAcaoModal({
         acao: () => transferirParaConta(contaId, valorResult.valor),

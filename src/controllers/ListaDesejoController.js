@@ -1,15 +1,18 @@
 const ListaDesejo = require('../models/ListaDesejo');
 const Transacao = require('../models/Transacao');
+const Conta = require('../models/Conta');
 const {
   validarSubcategoriaParaCategoria,
   processarSubcategoriaAoAtualizar,
 } = require('../utils/subcategoriaUtils');
 const HistoricoService = require('../services/HistoricoService');
 const SaldoService = require('../services/SaldoService');
+const FaturaService = require('../services/FaturaService');
 const { formatarMoeda } = require('../utils/stringHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
 const { criarErro } = require('../utils/errorHelpers');
 const { selecionarCamposPermitidos } = require('../utils/payloadHelpers');
+const { contaEhCredito } = require('../utils/contaHelpers');
 
 const MENSAGEM_ITEM_NAO_ENCONTRADO = 'Item da lista de desejos nao encontrado';
 const PROJECAO_CATEGORIA = 'nome cor tipo';
@@ -221,12 +224,36 @@ class ListaDesejoController {
       throw criarErro(400, 'Valor inválido');
     }
 
-    if (statusFinal === 'pago') {
-      await SaldoService.validarSaldoDisponivel({
+    const contaSelecionada =
+      fonteSaldo === 'conta'
+        ? await Conta.findOne({ _id: conta, usuario: req.user.id })
+        : null;
+
+    if (fonteSaldo === 'conta' && !contaSelecionada) {
+      throw criarErro(404, 'Conta não encontrada');
+    }
+
+    if (contaEhCredito(contaSelecionada)) {
+      await FaturaService.validarTransacaoProjetada({
         usuarioId: req.user.id,
-        contaId: conta,
-        fonteSaldo,
-        valor: valorFinal,
+        transacaoNova: {
+          conta,
+          fonteSaldo,
+          valor: valorFinal,
+          tipo: 'saida',
+          status: statusFinal,
+        },
+      });
+    } else {
+      await SaldoService.validarTransacaoProjetada({
+        usuarioId: req.user.id,
+        transacaoNova: {
+          conta: fonteSaldo === 'carteira' ? null : conta,
+          fonteSaldo,
+          valor: valorFinal,
+          tipo: 'saida',
+          status: statusFinal,
+        },
       });
     }
 
@@ -256,16 +283,20 @@ class ListaDesejoController {
     });
 
     if (statusFinal === 'pago') {
-      await SaldoService.aplicarMovimento(
-        {
-          conta: conta,
-          fonteSaldo,
-          valor: valorFinal,
-          tipo: 'saida',
-          status: 'pago',
-        },
-        req.user.id
-      );
+      if (contaEhCredito(contaSelecionada)) {
+        await FaturaService.aplicarCompra(novaTransacao, req.user.id);
+      } else {
+        await SaldoService.aplicarMovimento(
+          {
+            conta: conta,
+            fonteSaldo,
+            valor: valorFinal,
+            tipo: 'saida',
+            status: 'pago',
+          },
+          req.user.id
+        );
+      }
     }
 
     await ListaDesejo.findByIdAndDelete(item._id);

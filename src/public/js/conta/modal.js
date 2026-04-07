@@ -10,6 +10,8 @@ import {
   parseCurrency,
   criarOptionsHTML,
   formatarItemComTipo,
+  contaEhCredito,
+  filtrarContasNaoCredito,
   $,
 } from '../helpers/index.js';
 import {
@@ -20,8 +22,19 @@ import {
 } from './api.js';
 import { invalidateContas } from './service.js';
 import { templateEditarConta, templateTransferirConta } from './templates.js';
+import { mostrarNotificacao } from '../notification.js';
 
 const VALOR_CARTEIRA = 'carteira';
+const MENSAGEM_TRANSFERENCIA_CREDITO =
+  'Transferências com cartão de crédito não são permitidas';
+
+function obterSaldoDisponivelTransferencia(conta) {
+  if (contaEhCredito(conta)) {
+    return Number(conta.limite || 0) + Number(conta.saldo || 0);
+  }
+
+  return Number(conta.saldo || 0);
+}
 
 export async function abrirModalEditarConta(
   id,
@@ -38,15 +51,14 @@ export async function abrirModalEditarConta(
       limparErroInline();
 
       const novoNome = $('modalNomeConta')?.value;
-      const novoTipo = $('modalTipoConta')?.value;
 
-      if (!novoNome || !novoTipo) {
+      if (!novoNome) {
         mostrarErroInline('Por favor, preencha todos os campos obrigatórios');
         return;
       }
 
       await executarAcaoModal({
-        acao: () => updateConta(id, { nome: novoNome, tipo: novoTipo }),
+        acao: () => updateConta(id, { nome: novoNome }),
         mensagemErro: 'Erro ao atualizar conta',
         notificacaoSucesso: {
           objeto: `Conta "${novoNome}"`,
@@ -100,7 +112,14 @@ export async function abrirModalTransferirConta(
   const contaOrigem = contas.find((c) => c._id === contaOrigemId);
   if (!contaOrigem) return;
 
-  const outrasContas = contas.filter((c) => c._id !== contaOrigemId);
+  if (contaEhCredito(contaOrigem)) {
+    mostrarNotificacao(MENSAGEM_TRANSFERENCIA_CREDITO, 'erro');
+    return;
+  }
+
+  const outrasContas = filtrarContasNaoCredito(contas).filter(
+    (c) => c._id !== contaOrigemId
+  );
 
   const optionsCarteira = '<option value="carteira">Dinheiro físico</option>';
   const optionsContas = criarOptionsHTML(
@@ -127,7 +146,7 @@ export async function abrirModalTransferirConta(
         return;
       }
 
-      if (valor > contaOrigem.saldo) {
+      if (valor > obterSaldoDisponivelTransferencia(contaOrigem)) {
         mostrarErroInline('Saldo insuficiente na conta');
         return;
       }

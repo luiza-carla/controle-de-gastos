@@ -22,6 +22,7 @@ import {
   inicializarTags,
   obterSubcategoriaParaEnviar,
   resetFormWithMasks,
+  contaSelecionadaEhCredito,
 } from '../helpers/index.js';
 import { criarTransacao } from './service.js';
 import { listarTransacoes } from './render.js';
@@ -30,6 +31,36 @@ let tags = [];
 
 const FORM_ERRO_ID = 'formErroInlineTransacao';
 const FORM_MSG_ERRO_ID = 'formMensagemErroTransacao';
+const MENSAGEM_ENTRADA_CREDITO =
+  'Não é permitido lançar entradas em cartão de crédito';
+
+function sincronizarTipoParaContaCredito(
+  selectConta,
+  selectTipo,
+  tipoDespesaSelect
+) {
+  if (!selectConta || !selectTipo) {
+    return;
+  }
+
+  const isCredito = contaSelecionadaEhCredito(selectConta);
+  const optionEntrada = selectTipo.querySelector('option[value="entrada"]');
+
+  if (optionEntrada) {
+    optionEntrada.disabled = isCredito;
+  }
+
+  if (isCredito && selectTipo.value !== 'saida') {
+    selectTipo.value = 'saida';
+  }
+
+  if (selectTipo.value === 'saida') {
+    showElement($('tipoDespesaContainer'));
+  } else {
+    hideElement($('tipoDespesaContainer'));
+    if (tipoDespesaSelect) tipoDespesaSelect.value = '';
+  }
+}
 
 function resetarFormularioTransacao(
   form,
@@ -46,6 +77,10 @@ function resetarFormularioTransacao(
   // também apagar subcategoria
   const subcat = $('subcategoria');
   if (subcat) subcat.value = '';
+
+  // limpar data da primeira parcela
+  const dataPrimeiraParcela = $('dataPrimeiraParcela');
+  if (dataPrimeiraParcela) dataPrimeiraParcela.value = '';
 }
 
 export async function initTransacaoForm(formId = 'formTransacao') {
@@ -65,6 +100,7 @@ export async function initTransacaoForm(formId = 'formTransacao') {
 
   const recorrenciaSelect = $('recorrencia');
   const parcelasContainer = $('parcelasContainer');
+  const contaSelect = $('conta');
 
   // garantir limpeza de subcategoria quando a categoria mudar
   inputCategoria?.addEventListener('input', () => {
@@ -76,6 +112,18 @@ export async function initTransacaoForm(formId = 'formTransacao') {
 
   // Controla exibicao de campos condicionais
   tipoSelect?.addEventListener('change', () => {
+    if (
+      tipoSelect.value === 'entrada' &&
+      contaSelecionadaEhCredito(contaSelect)
+    ) {
+      mostrarErroInline(
+        MENSAGEM_ENTRADA_CREDITO,
+        FORM_ERRO_ID,
+        FORM_MSG_ERRO_ID
+      );
+      tipoSelect.value = 'saida';
+    }
+
     if (tipoSelect.value === 'saida') {
       showElement($('tipoDespesaContainer'));
     } else {
@@ -91,6 +139,11 @@ export async function initTransacaoForm(formId = 'formTransacao') {
       showElement(parcelasContainer);
     }
   });
+
+  contaSelect?.addEventListener('change', () => {
+    sincronizarTipoParaContaCredito(contaSelect, tipoSelect, tipoDespesaSelect);
+  });
+  sincronizarTipoParaContaCredito(contaSelect, tipoSelect, tipoDespesaSelect);
 
   // Envia dados da transacao para API
   const guardSubmit = createFormSubmitGuard(form);
@@ -144,8 +197,20 @@ export async function initTransacaoForm(formId = 'formTransacao') {
         return;
       }
 
+      if (
+        tipoSelect?.value === 'entrada' &&
+        contaSelecionadaEhCredito(contaSelect)
+      ) {
+        mostrarErroInline(
+          MENSAGEM_ENTRADA_CREDITO,
+          FORM_ERRO_ID,
+          FORM_MSG_ERRO_ID
+        );
+        return;
+      }
+
       try {
-        await criarTransacao({
+        const payload = {
           titulo: tituloTransacao,
           valor,
           tipo: tipoSelect.value,
@@ -160,7 +225,18 @@ export async function initTransacaoForm(formId = 'formTransacao') {
             totalParcelas: Number(form.totalParcelas.value || 1),
             parcelaAtual: Number(form.parcelaAtual.value || 1),
           },
-        });
+        };
+
+        if (
+          form.recorrencia.value !== 'nenhuma' &&
+          form.dataPrimeiraParcela.value
+        ) {
+          payload.dataPrimeiraParcela = new Date(
+            form.dataPrimeiraParcela.value
+          );
+        }
+
+        await criarTransacao(payload);
 
         if (acao === 'salvar-adicionar-outro') {
           notificarOperacao(notificacaoTransacao);

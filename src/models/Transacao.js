@@ -14,6 +14,12 @@ const TransacaoSchema = new mongoose.Schema(
       required: false,
     },
 
+    fatura: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Fatura',
+      required: false,
+    },
+
     fonteSaldo: {
       type: String,
       enum: ['conta', 'carteira'],
@@ -81,7 +87,7 @@ const TransacaoSchema = new mongoose.Schema(
 
     frequencia: {
       type: String,
-      enum: ['mensal', 'semanal', 'diario', 'anual', 'hora', 'outra'],
+      enum: ['mensal' /* 'semanal', 'diario', 'anual', 'hora', 'outra' */],
       required: false,
     },
 
@@ -100,6 +106,11 @@ const TransacaoSchema = new mongoose.Schema(
     parcelamento: {
       totalParcelas: { type: Number, default: 1 },
       parcelaAtual: { type: Number, default: 1 },
+    },
+
+    dataPrimeiraParcela: {
+      type: Date,
+      required: false,
     },
 
     status: {

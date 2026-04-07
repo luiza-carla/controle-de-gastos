@@ -10,9 +10,13 @@ const Conta = require('../models/Conta');
 const Categoria = require('../models/Categoria');
 const Subcategoria = require('../models/Subcategoria');
 const Transacao = require('../models/Transacao');
+const Fatura = require('../models/Fatura');
+const Parcela = require('../models/Parcela');
 const ListaDesejo = require('../models/ListaDesejo');
 const Historico = require('../models/Historico');
+const FaturaService = require('../services/FaturaService');
 const logger = require('./logger');
+const { contaEhCredito, filtrarContasNaoCredito } = require('./contaHelpers');
 
 // Importar função de seed de categorias
 const garantirCategoriasPadrao = require('./seedCategoria');
@@ -32,7 +36,15 @@ const DEFAULT_SEED_OPTIONS = {
   limparTudo: false,
 };
 
-const MODELS_LIMPEZA = [Carteira, Conta, Transacao, ListaDesejo, Historico];
+const MODELS_LIMPEZA = [
+  Carteira,
+  Conta,
+  Fatura,
+  Parcela,
+  Transacao,
+  ListaDesejo,
+  Historico,
+];
 
 // Cria documentos em lote executando factory para cada item
 async function criarEmLote(quantidade, criarItem, Model) {
@@ -122,9 +134,19 @@ function gerarCarteira(usuarioId) {
 /**
  * Gera uma conta para um usuário
  */
-function gerarConta(usuarioId) {
+function gerarConta(usuarioId, tipoForcado = null) {
   const tipos = ['corrente', 'credito', 'investimento'];
-  const tipo = faker.helpers.arrayElement(tipos);
+  const tipo = tipoForcado || faker.helpers.arrayElement(tipos);
+  const limiteCredito =
+    tipo === 'credito'
+      ? faker.number.float({ min: 800, max: 6000, precision: 0.01 })
+      : 0;
+  const diaFechamento =
+    tipo === 'credito' ? faker.number.int({ min: 1, max: 25 }) : null;
+  const diaVencimento =
+    tipo === 'credito'
+      ? Math.min(diaFechamento + faker.number.int({ min: 5, max: 10 }), 28)
+      : null;
 
   const nomes = {
     corrente: [
@@ -157,8 +179,27 @@ function gerarConta(usuarioId) {
     usuario: usuarioId,
     nome: faker.helpers.arrayElement(nomes[tipo]),
     tipo: tipo,
-    saldo: faker.number.float({ min: 0, max: 600, precision: 0.01 }),
+    saldo:
+      tipo === 'credito'
+        ? 0
+        : faker.number.float({ min: 0, max: 600, precision: 0.01 }),
+    limite: limiteCredito,
+    limiteDisponivel: tipo === 'credito' ? limiteCredito : 0,
+    diaFechamento,
+    diaVencimento,
     ativa: faker.datatype.boolean(0.9),
+  };
+}
+
+function escolherCategoriaDespesa(categorias, subcategorias) {
+  const categoria = faker.helpers.arrayElement(categorias);
+  const subs = filtrarSubcategoriasPorCategoria(subcategorias, categoria._id, {
+    excluirNomes: ['Salário'],
+  });
+
+  return {
+    categoriaId: categoria._id,
+    subcategoriaId: subs.length ? faker.helpers.arrayElement(subs)._id : null,
   };
 }
 
@@ -167,24 +208,29 @@ function gerarConta(usuarioId) {
  */
 function gerarTransacao(
   usuarioId,
-  contaId,
+  conta,
   categorias,
   subcategorias,
   saldoState = {
     carteira: 0,
     contas: new Map(),
+    limites: new Map(),
   }
 ) {
-  const tipo = faker.helpers.arrayElement(['entrada', 'saida']);
+  const contaId = conta?._id || conta;
+  const contaIdTexto = contaId ? contaId.toString() : null;
+  const isContaCredito = contaEhCredito(conta);
+  let tipo = faker.helpers.arrayElement(['entrada', 'saida']);
 
-  const categoria = faker.helpers.arrayElement(categorias);
-  const subs = filtrarSubcategoriasPorCategoria(subcategorias, categoria._id, {
-    excluirNomes: ['Salário'],
-  });
-  const subcategoriaId = subs.length
-    ? faker.helpers.arrayElement(subs)._id
-    : null;
+  const { categoriaId, subcategoriaId } = escolherCategoriaDespesa(
+    categorias,
+    subcategorias
+  );
   const fonteSaldo = faker.helpers.arrayElement(['conta', 'carteira']);
+
+  if (isContaCredito && fonteSaldo === 'conta') {
+    tipo = 'saida';
+  }
 
   // Gerar datas no mês atual para aparecerem no resumo
   const hoje = new Date();
@@ -199,7 +245,9 @@ function gerarTransacao(
     const saldoDisponivel =
       fonteSaldo === 'carteira'
         ? saldoState.carteira
-        : saldoState.contas.get(contaId.toString()) || 0;
+        : isContaCredito
+          ? saldoState.limites.get(contaIdTexto) || 0
+          : saldoState.contas.get(contaIdTexto) || 0;
 
     if (valor > saldoDisponivel) {
       status = 'pendente';
@@ -213,7 +261,7 @@ function gerarTransacao(
     titulo: faker.commerce.productName(),
     valor: valor,
     tipo: tipo,
-    categoria: categoria._id,
+    categoria: categoriaId,
     subcategoria: subcategoriaId,
     data: faker.date.between({
       from: inicioMes,
@@ -234,8 +282,13 @@ function gerarTransacao(
 
     if (fonteSaldo === 'carteira') {
       saldoState.carteira += delta;
+    } else if (isContaCredito && contaIdTexto) {
+      saldoState.limites.set(
+        contaIdTexto,
+        Math.max((saldoState.limites.get(contaIdTexto) || 0) - valor, 0)
+      );
     } else {
-      const id = contaId.toString();
+      const id = contaIdTexto;
       saldoState.contas.set(id, (saldoState.contas.get(id) || 0) + delta);
     }
   }
@@ -267,6 +320,92 @@ function gerarTransacao(
   }
 
   return transacao;
+}
+
+function gerarCompraCreditoGarantida(
+  usuarioId,
+  cartao,
+  categorias,
+  subcategorias
+) {
+  if (!cartao?._id) {
+    return null;
+  }
+
+  const { categoriaId, subcategoriaId } = escolherCategoriaDespesa(
+    categorias,
+    subcategorias
+  );
+  const valorMaximo = Math.max(
+    Math.min(Number(cartao.limite || 0) * 0.2, 180),
+    20
+  );
+
+  return {
+    usuario: usuarioId,
+    conta: cartao._id,
+    fonteSaldo: 'conta',
+    titulo: faker.commerce.productName(),
+    valor: faker.number.float({ min: 10, max: valorMaximo, precision: 0.01 }),
+    tipo: 'saida',
+    categoria: categoriaId,
+    subcategoria: subcategoriaId,
+    data: faker.date.recent({ days: 20 }),
+    ativa: true,
+    tags: faker.helpers.arrayElements(
+      ['urgente', 'planejado', 'imprevisto', 'fixo', 'variável', 'lazer'],
+      faker.number.int({ min: 0, max: 3 })
+    ),
+    recorrencia: 'nenhuma',
+    status: 'pago',
+    tipoDespesa: faker.helpers.arrayElement([
+      'essencial',
+      'eventual',
+      'opcional',
+    ]),
+    parcelamento: faker.datatype.boolean(0.5)
+      ? {
+          totalParcelas: faker.number.int({ min: 2, max: 6 }),
+          parcelaAtual: 1,
+        }
+      : {
+          totalParcelas: 1,
+          parcelaAtual: 1,
+        },
+  };
+}
+
+async function materializarFaturasSeed(usuarioId, contas, transacoes) {
+  const idsCartoes = new Set(
+    contas
+      .filter((conta) => contaEhCredito(conta))
+      .map((conta) => String(conta._id))
+  );
+
+  if (!idsCartoes.size) {
+    return;
+  }
+
+  const transacoesCredito = transacoes
+    .filter(
+      (transacao) =>
+        transacao.fonteSaldo === 'conta' &&
+        transacao.tipo === 'saida' &&
+        transacao.status === 'pago' &&
+        idsCartoes.has(String(transacao.conta))
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.data || a.createdAt).getTime() -
+        new Date(b.data || b.createdAt).getTime()
+    );
+
+  for (const transacao of transacoesCredito) {
+    await FaturaService.aplicarCompra(transacao, usuarioId);
+  }
+
+  await FaturaService.fecharFaturasDoDia();
+  await FaturaService.atualizarFaturasAtrasadas();
 }
 
 /**
@@ -327,8 +466,8 @@ function gerarSalario(usuarioId, contaId, refs) {
 
   return {
     usuario: usuarioId,
-    conta: contaId,
-    fonteSaldo: 'conta',
+    conta: contaId || null,
+    fonteSaldo: contaId ? 'conta' : 'carteira',
     titulo: faker.helpers.arrayElement(titulos),
     valor: faker.number.float({ min: 300, max: 1200, precision: 0.01 }),
     tipo: 'entrada',
@@ -540,7 +679,7 @@ async function seedDatabase(options = {}) {
 
     const contas = await criarEmLote(
       numContasPorUsuario,
-      () => gerarConta(usuarioTeste._id),
+      (index) => gerarConta(usuarioTeste._id, index === 0 ? 'credito' : null),
       Conta
     );
 
@@ -549,6 +688,11 @@ async function seedDatabase(options = {}) {
     const saldoState = {
       carteira: carteira.saldo,
       contas: new Map(contas.map((c) => [c._id.toString(), c.saldo])),
+      limites: new Map(
+        contas
+          .filter((conta) => contaEhCredito(conta))
+          .map((conta) => [conta._id.toString(), conta.limiteDisponivel])
+      ),
     };
 
     const transacoes = await criarEmLote(
@@ -557,7 +701,7 @@ async function seedDatabase(options = {}) {
         const contaAleatoria = faker.helpers.arrayElement(contas);
         return gerarTransacao(
           usuarioTeste._id,
-          contaAleatoria._id,
+          contaAleatoria,
           categorias,
           subcategorias,
           saldoState
@@ -566,15 +710,43 @@ async function seedDatabase(options = {}) {
       Transacao
     );
 
+    const cartoesCredito = contas.filter((conta) => contaEhCredito(conta));
+    const possuiCompraCredito = transacoes.some(
+      (transacao) =>
+        transacao.fonteSaldo === 'conta' &&
+        transacao.tipo === 'saida' &&
+        transacao.status === 'pago' &&
+        cartoesCredito.some(
+          (cartao) => String(cartao._id) === String(transacao.conta)
+        )
+    );
+
+    if (!possuiCompraCredito && cartoesCredito.length) {
+      const compraGarantida = gerarCompraCreditoGarantida(
+        usuarioTeste._id,
+        cartoesCredito[0],
+        categorias,
+        subcategorias
+      );
+
+      if (compraGarantida) {
+        const transacaoCredito = await Transacao.create(compraGarantida);
+        transacoes.push(transacaoCredito);
+      }
+    }
+
     const salarios =
       salarioRefs && salarioRefs.categoria
         ? await criarEmLote(
             numSalariosPorUsuario,
             () => {
-              const contaAleatoria = faker.helpers.arrayElement(contas);
+              const contasAceitasParaSalario = filtrarContasNaoCredito(contas);
+              const contaAleatoria = contasAceitasParaSalario.length
+                ? faker.helpers.arrayElement(contasAceitasParaSalario)
+                : null;
               return gerarSalario(
                 usuarioTeste._id,
-                contaAleatoria._id,
+                contaAleatoria?._id || null,
                 salarioRefs
               );
             },
@@ -607,6 +779,8 @@ async function seedDatabase(options = {}) {
         await Conta.updateOne({ _id: contaId }, { $inc: { saldo: delta } });
       }
     }
+
+    await materializarFaturasSeed(usuarioTeste._id, contas, transacoes);
 
     const listaDesejos = await criarEmLote(
       numListaDesejoPorUsuario,

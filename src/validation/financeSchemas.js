@@ -51,11 +51,11 @@ const statusTransacaoSchema = z.enum(['pendente', 'pago']);
 const recorrenciaSchema = z.enum(['nenhuma', 'mensal']);
 const frequenciaSchema = z.enum([
   'mensal',
-  'semanal',
-  'diario',
-  'anual',
-  'hora',
-  'outra',
+  // 'semanal',
+  // 'diario',
+  // 'anual',
+  // 'hora',
+  // 'outra',
 ]);
 const tipoContaSchema = z.enum(['corrente', 'credito', 'investimento']);
 const tipoTransacaoSchema = z.enum(['entrada', 'saida']);
@@ -109,12 +109,26 @@ const contaCriacaoSchema = z.object({
   nome: nomeSchema,
   tipo: tipoContaSchema,
   saldo: moedaNaoNegativaSchema.optional().default(0),
+  limite: moedaNaoNegativaSchema.optional().default(0),
+  diaFechamento: z.coerce
+    .number()
+    .int('Dia de fechamento inválido')
+    .min(1, 'Dia de fechamento deve estar entre 1 e 31')
+    .max(31, 'Dia de fechamento deve estar entre 1 e 31')
+    .optional()
+    .default(10),
+  diaVencimento: z.coerce
+    .number()
+    .int('Dia de vencimento inválido')
+    .min(1, 'Dia de vencimento deve estar entre 1 e 31')
+    .max(31, 'Dia de vencimento deve estar entre 1 e 31')
+    .optional()
+    .default(17),
 });
 
 const contaAtualizacaoSchema = z
   .object({
     nome: nomeSchema.optional(),
-    tipo: tipoContaSchema.optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'Informe ao menos um campo para atualizar',
@@ -136,6 +150,7 @@ const transacaoBaseSchema = z.object({
   status: statusTransacaoSchema.optional(),
   recorrencia: recorrenciaSchema.optional(),
   parcelamento: parcelamentoSchema.optional(),
+  dataPrimeiraParcela: dataOpcionalSchema,
   tags: tagsSchema.optional(),
   tipoDespesa: tipoDespesaOpcionalSchema,
 });
@@ -162,6 +177,7 @@ const transacaoAtualizacaoSchema = z
     status: statusTransacaoSchema.optional(),
     recorrencia: recorrenciaSchema.optional(),
     parcelamento: parcelamentoSchema.optional(),
+    dataPrimeiraParcela: dataOpcionalSchema,
     tags: tagsSchema.optional(),
     tipoDespesa: tipoDespesaOpcionalSchema,
   })

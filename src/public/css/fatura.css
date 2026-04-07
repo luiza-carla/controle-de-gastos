@@ -1,0 +1,184 @@
+.faturas-resumo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 18px 0 22px;
+}
+
+.faturas-resumo-card {
+  background: linear-gradient(135deg, var(--gray-50), #ffffff);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faturas-resumo-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.faturas-resumo-card strong {
+  font-size: 24px;
+  color: var(--gray-900);
+}
+
+.faturas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.fatura-card {
+  background: var(--gray-50);
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.fatura-card-header {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  border-bottom: 1px solid var(--divider);
+}
+
+.fatura-card-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.fatura-card-subtitulo {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.fatura-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fatura-badge.aberta {
+  background: #eef8ff;
+  color: #0b5cad;
+}
+
+.fatura-badge.fechada {
+  background: #f4f4f5;
+  color: #3f3f46;
+}
+
+.fatura-badge.paga {
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.fatura-badge.atrasada {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.fatura-card-metricas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fatura-card-metrica {
+  background: #ffffff;
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.fatura-card-metrica-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.fatura-card-metrica-valor {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.fatura-card-body {
+  padding: 18px;
+}
+
+.fatura-parcelas-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--gray-900);
+}
+
+.fatura-parcelas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fatura-parcela-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.fatura-parcela-titulo {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.fatura-parcela-meta {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.fatura-parcela-valor {
+  font-weight: 700;
+  color: var(--gray-900);
+  white-space: nowrap;
+}
+
+.fatura-parcela-status {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .fatura-card-header {
+    grid-template-columns: 1fr;
+  }
+
+  .fatura-parcela-item {
+    grid-template-columns: 1fr;
+  }
+}

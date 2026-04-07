@@ -6,6 +6,13 @@ import {
 } from './api.js';
 import { stateTransacoes } from './state.js';
 import { mostrarNotificacao, tratarErro } from '../notification.js';
+import { invalidateContas } from '../conta/service.js';
+import { invalidateCarteira } from '../carteira/service.js';
+
+function invalidarSaldosRelacionados() {
+  invalidateContas();
+  invalidateCarteira();
+}
 
 export async function carregarTransacoes(
   ordenarPor = stateTransacoes.ordenarPor
@@ -48,17 +55,20 @@ export function invalidarTransacoes() {
 export async function criarTransacao(payload) {
   const result = await apiCreateTransacao(payload);
   invalidarTransacoes();
+  invalidarSaldosRelacionados();
   return result;
 }
 
 export async function atualizarTransacao(id, payload) {
   const result = await apiUpdateTransacao(id, payload);
   invalidarTransacoes();
+  invalidarSaldosRelacionados();
   return result;
 }
 
 export async function deletarTransacao(id) {
   const result = await apiDeleteTransacao(id);
   invalidarTransacoes();
+  invalidarSaldosRelacionados();
   return result;
 }
