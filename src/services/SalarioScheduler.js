@@ -5,6 +5,7 @@ const categoriaHelpers = require('../utils/categoriaHelpers');
 const { formatarMoeda } = require('../utils/stringHelpers');
 const SaldoService = require('./SaldoService');
 const logger = require('../utils/logger');
+const { startOfMonth } = require('date-fns');
 
 // Serviço responsável por agendar e processar salários automaticamente
 class SalarioScheduler {
@@ -39,7 +40,7 @@ class SalarioScheduler {
     try {
       const hoje = new Date();
       const diaAtual = hoje.getDate();
-      const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      const inicioMes = startOfMonth(hoje);
 
       // Busca a categoria "Salário"
       const refs = await categoriaHelpers.buscarSalario();

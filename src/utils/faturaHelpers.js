@@ -1,19 +1,18 @@
+const { setDate, startOfDay, endOfDay, getDaysInMonth } = require('date-fns');
+
 function normalizarInicioDoDia(data) {
-  const value = new Date(data);
-  value.setHours(0, 0, 0, 0);
-  return value;
+  return startOfDay(data);
 }
 
 function normalizarFimDoDia(data) {
-  const value = new Date(data);
-  value.setHours(23, 59, 59, 999);
-  return value;
+  return endOfDay(data);
 }
 
 function criarDataSeguraNoMes(ano, mes, dia) {
-  const ultimoDiaDoMes = new Date(ano, mes + 1, 0).getDate();
+  const dataBase = new Date(ano, mes, 1); // Primeiro dia do mês
+  const ultimoDiaDoMes = getDaysInMonth(dataBase);
   const diaSeguro = Math.min(Math.max(Number(dia) || 1, 1), ultimoDiaDoMes);
-  return new Date(ano, mes, diaSeguro);
+  return setDate(dataBase, diaSeguro);
 }
 
 function obterFechamentoParaCompra(dataCompra, diaFechamento) {

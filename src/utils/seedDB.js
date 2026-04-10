@@ -2,6 +2,7 @@
 const { faker } = require('@faker-js/faker');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { startOfMonth, endOfMonth, setDate } = require('date-fns');
 
 // Models
 const Usuario = require('../models/Usuario');
@@ -234,8 +235,8 @@ function gerarTransacao(
 
   // Gerar datas no mês atual para aparecerem no resumo
   const hoje = new Date();
-  const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+  const inicioMes = startOfMonth(hoje);
+  const fimMes = endOfMonth(hoje);
 
   const valor = faker.number.float({ min: 5, max: 180, precision: 0.01 });
   let status = faker.datatype.boolean(0.8) ? 'pago' : 'pendente'; // 80% pagas
@@ -461,7 +462,7 @@ function gerarSalario(usuarioId, contaId, refs) {
   const jaProcessado = faker.datatype.boolean(0.7);
   const status = jaProcessado ? 'pago' : 'pendente';
   const dataUltimoProcessamento = jaProcessado
-    ? new Date(hoje.getFullYear(), hoje.getMonth(), diaRecebimento)
+    ? setDate(startOfMonth(hoje), diaRecebimento)
     : null;
 
   return {
@@ -473,7 +474,7 @@ function gerarSalario(usuarioId, contaId, refs) {
     tipo: 'entrada',
     categoria: refs.categoria._id,
     subcategoria: refs.subcategoria?._id || null,
-    data: new Date(hoje.getFullYear(), hoje.getMonth(), diaRecebimento),
+    data: setDate(startOfMonth(hoje), diaRecebimento),
     ativa: true,
     tags: ['salario', 'fixo', 'mensal'],
     recorrencia: 'mensal',

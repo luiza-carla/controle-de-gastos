@@ -1,16 +1,10 @@
+const { startOfMonth } = require('date-fns');
+
 // Helpers compartilhados para lógica de salários
 
 // Retorna o primeiro dia do mês para uma data de referência
 function obterInicioMes(dataReferencia = new Date()) {
-  return new Date(
-    dataReferencia.getFullYear(),
-    dataReferencia.getMonth(),
-    1,
-    0,
-    0,
-    0,
-    0
-  );
+  return startOfMonth(dataReferencia);
 }
 
 // Verifica se salário já foi processado no mês atual

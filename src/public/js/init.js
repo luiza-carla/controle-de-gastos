@@ -1,3 +1,4 @@
+import '/vendor/date-fns.js';
 import { verificarAutenticacao } from './auth.js';
 import { criarConta, popularSelectContas, listarContas } from './conta.js';
 import { initCarteiraPage } from './carteira.js';

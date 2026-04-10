@@ -12,6 +12,7 @@ const {
   obterFechamentoDoMes,
   jaPassouDaData,
 } = require('../utils/faturaHelpers');
+const { addDays } = require('date-fns');
 
 const STATUS_FATURA = {
   ABERTA: 'aberta',
@@ -116,13 +117,16 @@ function ratearValorParcelado(valorTotal, totalParcelas) {
   });
 }
 
-function adicionarMesesMantendoDia(dataBase, quantidadeMeses) {
-  const data = new Date(dataBase);
-  const ano = data.getFullYear();
-  const mes = data.getMonth() + quantidadeMeses;
-  const dia = data.getDate();
+const { addMonths } = require('date-fns');
 
-  return criarDataSeguraNoMes(ano, mes, dia);
+function adicionarMesesMantendoDia(dataBase, quantidadeMeses) {
+  const novaData = addMonths(dataBase, quantidadeMeses);
+  const diaOriginal = dataBase.getDate();
+  return criarDataSeguraNoMes(
+    novaData.getFullYear(),
+    novaData.getMonth(),
+    diaOriginal
+  );
 }
 
 class FaturaService {
@@ -701,7 +705,7 @@ class FaturaService {
       await this.obterOuCriarFaturaAberta({
         usuarioId: cartao.usuario,
         cartao,
-        dataReferencia: new Date(fechamentoDoMes.getTime() + 86400000),
+        dataReferencia: addDays(fechamentoDoMes, 1),
       });
 
       cartao.dataUltimoFechamento = fechamentoDoMes;

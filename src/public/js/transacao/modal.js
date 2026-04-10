@@ -14,6 +14,7 @@ import {
   applyCategoryTheme,
   contaSelecionadaEhCredito,
 } from '../helpers/index.js';
+const { parseISO } = window.dateFns;
 import { templateEditarTransacaoModal } from './templates.js';
 import {
   carregarTransacoes,
@@ -112,7 +113,7 @@ export const editarTransacao = async (id) => {
 
       const modalDataPrimeiraParcela = $('modalDataPrimeiraParcela');
       if (modalDataPrimeiraParcela && modalDataPrimeiraParcela.value) {
-        dados.dataPrimeiraParcela = new Date(modalDataPrimeiraParcela.value);
+        dados.dataPrimeiraParcela = parseISO(modalDataPrimeiraParcela.value);
       }
 
       await executarAcaoModal({

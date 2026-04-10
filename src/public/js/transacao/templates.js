@@ -8,6 +8,7 @@ import {
   gerarTags,
   getCategoryThemeClass,
 } from '../helpers/index.js';
+const { format } = window.dateFns;
 
 export function templateTransacaoCard(t) {
   const tipoClasse =
@@ -279,7 +280,7 @@ export function templateEditarTransacaoModal(transacao, contas) {
       <label>Data da primeira parcela</label>
       <input type="date" id="modalDataPrimeiraParcela" value="${
         transacao.dataPrimeiraParcela
-          ? new Date(transacao.dataPrimeiraParcela).toISOString().split('T')[0]
+          ? format(new Date(transacao.dataPrimeiraParcela), 'yyyy-MM-dd')
           : ''
       }" />
     </div>`

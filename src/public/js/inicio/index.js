@@ -7,6 +7,15 @@ import { renderResumo, renderProjecao, hideProjecao } from './render.js';
 import { setupProjecaoModal } from './modal.js';
 import { createInicioState } from './state.js';
 
+const {
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+  subMonths,
+  subYears,
+} = window.dateFns;
+
 const state = createInicioState();
 let initPromise;
 
@@ -21,48 +30,38 @@ function formatarDataInput(data) {
 // Retorna o intervalo completo do mes atual.
 function obterPeriodoMesAtual() {
   const hoje = new Date();
-  const ultimoDiaMesAtual = new Date(
-    hoje.getFullYear(),
-    hoje.getMonth() + 1,
-    0
-  );
+  const inicioMes = startOfMonth(hoje);
+  const fimMes = endOfMonth(hoje);
 
   return {
-    dataInicio: formatarDataInput(
-      new Date(hoje.getFullYear(), hoje.getMonth(), 1)
-    ),
-    dataFim: formatarDataInput(ultimoDiaMesAtual),
+    dataInicio: formatarDataInput(inicioMes),
+    dataFim: formatarDataInput(fimMes),
   };
 }
 
 // Monta o periodo correspondente aos atalhos do filtro.
 function obterPeriodoAtalho(tipoAtalho) {
   const hoje = new Date();
-  const fim = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-  const inicio = new Date(fim);
 
   if (tipoAtalho === 'ultimo-mes') {
-    const ultimoMes = hoje.getMonth() - 1;
-    const anoDoUltimoMes =
-      ultimoMes < 0 ? hoje.getFullYear() - 1 : hoje.getFullYear();
-    const indiceUltimoMes = ultimoMes < 0 ? 11 : ultimoMes;
+    const ultimoMes = subMonths(hoje, 1);
+    const inicio = startOfMonth(ultimoMes);
+    const fim = endOfMonth(ultimoMes);
 
     return {
-      dataInicio: formatarDataInput(
-        new Date(anoDoUltimoMes, indiceUltimoMes, 1)
-      ),
-      dataFim: formatarDataInput(
-        new Date(anoDoUltimoMes, indiceUltimoMes + 1, 0)
-      ),
+      dataInicio: formatarDataInput(inicio),
+      dataFim: formatarDataInput(fim),
     };
   }
 
   if (tipoAtalho === 'ultimo-ano') {
-    const ultimoAno = hoje.getFullYear() - 1;
+    const ultimoAno = subYears(hoje, 1);
+    const inicio = startOfYear(ultimoAno);
+    const fim = endOfYear(ultimoAno);
 
     return {
-      dataInicio: formatarDataInput(new Date(ultimoAno, 0, 1)),
-      dataFim: formatarDataInput(new Date(ultimoAno, 11, 31)),
+      dataInicio: formatarDataInput(inicio),
+      dataFim: formatarDataInput(fim),
     };
   }
 
@@ -75,10 +74,8 @@ function obterPeriodoAtalho(tipoAtalho) {
     };
   }
 
-  return {
-    dataInicio: formatarDataInput(inicio),
-    dataFim: formatarDataInput(fim),
-  };
+  // Default: período atual
+  return obterPeriodoMesAtual();
 }
 
 // Destaca visualmente o atalho de periodo selecionado.

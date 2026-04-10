@@ -1,5 +1,7 @@
+const { formatISO } = require('date-fns');
+
 function buildPrefix(level, contexto) {
-  const timestamp = new Date().toISOString();
+  const timestamp = formatISO(new Date());
   const nivel = String(level || 'log').toUpperCase();
   const escopo = contexto ? ` [${contexto}]` : '';
   return `[${timestamp}] [${nivel}]${escopo}`;

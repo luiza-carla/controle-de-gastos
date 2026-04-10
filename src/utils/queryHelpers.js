@@ -1,4 +1,5 @@
 // Helpers para parsing e validação de query parameters
+const { startOfDay, endOfDay } = require('date-fns');
 
 // Converte query parameter para inteiro com fallback e aplica limites.
 function parseQueryInt(value, fallback = 0, options = {}) {
@@ -13,7 +14,7 @@ function parseQueryInt(value, fallback = 0, options = {}) {
 }
 
 function parseQueryDate(value, options = {}) {
-  const { endOfDay = false } = options;
+  const { endOfDay: isEndOfDay = false } = options;
 
   if (value === undefined || value === null || value === '') {
     return null;
@@ -33,9 +34,8 @@ function parseQueryDate(value, options = {}) {
   const mes = Number(mesTexto);
   const dia = Number(diaTexto);
 
-  const data = endOfDay
-    ? new Date(ano, mes - 1, dia, 23, 59, 59, 999)
-    : new Date(ano, mes - 1, dia, 0, 0, 0, 0);
+  const dataBase = new Date(ano, mes - 1, dia);
+  const data = isEndOfDay ? endOfDay(dataBase) : startOfDay(dataBase);
 
   if (
     Number.isNaN(data.getTime()) ||

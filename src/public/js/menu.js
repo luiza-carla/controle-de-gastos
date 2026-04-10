@@ -11,7 +11,7 @@ const MENU_LINKS_OBRIGATORIOS = [
   'transacoes.html',
   'lista-desejos.html',
   'salario.html',
-  'faturas.html',
+  // 'faturas.html',
   'historico.html',
 ];
 

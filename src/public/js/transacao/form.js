@@ -12,6 +12,7 @@ import {
   tratarErro,
   extrairMensagemErroInline,
 } from '../notification.js';
+const { parseISO } = window.dateFns;
 import {
   showElement,
   hideElement,
@@ -231,7 +232,7 @@ export async function initTransacaoForm(formId = 'formTransacao') {
           form.recorrencia.value !== 'nenhuma' &&
           form.dataPrimeiraParcela.value
         ) {
-          payload.dataPrimeiraParcela = new Date(
+          payload.dataPrimeiraParcela = parseISO(
             form.dataPrimeiraParcela.value
           );
         }
