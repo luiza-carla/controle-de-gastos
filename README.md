@@ -41,14 +41,12 @@ cd gastos
 npm install
 ```
 
-Crie um arquivo `.env` na raiz:
+Copie o arquivo `.env-example` na raiz:
 
 ```env
-MONGO_URL=mongodb://127.0.0.1:27017/gastos
-JWT_SECRET=defina_uma_chave_forte
-PORT=3000
-NODE_ENV=development
+cp .env.example .env
 ```
+Preencha os valores conforme seu ambiente.
 
 Opcionalmente, popule a base:
 
