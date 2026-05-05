@@ -1,4 +1,4 @@
-const CarteiraService = require('../services/CarteiraService');
+const CarteiraService = require('../services/carteira');
 
 class CarteiraController {
   // Obtém ou cria carteira do usuário
