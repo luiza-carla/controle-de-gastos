@@ -1,99 +1,19 @@
-const Conta = require('../models/Conta');
-const Transacao = require('../models/Transacao');
-const HistoricoService = require('./HistoricoService');
-const SaldoService = require('./SaldoService');
-const { criarErro } = require('../utils/errorHelpers');
-const { contaEhCredito } = require('../utils/contaHelpers');
-const logger = require('../utils/logger');
-
-const MENSAGEM_CONTA_EM_USO =
-  'Não é possível apagar a conta pois existem transações ou salários associados.';
-const MENSAGEM_LIMITE_CREDITO_INVALIDO =
-  'Limite do cartão de crédito deve ser maior que zero';
-const MENSAGEM_TRANSFERENCIA_CREDITO =
-  'Transferências com cartão de crédito não são permitidas';
-
-function normalizarDadosConta(dados, contaAtual = null) {
-  const tipoFinal = dados.tipo || contaAtual?.tipo;
-  const payload = { ...dados };
-
-  if (contaEhCredito(tipoFinal)) {
-    const limite = Number(
-      Object.prototype.hasOwnProperty.call(payload, 'limite')
-        ? payload.limite
-        : contaAtual?.limite || 0
-    );
-
-    if (!(limite > 0)) {
-      throw criarErro(400, MENSAGEM_LIMITE_CREDITO_INVALIDO);
-    }
-
-    payload.limite = limite;
-    payload.limiteDisponivel = contaAtual
-      ? Number(contaAtual.limiteDisponivel ?? limite)
-      : limite;
-    payload.diaFechamento = Number(
-      payload.diaFechamento || contaAtual?.diaFechamento || 10
-    );
-    payload.diaVencimento = Number(
-      payload.diaVencimento || contaAtual?.diaVencimento || 17
-    );
-
-    if (!contaAtual) {
-      payload.saldo = 0;
-    }
-
-    return payload;
-  }
-
-  payload.limite = 0;
-  payload.limiteDisponivel = 0;
-  payload.diaFechamento = null;
-  payload.diaVencimento = null;
-  payload.dataUltimoFechamento = null;
-  return payload;
-}
-
-async function registrarHistoricoConta({
-  usuario,
-  conta,
-  contaId,
-  acao,
-  dadosAnteriores,
-  dadosNovos,
-}) {
-  await HistoricoService.registrar({
-    usuario,
-    entidade: 'conta',
-    entidadeId: contaId || conta?._id,
-    acao,
-    descricao: HistoricoService.formatarDescricaoConta(acao, conta),
-    dadosAnteriores,
-    dadosNovos,
-  });
-}
-
-function validarDadosTransferencia(contaDestinoId, valor) {
-  if (!contaDestinoId || !valor || valor <= 0) {
-    throw criarErro(400, 'Conta destino e valor são obrigatórios');
-  }
-}
-
-function validarContasTransferencia(contaOrigem, contaDestino) {
-  if (!contaOrigem) {
-    throw criarErro(404, 'Conta de origem não encontrada');
-  }
-
-  if (!contaDestino) {
-    throw criarErro(404, 'Conta de destino não encontrada');
-  }
-}
-
-function validarContaEncontrada(conta) {
-  if (!conta) {
-    throw criarErro(404, 'Conta não encontrada');
-  }
-}
+const Conta = require('../../models/Conta');
+const Transacao = require('../../models/Transacao');
+const SaldoService = require('../SaldoService');
+const HistoricoService = require('../HistoricoService');
+const logger = require('../../utils/logger');
+const { contaEhCredito } = require('../../utils/contaHelpers');
+const { normalizarDadosConta } = require('./normalizacao');
+const { registrarHistoricoConta } = require('./historico');
+const {
+  MENSAGEM_CONTA_EM_USO,
+  MENSAGEM_TRANSFERENCIA_CREDITO,
+  validarDadosTransferencia,
+  validarContasTransferencia,
+  validarContaEncontrada,
+} = require('./validacoes');
+const { criarErro } = require('../../utils/errorHelpers');
 
 class ContaService {
   // Cria nova conta
