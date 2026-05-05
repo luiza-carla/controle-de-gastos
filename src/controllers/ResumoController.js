@@ -1,4 +1,4 @@
-const ResumoService = require('../services/ResumoService');
+const ResumoService = require('../services/resumo/index');
 const { criarErro } = require('../utils/errorHelpers');
 const { parseQueryDate } = require('../utils/queryHelpers');
 
