@@ -5,7 +5,7 @@ const {
   validarSubcategoriaParaCategoria,
   processarSubcategoriaAoAtualizar,
 } = require('../utils/subcategoriaUtils');
-const HistoricoService = require('../services/HistoricoService');
+const HistoricoService = require('../services/historico');
 const SaldoService = require('../services/SaldoService');
 const FaturaService = require('../services/FaturaService');
 const { formatarMoeda } = require('../utils/stringHelpers');

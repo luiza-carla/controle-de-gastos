@@ -1,4 +1,4 @@
-const HistoricoService = require('../services/HistoricoService');
+const HistoricoService = require('../services/historico');
 
 // Registra histórico de uma ação a partir do contexto da requisição.
 async function registrarHistoricoDaRequisicao(req, entidade, dados) {

@@ -1,6 +1,6 @@
 const cron = require('node-cron');
-const HistoricoService = require('./HistoricoService');
-const logger = require('../utils/logger');
+const HistoricoService = require('.');
+const logger = require('../../utils/logger');
 
 const DIAS_CICLO = Number(process.env.HISTORICO_CICLO_DIAS || 30);
 

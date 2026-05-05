@@ -1,7 +1,7 @@
 const Conta = require('../../models/Conta');
 const Transacao = require('../../models/Transacao');
 const SaldoService = require('../SaldoService');
-const HistoricoService = require('../HistoricoService');
+const HistoricoService = require('../historico');
 const logger = require('../../utils/logger');
 const { contaEhCredito } = require('../../utils/contaHelpers');
 const { normalizarDadosConta } = require('./normalizacao');

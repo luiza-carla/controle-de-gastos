@@ -1,5 +1,5 @@
 const Conta = require('../../models/Conta');
-const HistoricoService = require('../HistoricoService');
+const HistoricoService = require('../historico');
 const { criarErro } = require('../../utils/errorHelpers');
 const { obterOuCriar } = require('./carteiraRepository');
 const {

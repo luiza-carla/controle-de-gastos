@@ -1,5 +1,5 @@
 const Transacao = require('../models/Transacao');
-const HistoricoService = require('../services/HistoricoService');
+const HistoricoService = require('../services/historico');
 const SaldoService = require('../services/SaldoService');
 const { formatarMoeda } = require('../utils/stringHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');

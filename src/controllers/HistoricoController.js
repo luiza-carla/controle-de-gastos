@@ -1,4 +1,4 @@
-const HistoricoService = require('../services/HistoricoService');
+const HistoricoService = require('../services/historico');
 const { parseQueryInt } = require('../utils/queryHelpers');
 
 class HistoricoController {

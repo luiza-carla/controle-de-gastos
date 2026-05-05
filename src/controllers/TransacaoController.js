@@ -1,6 +1,6 @@
 const Transacao = require('../models/Transacao');
 const Conta = require('../models/Conta');
-const HistoricoService = require('../services/HistoricoService');
+const HistoricoService = require('../services/historico');
 const SaldoService = require('../services/SaldoService');
 const FaturaService = require('../services/FaturaService');
 const categoriaHelpers = require('../utils/categoriaHelpers');

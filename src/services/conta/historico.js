@@ -1,4 +1,4 @@
-const HistoricoService = require('../HistoricoService');
+const HistoricoService = require('../historico');
 
 async function registrarHistoricoConta({
   usuario,
