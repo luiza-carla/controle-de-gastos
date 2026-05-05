@@ -4,7 +4,7 @@ const connectDB = require('./config/database');
 const garantirCategoriasPadrao = require('./utils/seedCategoria');
 const salarioScheduler = require('./services/SalarioScheduler');
 const faturaScheduler = require('./services/FaturaScheduler');
-const historicoCleanupScheduler = require('./services/HistoricoCleanupScheduler');
+const historicoCleanupScheduler = require('./services/historico/HistoricoCleanupScheduler');
 const logger = require('./utils/logger');
 
 async function iniciarServidor() {

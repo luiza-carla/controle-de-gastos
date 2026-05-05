@@ -1,7 +1,6 @@
 const Transacao = require('../../models/Transacao');
 const categoriaHelpers = require('../../utils/categoriaHelpers');
 const { transacao: popularTransacao } = require('../../utils/populateHelpers');
-const { obterInicioMes } = require('../../utils/salarioHelpers');
 const {
   totaisTransacoes,
   somaSaidas,

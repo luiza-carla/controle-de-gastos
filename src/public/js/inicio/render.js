@@ -111,9 +111,7 @@ export function renderProjecao(dados, els) {
   if (els.projSaldoAtual)
     els.projSaldoAtual.textContent = formatarValor(dados.saldoAtual);
   if (els.projSaidasLabel) {
-    els.projSaidasLabel.textContent = dados.periodo?.filtroAtivo
-      ? 'Saídas pendentes no período:'
-      : 'Saídas pendentes:';
+    els.projSaidasLabel.textContent = 'Saídas pendentes:';
   }
   if (els.projSaidasPendentes)
     els.projSaidasPendentes.textContent = formatarValor(dados.saidasPendentes);

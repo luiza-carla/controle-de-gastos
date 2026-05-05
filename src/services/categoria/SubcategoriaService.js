@@ -1,4 +1,4 @@
-const Subcategoria = require('../models/Subcategoria');
+const Subcategoria = require('../../models/Subcategoria');
 
 class SubcategoriaService {
   /**

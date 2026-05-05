@@ -46,6 +46,7 @@ Copie o arquivo `.env-example` na raiz:
 ```env
 cp .env.example .env
 ```
+
 Preencha os valores conforme seu ambiente.
 
 Opcionalmente, popule a base:

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Categoria = require('../models/Categoria');
+const Categoria = require('../../models/Categoria');
 
 class CategoriaService {
   // Lista categorias ativas (excluindo salário)

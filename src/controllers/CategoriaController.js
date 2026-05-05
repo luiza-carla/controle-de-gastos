@@ -1,4 +1,4 @@
-const CategoriaService = require('../services/CategoriaService');
+const CategoriaService = require('../services/categoria/CategoriaService');
 
 class CategoriaController {
   // Lista todas as categorias
