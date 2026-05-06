@@ -3,7 +3,7 @@ const app = require('./app');
 const connectDB = require('./config/database');
 const garantirCategoriasPadrao = require('./utils/seedCategoria');
 const salarioScheduler = require('./services/SalarioScheduler');
-const faturaScheduler = require('./services/FaturaScheduler');
+const faturaScheduler = require('./services/fatura/FaturaScheduler');
 const historicoCleanupScheduler = require('./services/historico/HistoricoCleanupScheduler');
 const logger = require('./utils/logger');
 

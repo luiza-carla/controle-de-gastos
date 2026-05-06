@@ -7,7 +7,7 @@ const {
 } = require('../utils/subcategoriaUtils');
 const HistoricoService = require('../services/historico');
 const SaldoService = require('../services/SaldoService');
-const FaturaService = require('../services/FaturaService');
+const FaturaService = require('../services/fatura');
 const { formatarMoeda } = require('../utils/stringHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
 const { criarErro } = require('../utils/errorHelpers');

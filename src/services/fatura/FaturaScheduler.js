@@ -1,6 +1,6 @@
 const cron = require('node-cron');
-const FaturaService = require('./FaturaService');
-const logger = require('../utils/logger');
+const FaturaService = require('.');
+const logger = require('../../utils/logger');
 
 class FaturaScheduler {
   constructor() {

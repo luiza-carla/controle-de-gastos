@@ -1,4 +1,4 @@
-const FaturaService = require('../services/FaturaService');
+const FaturaService = require('../services/fatura');
 
 class FaturaController {
   async listar(req, res) {
