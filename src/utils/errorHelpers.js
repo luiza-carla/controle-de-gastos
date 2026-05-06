@@ -2,9 +2,11 @@
 const logger = require('./logger');
 
 // Cria erro HTTP com statusCode personalizado
-function criarErro(statusCode, mensagem) {
+function criarErro(statusCode, mensagem, opcoes = {}) {
   const erro = new Error(mensagem);
   erro.statusCode = statusCode;
+  erro.__mostrarAoUsuario = opcoes.__mostrarAoUsuario;
+
   return erro;
 }
 

@@ -1,4 +1,4 @@
-import { error as loggerError } from './helpers/logger.js';
+import { error as loggerError, warn as loggerWarn } from './helpers/logger.js';
 import { $ } from './helpers/dom.js';
 
 const ICONES_NOTIFICACAO = {
@@ -19,6 +19,9 @@ const RADICAIS_OPERACAO = {
 
 const CHAVE_NOTIFICACAO_PENDENTE = 'notificacaoPendente';
 const ID_CONTAINER_NOTIFICACOES = 'notificacoesContainer';
+
+const STATUS_ERRO_USUARIO = new Set([400, 401, 404, 409]);
+
 const MENSAGENS_ERRO_INLINE_CONHECIDAS = new Set([
   'Saldo insuficiente na carteira',
   'Saldo insuficiente na conta',
@@ -45,38 +48,30 @@ function obterContainerNotificacoes() {
   return container;
 }
 
-//Erro que pode ser mostrado ao usuário
-export function erroUsuario(mensagem) {
+// Erro que pode ser mostrado ao usuário
+export function erroUsuario(mensagem, statusCode = 400) {
   const erro = new Error(mensagem);
+  erro.statusCode = statusCode;
   erro.__mostrarAoUsuario = true;
   return erro;
 }
 
-function isErroHttpUsuario(error) {
-  const statusCode = Number(error?.statusCode);
-  return statusCode >= 400 && statusCode < 500;
-}
-
-function isErroUsuario(error) {
-  return !!(error && error.__mostrarAoUsuario);
-}
-
-// Resolve a mensagem que deve ser mostrada para erros de usuario.
+// Resolve mensagem de erro para exibição geral
 function extrairMensagemErroUsuario(error) {
-  if (isErroUsuario(error)) {
-    return obterMensagemErro(error);
-  }
+  const mensagem = obterMensagemErro(error);
+  if (!mensagem) return null;
 
-  if (isErroHttpUsuario(error)) {
-    return obterMensagemErro(error);
-  }
+  if (error?.__mostrarAoUsuario === true) return mensagem;
+
+  const status = Number(error?.statusCode);
+  if (STATUS_ERRO_USUARIO.has(status)) return mensagem;
 
   return null;
 }
 
-// Retorna mensagens que devem ser exibidas inline em formularios/modais.
+// Mensagens específicas para exibição inline
 export function extrairMensagemErroInline(error) {
-  if (isErroUsuario(error)) {
+  if (error?.__mostrarAoUsuario === true) {
     return obterMensagemErro(error);
   }
 
@@ -87,35 +82,28 @@ export function extrairMensagemErroInline(error) {
 }
 
 /**
- * Trata um erro: se for um erro destinado ao usuário, exibe uma notificação.
- * Caso contrário, apenas registra no logger.
- *
- * @param {unknown} error - Objeto de erro (pode ser Error/any)
- * @param {string} mensagemPadrao - Texto a ser usado se não houver mensagem no erro
+ * Trata um erro: decide a mensagem e registra no log.
  */
 export function tratarErro(error, mensagemPadrao = 'Ocorreu um erro') {
   const mensagemUsuario = extrairMensagemErroUsuario(error);
   const mensagemInline = extrairMensagemErroInline(error);
-  const isUsuario = !!mensagemUsuario;
-  const isEsperado = isUsuario || !!mensagemInline;
-  const mensagem = mensagemUsuario || mensagemPadrao;
 
-  if (isErroUsuario(error)) {
-    mostrarNotificacao(mensagem, 'erro');
-  } else if (!isEsperado) {
+  const mensagemFinal = mensagemInline || mensagemUsuario || mensagemPadrao;
+
+  const isEsperado = !!mensagemUsuario || !!mensagemInline;
+
+  if (!isEsperado) {
     loggerError('Erro interno:', 'notification', error);
+  } else {
+    loggerWarn('Erro esperado:', 'notification', error);
   }
 
-  return mensagem;
+  return mensagemFinal;
 }
 
 /**
  * Mostra uma notificação temporária na tela
- * @param {string} mensagem - Mensagem a ser exibida
- * @param {string} tipo - Tipo da notificação: 'sucesso', 'erro', 'aviso' (padrão: 'sucesso')
- * @param {number} duracao - Duração em milissegundos (padrão: 3000)
  */
-
 export function mostrarNotificacao(mensagem, tipo = 'sucesso', duracao = 3000) {
   const container = obterContainerNotificacoes();
   const notificacao = document.createElement('div');

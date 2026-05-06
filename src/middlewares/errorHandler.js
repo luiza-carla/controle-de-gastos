@@ -2,26 +2,31 @@
 const { logarErro } = require('../utils/errorHelpers');
 
 function errorHandler(err, req, res, next) {
-  if (res.headersSent) {
-    return next(err);
-  }
+  if (res.headersSent) return next(err);
 
   let status = err.statusCode || err.status || 500;
 
-  // Erros de validação/cast do Mongoose devem retornar 400
-  if (err.name === 'ValidationError' || err.name === 'CastError') {
-    status = 400;
-  }
+  const isErroBug = err.name === 'ValidationError' || err.name === 'CastError';
 
-  // Só loga erros internos da aplicação; erros 4xx são esperados pelo fluxo.
-  if (status >= 500) {
+  if (isErroBug) {
+    status = 400;
+    logarErro('errorHandler', err);
+  } else if (status >= 500) {
     logarErro('errorHandler', err);
   }
 
-  const mensagem =
-    status >= 500
-      ? 'Erro interno do servidor'
-      : err.message || 'Requisição inválida';
+  let mensagem;
+
+  if (err.__mostrarAoUsuario === true) {
+    mensagem = err.message;
+  } else if (err.__mostrarAoUsuario === false) {
+    mensagem = 'Erro interno do servidor';
+  } else if (status >= 500 || isErroBug) {
+    mensagem = 'Erro interno do servidor';
+  } else {
+    mensagem = err.message || 'Requisição inválida';
+  }
+
   return res.status(status).json({ mensagem });
 }
 

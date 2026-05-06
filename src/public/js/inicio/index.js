@@ -140,11 +140,7 @@ function validarFiltrosResumo(filtros = {}) {
 // Centraliza o tratamento de erro do resumo e da projecao.
 function tratarErroResumo(err, mensagemPadrao) {
   const msg = tratarErro(err, mensagemPadrao);
-
-  if (!err?.__mostrarAoUsuario) {
-    mostrarNotificacao(msg, 'erro');
-  }
-
+  mostrarNotificacao(msg, 'erro');
   return null;
 }
 
