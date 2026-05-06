@@ -12,7 +12,7 @@ import {
 // alinhados e coloridos igualmente.
 export function criarBadgeCategoria(categoria, subcategoria) {
   const nome = categoria?.nome || 'Sem categoria';
-  const themeClass = getCategoryThemeClass(categoria?.cor, categoria?.nome);
+  const themeClass = getCategoryThemeClass(categoria?.slug);
 
   let html = `<span class="categoria-badge ${themeClass}">${escaparHtml(nome)}</span>`;
 
@@ -34,7 +34,7 @@ export function criarBadgesCategoriaSubcategoriaSeparados(
 
   const subcategoriaBadge =
     subcategoria && subcategoria.nome
-      ? `<span class="categoria-badge subcategoria-badge ${getCategoryThemeClass(categoria?.cor, categoria?.nome)}">${escaparHtml(
+      ? `<span class="categoria-badge subcategoria-badge ${getCategoryThemeClass(categoria?.slug)}">${escaparHtml(
           subcategoria.nome
         )}</span>`
       : '';

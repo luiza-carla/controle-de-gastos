@@ -1,10 +1,10 @@
 import {
   CATEGORY_THEME_CLASSES,
-  getCategoryThemeClassFromColor,
+  getCategoryThemeClassFromSlug,
 } from './generatedCategoryTheme.js';
 
-function getCategoryThemeClass(color) {
-  return getCategoryThemeClassFromColor(color);
+function getCategoryThemeClass(slug) {
+  return getCategoryThemeClassFromSlug(slug);
 }
 
 function clearCategoryTheme(element) {
@@ -12,10 +12,13 @@ function clearCategoryTheme(element) {
   element.classList.remove(...CATEGORY_THEME_CLASSES, 'input-categoria-accent');
 }
 
-function applyCategoryTheme(element, color, { accent = false } = {}) {
+function applyCategoryTheme(element, slug, { accent = false } = {}) {
   if (!element) return;
   clearCategoryTheme(element);
-  element.classList.add(getCategoryThemeClass(color));
+
+  const themeClass = getCategoryThemeClass(slug);
+  element.classList.add(themeClass);
+
   if (accent) {
     element.classList.add('input-categoria-accent');
   }

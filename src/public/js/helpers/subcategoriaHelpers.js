@@ -7,6 +7,8 @@ import {
   $,
   showElement,
   hideElement,
+  applyCategoryTheme,
+  clearCategoryTheme,
 } from './index.js';
 import * as logger from './logger.js';
 import { apiFetch } from '../config.js';
@@ -32,7 +34,8 @@ export function setupSubcategoriaAutocomplete(
   inputId,
   inputHiddenId,
   dropdownId,
-  initialList = []
+  initialList = [],
+  { categorySlug = '' } = {}
 ) {
   const inputBusca = $(inputId);
   const inputHidden = $(inputHiddenId);
@@ -49,6 +52,20 @@ export function setupSubcategoriaAutocomplete(
 
   let subcategorias = initialList;
   let selecionada = null;
+  let categoriaSlugAtual = categorySlug;
+
+  const aplicarTema = (slug = '') => {
+    categoriaSlugAtual = slug;
+
+    if (!slug) {
+      clearCategoryTheme(inputBusca);
+      return;
+    }
+
+    applyCategoryTheme(inputBusca, slug, {
+      accent: true,
+    });
+  };
 
   const mostrarDropdown = (lista) => {
     if (lista.length === 0) {
@@ -119,6 +136,8 @@ export function setupSubcategoriaAutocomplete(
   };
   document.addEventListener('click', handler);
 
+  aplicarTema(categoriaSlugAtual);
+
   return {
     selecionar: (id, nome) => {
       inputBusca.value = nome;
@@ -133,10 +152,15 @@ export function setupSubcategoriaAutocomplete(
       selecionada = null;
       removeClass(dropdown, 'show');
       hideElement(dropdown);
+      aplicarTema('');
     },
-    atualizarOpcoes: (novaLista) => {
+    atualizarOpcoes: (novaLista, slug = categoriaSlugAtual) => {
       subcategorias = novaLista || [];
+      aplicarTema(slug);
       filtrar('');
+    },
+    atualizarTemaCategoria: (slug = '') => {
+      aplicarTema(slug);
     },
   };
 }

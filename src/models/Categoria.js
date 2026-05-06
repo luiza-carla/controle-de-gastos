@@ -12,7 +12,11 @@ const CategoriaSchema = new mongoose.Schema(
       type: String,
       default: '#000000',
     },
-
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     ativa: {
       type: Boolean,
       default: true,

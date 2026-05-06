@@ -59,11 +59,11 @@ function inicializarModalEditarDesejo({ desejo, categorias, tags }) {
     'modalCategoriaDesejo',
     'modalDropdownCategoriaDesejo',
     categorias,
-    async (catId) => {
+    async (catId, _catNome, catSlug) => {
       subcategoriaAutocompleteModal?.limpar?.();
 
       const subs = await carregarSubcategorias(catId);
-      subcategoriaAutocompleteModal.atualizarOpcoes(subs);
+      subcategoriaAutocompleteModal.atualizarOpcoes(subs, catSlug);
       atualizarVisibilidadeModal(subs);
     }
   );
@@ -83,14 +83,16 @@ function inicializarModalEditarDesejo({ desejo, categorias, tags }) {
     if (inputBusca && inputHidden) {
       inputBusca.value = desejo.categoria.nome;
       inputHidden.value = desejo.categoria._id;
-      applyCategoryTheme(inputBusca, desejo.categoria.cor, {
+      applyCategoryTheme(inputBusca, desejo.categoria.slug, {
         accent: true,
-        categoryName: desejo.categoria.nome,
       });
     }
 
     carregarSubcategorias(desejo.categoria._id).then((subs) => {
-      subcategoriaAutocompleteModal.atualizarOpcoes(subs);
+      subcategoriaAutocompleteModal.atualizarOpcoes(
+        subs,
+        desejo.categoria.slug
+      );
       atualizarVisibilidadeModal(subs);
       if (desejo.subcategoria) {
         const inp = $('modalBuscaSubcategoriaDesejo');

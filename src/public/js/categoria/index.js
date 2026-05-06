@@ -48,9 +48,12 @@ export async function inicializarCategorias(options = {}) {
     ids.inputCategoriaHidden,
     ids.dropdownCategoria,
     getCategorias(),
-    async (categoriaId) => {
+    async (categoriaId, _categoriaNome, categoriaSlug) => {
       const subcategorias = await carregarSubcategorias(categoriaId);
-      getSubcategoriaAutocomplete()?.atualizarOpcoes(subcategorias);
+      getSubcategoriaAutocomplete()?.atualizarOpcoes(
+        subcategorias,
+        categoriaSlug
+      );
       mostrarGrupo(subcategorias && subcategorias.length > 0);
     }
   );

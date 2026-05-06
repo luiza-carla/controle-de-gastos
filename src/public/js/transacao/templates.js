@@ -36,7 +36,7 @@ export function templateTransacaoCard(t) {
 
   const { categoriaBadge, subcategoriaBadge } =
     criarBadgesCategoriaSubcategoriaSeparados(t.categoria, t.subcategoria);
-  const themeClass = getCategoryThemeClass(t.categoria?.cor, t.categoria?.nome);
+  const themeClass = getCategoryThemeClass(t.categoria?.slug);
 
   const tags = gerarTags(t.tags);
   const dataCriacao = formatarData(t.createdAt || t.data);

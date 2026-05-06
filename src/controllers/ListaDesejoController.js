@@ -15,7 +15,7 @@ const { selecionarCamposPermitidos } = require('../utils/payloadHelpers');
 const { contaEhCredito } = require('../utils/contaHelpers');
 
 const MENSAGEM_ITEM_NAO_ENCONTRADO = 'Item da lista de desejos nao encontrado';
-const PROJECAO_CATEGORIA = 'nome cor tipo';
+const PROJECAO_CATEGORIA = 'nome cor tipo slug';
 const CAMPOS_PERMITIDOS_LISTA_DESEJO_ATUALIZACAO = [
   'titulo',
   'valor',

@@ -10,7 +10,7 @@ function transacao(query) {
       'fatura',
       'status valorTotal valorPago dataVencimento periodoInicio periodoFim'
     )
-    .populate('categoria', 'nome tipo cor')
+    .populate('categoria', 'nome tipo cor slug')
     .populate('subcategoria', 'nome');
 }
 

@@ -10,3 +10,7 @@ scripts/test-*.js
 
 *.txt
 md/
+
+# Arquivos gerados automaticamente
+src/public/css/generated-category-themes.css
+src/public/js/helpers/generatedCategoryTheme.js

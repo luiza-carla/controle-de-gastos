@@ -1,6 +1,7 @@
 const DEFAULT_CATEGORIES = [
   {
     nome: 'Renda',
+    slug: 'renda',
     cor: '#2ecc71',
     subcategorias: [
       'Salário',
@@ -15,6 +16,7 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Moradia',
+    slug: 'moradia',
     cor: '#e74c3c',
     subcategorias: [
       'Aluguel',
@@ -31,6 +33,7 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Alimentação',
+    slug: 'alimentacao',
     cor: '#f39c12',
     subcategorias: [
       'Mercado',
@@ -43,6 +46,7 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Transporte',
+    slug: 'transporte',
     cor: '#2980b9',
     subcategorias: [
       'Combustível',
@@ -56,6 +60,7 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Saúde',
+    slug: 'saude',
     cor: '#e84393',
     subcategorias: [
       'Plano de saúde',
@@ -69,6 +74,7 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Educação',
+    slug: 'educacao',
     cor: '#8e44ad',
     subcategorias: [
       'Faculdade',
@@ -80,6 +86,7 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Lazer e entretenimento',
+    slug: 'lazer-entretenimento',
     cor: '#00bcd4',
     subcategorias: [
       'Cinema',
@@ -93,6 +100,7 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Compras',
+    slug: 'compras',
     cor: '#ff9800',
     subcategorias: [
       'Roupa',
@@ -106,6 +114,7 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Beleza e cuidados pessoais',
+    slug: 'beleza-cuidados',
     cor: '#ff4fa3',
     subcategorias: [
       'Maquiagem',
@@ -119,6 +128,7 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Pets',
+    slug: 'pets',
     cor: '#16a085',
     subcategorias: [
       'Ração',
@@ -130,6 +140,7 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Finanças',
+    slug: 'financas',
     cor: '#34495e',
     subcategorias: [
       'Cartão de crédito',
@@ -142,11 +153,13 @@ const DEFAULT_CATEGORIES = [
   },
   {
     nome: 'Presentes e doações',
+    slug: 'presentes-doacoes',
     cor: '#f06292',
     subcategorias: ['Presente dado', 'Doação', 'Caridade'],
   },
   {
     nome: 'Outros',
+    slug: 'outros',
     cor: '#7f8c8d',
     subcategorias: ['Imprevisto', 'Taxas diversas', 'Outros'],
   },

@@ -8,7 +8,6 @@ const outputCssPath = path.join(
   'css',
   'generated-category-themes.css'
 );
-
 const outputJsPath = path.join(
   __dirname,
   '..',
@@ -18,41 +17,45 @@ const outputJsPath = path.join(
   'generatedCategoryTheme.js'
 );
 
-function normalizeColor(color) {
-  return String(color || '')
+function normalizeSlug(slug) {
+  return String(slug || '')
     .trim()
     .toLowerCase();
 }
 
-function getThemeClassName(color) {
-  const normalizedColor = normalizeColor(color).replace('#', '');
-  return normalizedColor ? `cat-theme-${normalizedColor}` : 'cat-theme-default';
+function getThemeClassName(slug) {
+  return slug ? `cat-theme-${normalizeSlug(slug)}` : 'cat-theme-default';
 }
 
-function uniqueColorsFromCategories(categories) {
+function formatObjectKey(key) {
+  const normalizedKey = normalizeSlug(key);
+  return /^[$A-Z_][0-9A-Z_$]*$/i.test(normalizedKey)
+    ? normalizedKey
+    : `'${normalizedKey}'`;
+}
+
+function uniqueSlugsFromCategories(categories) {
   return [
     ...new Set(
       (categories || [])
-        .map((category) => normalizeColor(category?.cor))
+        .map((category) => normalizeSlug(category?.slug))
         .filter(Boolean)
     ),
-  ].sort((colorA, colorB) => colorA.localeCompare(colorB));
+  ].sort((a, b) => a.localeCompare(b));
 }
 
-function generateCss(colors) {
-  const blocks = colors
+function generateCss(categories) {
+  const blocks = categories
     .map(
-      (color) => `.${getThemeClassName(color)} {
-  --categoria-cor: ${color};
-  --cor-categoria: ${color};
-  --categoria-dot: ${color};
-  --input-accent-color: ${color};
+      (cat) => `.${getThemeClassName(cat.slug)} {
+  --categoria-cor: ${cat.cor};
+  --cor-categoria: ${cat.cor};
+  --categoria-dot: ${cat.cor};
+  --input-accent-color: ${cat.cor};
 }`
     )
     .join('\n\n');
-
   return `/* Arquivo gerado automaticamente por categoryThemeGenerator.js */
-/* Cada classe abaixo expõe a cor de uma categoria via variáveis CSS. */
 .cat-theme-default {
   --categoria-cor: var(--gray-700);
   --cor-categoria: var(--gray-700);
@@ -64,32 +67,36 @@ ${blocks}
 `;
 }
 
-function generateJs(colors) {
-  const entries = colors
-    .map((color) => `  '${color}': '${getThemeClassName(color)}',`)
+function generateJs(categories) {
+  const entries = categories
+    .map(
+      (cat) =>
+        `  ${formatObjectKey(cat.slug)}: '${getThemeClassName(cat.slug)}',`
+    )
     .join('\n');
 
   return `// Arquivo gerado automaticamente por categoryThemeGenerator.js.
-// Mapeia a cor salva nos dados para a classe CSS correspondente.
-const CATEGORY_THEME_CLASS_BY_COLOR = {
+// Mapeia o slug da categoria para a classe CSS correspondente.
+const CATEGORY_THEME_CLASS_BY_SLUG = {
 ${entries}
 };
 
 const DEFAULT_CATEGORY_THEME_CLASS = 'cat-theme-default';
+
 const CATEGORY_THEME_CLASSES = [
   DEFAULT_CATEGORY_THEME_CLASS,
-  ...Object.values(CATEGORY_THEME_CLASS_BY_COLOR),
+  ...Object.values(CATEGORY_THEME_CLASS_BY_SLUG),
 ];
 
-function normalizeCategoryColor(color) {
-  return String(color || '')
+function normalizeCategorySlug(slug) {
+  return String(slug || '')
     .trim()
     .toLowerCase();
 }
 
-function getCategoryThemeClassFromColor(color) {
+function getCategoryThemeClassFromSlug(slug) {
   return (
-    CATEGORY_THEME_CLASS_BY_COLOR[normalizeCategoryColor(color)] ||
+    CATEGORY_THEME_CLASS_BY_SLUG[normalizeCategorySlug(slug)] ||
     DEFAULT_CATEGORY_THEME_CLASS
   );
 }
@@ -97,7 +104,7 @@ function getCategoryThemeClassFromColor(color) {
 export {
   CATEGORY_THEME_CLASSES,
   DEFAULT_CATEGORY_THEME_CLASS,
-  getCategoryThemeClassFromColor,
+  getCategoryThemeClassFromSlug,
 };
 `;
 }
@@ -114,14 +121,31 @@ function writeFile(filePath, content) {
   fs.writeFileSync(filePath, content, 'utf8');
 }
 
+// FIX: deduplicação por slug usando Map antes de gerar CSS e JS.
+// Garante que mesmo que o Mongo retorne categorias com slugs repetidos
+// (edge case ou dados sujos), o arquivo gerado nunca terá blocos/entradas duplicadas.
+// A primeira ocorrência de cada slug prevalece; slugs são normalizados e ordenados.
 function generateCategoryThemeFiles(categories) {
-  // Gera os artefatos consumidos pelo frontend a partir das cores existentes.
-  const colors = uniqueColorsFromCategories(categories);
-  writeFile(outputCssPath, generateCss(colors));
-  writeFile(outputJsPath, generateJs(colors));
+  const slugMap = new Map();
+
+  for (const cat of categories || []) {
+    if (!cat?.slug) continue;
+    const slug = normalizeSlug(cat.slug);
+    // Primeira ocorrência vence, evita sobrescrever com dados parciais
+    if (!slugMap.has(slug)) {
+      slugMap.set(slug, { slug, cor: cat.cor });
+    }
+  }
+  const normalizedCategories = [...slugMap.values()].sort((a, b) =>
+    a.slug.localeCompare(b.slug)
+  );
+
+  writeFile(outputCssPath, generateCss(normalizedCategories));
+  writeFile(outputJsPath, generateJs(normalizedCategories));
 }
 
 module.exports = {
   generateCategoryThemeFiles,
-  uniqueColorsFromCategories,
+  formatObjectKey,
+  uniqueSlugsFromCategories,
 };

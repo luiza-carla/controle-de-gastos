@@ -152,13 +152,13 @@ export const editarTransacao = async (id) => {
     'modalCategoriaTransacao',
     'modalDropdownCategoriaTransacao',
     categorias,
-    async (catId) => {
+    async (catId, _catNome, catSlug) => {
       // ao escolher nova categoria enquanto edita, limpa eventual seleção de subcategoria
       subcategoriaAutocompleteModal?.limpar?.();
 
       // busca subcategorias para a nova categoria
       const subs = await carregarSubcategorias(catId);
-      subcategoriaAutocompleteModal.atualizarOpcoes(subs);
+      subcategoriaAutocompleteModal.atualizarOpcoes(subs, catSlug);
       atualizarVisibilidadeModal(subs);
     }
   );
@@ -179,14 +179,16 @@ export const editarTransacao = async (id) => {
     if (inputBusca && inputHidden) {
       inputBusca.value = transacao.categoria.nome;
       inputHidden.value = transacao.categoria._id;
-      applyCategoryTheme(inputBusca, transacao.categoria.cor, {
+      applyCategoryTheme(inputBusca, transacao.categoria.slug, {
         accent: true,
-        categoryName: transacao.categoria.nome,
       });
     }
     // carregar lista de subcategorias existente para pré‑selecionar
     const subs = await carregarSubcategorias(transacao.categoria._id);
-    subcategoriaAutocompleteModal.atualizarOpcoes(subs);
+    subcategoriaAutocompleteModal.atualizarOpcoes(
+      subs,
+      transacao.categoria.slug
+    );
     atualizarVisibilidadeModal(subs);
     if (transacao.subcategoria) {
       const inp = $('modalBuscaSubcategoriaTransacao');
