@@ -1,3 +1,5 @@
+import { normalizarDinheiro } from '../helpers/money.js';
+
 /**
  * Retorna a classe CSS que representa o estado do saldo projetado
  * (positivo / negativo / zero).
@@ -5,7 +7,7 @@
  * @returns {string}
  */
 export function getSaldoProjetadoClass(valor) {
-  const numero = Number(valor || 0);
+  const numero = normalizarDinheiro(valor || 0);
   if (numero < 0) return 'saldo-projetado-negativo';
   if (numero > 0) return 'saldo-projetado-positivo';
   return 'saldo-projetado-zero';

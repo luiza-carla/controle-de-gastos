@@ -14,6 +14,7 @@ const {
   validarContaEncontrada,
 } = require('./validacoes');
 const { criarErro } = require('../../utils/errorHelpers');
+const { normalizarDinheiro } = require('../../utils/money');
 
 class ContaService {
   // Cria nova conta
@@ -136,8 +137,8 @@ class ContaService {
 
     await SaldoService.aplicarDeltaContas(
       {
-        [contaOrigem._id]: -Number(valor),
-        [contaDestino._id]: Number(valor),
+        [contaOrigem._id]: -normalizarDinheiro(valor),
+        [contaDestino._id]: normalizarDinheiro(valor),
       },
       usuarioId
     );

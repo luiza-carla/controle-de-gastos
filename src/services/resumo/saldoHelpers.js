@@ -1,6 +1,7 @@
 const Conta = require('../../models/Conta');
 const Carteira = require('../../models/Carteira');
 const { somarCampo } = require('../../utils/resumoHelpers');
+const { normalizarDinheiro, somarDinheiro } = require('../../utils/money');
 
 // Retorna o nome da origem do saldo da transação
 // Se for carteira, retorna fixo; senão, usa o nome da conta
@@ -22,13 +23,13 @@ function calcularDetalhesSaldoDoPeriodo(transacoes = []) {
 
     // pega valor acumulado atual da origem (ou 0 se não existir)
     const valorAtual = totaisPorOrigem.get(nomeOrigem) || 0;
-    const valorTransacao = Number(transacao?.valor || 0);
+    const valorTransacao = normalizarDinheiro(transacao?.valor || 0);
     // define se soma ou subtrai baseado no tipo da transação
     const valorLiquido =
       transacao?.tipo === 'entrada' ? valorTransacao : -valorTransacao;
 
     // atualiza o total daquela origem
-    totaisPorOrigem.set(nomeOrigem, valorAtual + valorLiquido);
+    totaisPorOrigem.set(nomeOrigem, somarDinheiro(valorAtual, valorLiquido));
   });
 
   // transforma Map em array de objetos e ordena por valor
@@ -43,18 +44,18 @@ async function carregarSaldosAtuais(usuarioId) {
   const carteira = await Carteira.findOne({ usuario: usuarioId });
 
   const saldoContas = somarCampo(contas, 'saldo');
-  const saldoCarteira = carteira?.saldo || 0;
+  const saldoCarteira = normalizarDinheiro(carteira?.saldo || 0);
   // cria lista detalhada das contas
   const detalhesSaldo = contas.map((conta) => ({
     nome: conta.nome,
-    valor: Number(conta.saldo || 0),
+    valor: normalizarDinheiro(conta.saldo || 0),
   }));
 
   // adiciona carteira como mais uma origem no detalhamento
   if (carteira) {
     detalhesSaldo.push({
       nome: 'Carteira',
-      valor: Number(carteira.saldo || 0),
+      valor: normalizarDinheiro(carteira.saldo || 0),
     });
   }
   // ordena do menor para o maior saldo
@@ -63,7 +64,7 @@ async function carregarSaldosAtuais(usuarioId) {
   return {
     saldoContas,
     saldoCarteira,
-    saldoAtual: saldoContas + saldoCarteira,
+    saldoAtual: somarDinheiro(saldoContas, saldoCarteira),
     detalhesSaldo,
   };
 }

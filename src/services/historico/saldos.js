@@ -5,6 +5,7 @@ const {
   salarioJaProcessadoNoMes,
 } = require('../../utils/salarioHelpers');
 const { normalizarSnapshotTransacao } = require('./normalizacao');
+const { normalizarDinheiro } = require('../../utils/money');
 
 async function restaurarSaldoConta(usuarioId, contaId, saldo) {
   await Conta.updateOne(
@@ -42,7 +43,7 @@ async function ajustarSaldoAoReverterTransacao(
   // helper local para calcular delta e aplicar
   const aplicarDelta = async (transacao, sinal = 1) => {
     if (!transacao || transacao.status !== 'pago') return;
-    const valor = Number(transacao.valor || 0);
+    const valor = normalizarDinheiro(transacao.valor || 0);
     if (!valor) return;
     const mult = transacao.tipo === 'entrada' ? 1 : -1;
     const delta = mult * valor * sinal;
@@ -79,7 +80,7 @@ async function aplicarDeltaSalario(usuarioId, salario, sinal, dataReferencia) {
     return;
   }
 
-  const valor = Number(salario?.valor || 0);
+  const valor = normalizarDinheiro(salario?.valor || 0);
   if (!valor) {
     return;
   }

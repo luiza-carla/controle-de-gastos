@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizarDinheiro } = require('../utils/money');
 
 const FaturaSchema = new mongoose.Schema(
   {
@@ -34,11 +35,13 @@ const FaturaSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
+      set: normalizarDinheiro,
     },
     valorPago: {
       type: Number,
       default: 0,
       min: 0,
+      set: normalizarDinheiro,
     },
     status: {
       type: String,

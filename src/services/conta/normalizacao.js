@@ -1,5 +1,6 @@
 const { criarErro } = require('../../utils/errorHelpers');
 const { contaEhCredito } = require('../../utils/contaHelpers');
+const { normalizarDinheiro } = require('../../utils/money');
 
 const MENSAGEM_LIMITE_CREDITO_INVALIDO =
   'Limite do cartão de crédito deve ser maior que zero';
@@ -9,7 +10,7 @@ function normalizarDadosConta(dados, contaAtual = null) {
   const payload = { ...dados };
 
   if (contaEhCredito(tipoFinal)) {
-    const limite = Number(
+    const limite = normalizarDinheiro(
       Object.prototype.hasOwnProperty.call(payload, 'limite')
         ? payload.limite
         : contaAtual?.limite || 0
@@ -21,7 +22,7 @@ function normalizarDadosConta(dados, contaAtual = null) {
 
     payload.limite = limite;
     payload.limiteDisponivel = contaAtual
-      ? Number(contaAtual.limiteDisponivel ?? limite)
+      ? normalizarDinheiro(contaAtual.limiteDisponivel ?? limite)
       : limite;
     payload.diaFechamento = Number(
       payload.diaFechamento || contaAtual?.diaFechamento || 10

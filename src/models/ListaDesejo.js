@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizarDinheiro } = require('../utils/money');
 
 const ListaDesejoSchema = new mongoose.Schema(
   {
@@ -16,6 +17,7 @@ const ListaDesejoSchema = new mongoose.Schema(
     valor: {
       type: Number,
       required: true,
+      set: normalizarDinheiro,
     },
 
     categoria: {

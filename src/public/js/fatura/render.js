@@ -9,6 +9,11 @@ import {
   showElement,
   hideElement,
 } from '../helpers/index.js';
+import {
+  normalizarDinheiro,
+  somarDinheiro,
+  subtrairDinheiro,
+} from '../helpers/money.js';
 
 function formatarStatus(status = '') {
   const mapa = {
@@ -25,11 +30,14 @@ function formatarStatus(status = '') {
 function calcularTotais(faturas = []) {
   return faturas.reduce(
     (acc, fatura) => {
-      const total = Number(fatura.valorTotal || 0);
-      const pago = Number(fatura.valorPago || 0);
+      const total = normalizarDinheiro(fatura.valorTotal || 0);
+      const pago = normalizarDinheiro(fatura.valorPago || 0);
 
-      acc.totalPago += pago;
-      acc.totalAberto += Math.max(total - pago, 0);
+      acc.totalPago = somarDinheiro(acc.totalPago, pago);
+      acc.totalAberto = somarDinheiro(
+        acc.totalAberto,
+        Math.max(subtrairDinheiro(total, pago), 0)
+      );
       return acc;
     },
     { totalAberto: 0, totalPago: 0 }
@@ -59,7 +67,7 @@ function templateParcela(parcela) {
 function templateFatura(fatura) {
   const contaNome = fatura.conta?.nome || 'Cartão';
   const valorEmAberto = Math.max(
-    Number(fatura.valorTotal || 0) - Number(fatura.valorPago || 0),
+    subtrairDinheiro(fatura.valorTotal || 0, fatura.valorPago || 0),
     0
   );
   const parcelasHtml = (fatura.parcelas || []).map(templateParcela).join('');

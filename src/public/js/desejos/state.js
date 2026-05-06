@@ -4,6 +4,7 @@ import {
   filtrarPorCategoria,
   filtrarPorTexto,
 } from '../helpers/index.js';
+import { normalizarDinheiro } from '../helpers/money.js';
 
 export function createDesejosState({ onPageChange }) {
   const state = {
@@ -46,7 +47,7 @@ export function createDesejosState({ onPageChange }) {
       const porCategoria = filtrarPorCategoria(itens, state.filtroCategoriaId);
       return filtrarPorTexto(porCategoria, state.filtroTexto);
     },
-    calcularValorTotal: (item) => Number(item.valor) || 0,
+    calcularValorTotal: (item) => normalizarDinheiro(item.valor) || 0,
   });
 
   Object.assign(state, {

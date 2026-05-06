@@ -13,6 +13,7 @@ const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
 const { criarErro } = require('../utils/errorHelpers');
 const { selecionarCamposPermitidos } = require('../utils/payloadHelpers');
 const { contaEhCredito } = require('../utils/contaHelpers');
+const { normalizarDinheiro } = require('../utils/money');
 
 const MENSAGEM_ITEM_NAO_ENCONTRADO = 'Item da lista de desejos nao encontrado';
 const PROJECAO_CATEGORIA = 'nome cor tipo slug';
@@ -212,7 +213,7 @@ class ListaDesejoController {
     }
 
     const { conta, valor, status, data } = req.body;
-    const valorFinal = Number(valor || item.valor || 0);
+    const valorFinal = normalizarDinheiro(valor || item.valor || 0);
     const statusFinal = status || 'pago';
     const fonteSaldo = conta === 'carteira' ? 'carteira' : 'conta';
 

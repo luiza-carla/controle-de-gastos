@@ -1,18 +1,21 @@
 const { obterInicioMes } = require('./../utils/salarioHelpers');
+const { somarCampoDinheiro } = require('./money');
 
 // Função auxiliar para somar um campo numérico de um array
 function somarCampo(lista = [], campo) {
-  return lista.reduce((acc, item) => acc + Number(item[campo] || 0), 0);
+  return somarCampoDinheiro(lista, campo);
 }
 
 // Calcula totais de entradas e saídas de uma lista de transações
 function totaisTransacoes(transacoes = []) {
-  let entradas = 0;
-  let saidas = 0;
-  transacoes.forEach((t) => {
-    if (t.tipo === 'entrada') entradas += Number(t.valor);
-    if (t.tipo === 'saida') saidas += Number(t.valor);
-  });
+  const entradas = somarCampoDinheiro(
+    transacoes.filter((t) => t.tipo === 'entrada'),
+    'valor'
+  );
+  const saidas = somarCampoDinheiro(
+    transacoes.filter((t) => t.tipo === 'saida'),
+    'valor'
+  );
   return { entradas, saidas };
 }
 

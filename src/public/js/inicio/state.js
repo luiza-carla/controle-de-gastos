@@ -35,6 +35,7 @@ export function createInicioState() {
       btnProjecao: $('btnProjecao'),
       modalProjecao: $('modalProjecao'),
       projSaldoAtual: $('projSaldoAtual'),
+      projEntradasPendentes: $('projEntradasPendentes'),
       projSaidasLabel: $('projSaidasLabel'),
       projSaidasPendentes: $('projSaidasPendentes'),
       projSaldoFinal: $('projSaldoFinal'),

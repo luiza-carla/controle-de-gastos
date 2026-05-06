@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizarDinheiro } = require('../utils/money');
 
 const CarteiraSchema = new mongoose.Schema(
   {
@@ -12,6 +13,7 @@ const CarteiraSchema = new mongoose.Schema(
     saldo: {
       type: Number,
       default: 0,
+      set: normalizarDinheiro,
     },
   },
   { timestamps: true }

@@ -13,6 +13,13 @@ const {
   jaPassouDaData,
 } = require('../utils/faturaHelpers');
 const { addDays } = require('date-fns');
+const {
+  obterNumeroSeguro,
+  paraCentavos,
+  deCentavos,
+  somarDinheiro,
+  subtrairDinheiro,
+} = require('../utils/money');
 
 const STATUS_FATURA = {
   ABERTA: 'aberta',
@@ -32,11 +39,6 @@ const MENSAGEM_TRANSACAO_CREDITO_INVALIDA =
   'Cartão de crédito só permite compras de saída';
 const MENSAGEM_CONTA_CREDITO_INVALIDA =
   'Conta informada não é um cartão de crédito';
-
-function obterNumeroSeguro(valor, fallback = 0) {
-  const numero = Number(valor);
-  return Number.isFinite(numero) ? numero : fallback;
-}
 
 function obterLimiteTotal(cartao) {
   return obterNumeroSeguro(cartao?.limite || 0);
@@ -107,13 +109,13 @@ function atualizarStatusParcela(parcela) {
 
 function ratearValorParcelado(valorTotal, totalParcelas) {
   const quantidade = Math.max(Number(totalParcelas) || 1, 1);
-  const valorEmCentavos = Math.round(obterNumeroSeguro(valorTotal) * 100);
+  const valorEmCentavos = paraCentavos(valorTotal);
   const base = Math.floor(valorEmCentavos / quantidade);
   const resto = valorEmCentavos % quantidade;
 
   return Array.from({ length: quantidade }, (_, index) => {
     const valorParcela = base + (index < resto ? 1 : 0);
-    return valorParcela / 100;
+    return deCentavos(valorParcela);
   });
 }
 
@@ -262,11 +264,9 @@ class FaturaService {
 
     return parcelas.reduce(
       (total, parcela) =>
-        total +
-        Math.max(
-          obterNumeroSeguro(parcela.valor) -
-            obterNumeroSeguro(parcela.valorPago),
-          0
+        somarDinheiro(
+          total,
+          Math.max(subtrairDinheiro(parcela.valor, parcela.valorPago), 0)
         ),
       0
     );
@@ -280,11 +280,11 @@ class FaturaService {
 
     const parcelas = await Parcela.find({ fatura: fatura._id });
     fatura.valorTotal = parcelas.reduce(
-      (total, parcela) => total + obterNumeroSeguro(parcela.valor),
+      (total, parcela) => somarDinheiro(total, parcela.valor),
       0
     );
     fatura.valorPago = parcelas.reduce(
-      (total, parcela) => total + obterNumeroSeguro(parcela.valorPago),
+      (total, parcela) => somarDinheiro(total, parcela.valorPago),
       0
     );
 
@@ -378,8 +378,10 @@ class FaturaService {
           ? obterNumeroSeguro(transacaoNova.valor)
           : 0;
 
-      const limiteProjetado =
-        obterLimiteDisponivel(cartao) + valorRestauradoAnterior - valorNovo;
+      const limiteProjetado = subtrairDinheiro(
+        somarDinheiro(obterLimiteDisponivel(cartao), valorRestauradoAnterior),
+        valorNovo
+      );
 
       if (limiteProjetado < 0) {
         throw criarErro(400, MENSAGEM_LIMITE_CREDITO);
@@ -396,12 +398,12 @@ class FaturaService {
     });
 
     cartao.limiteDisponivel = Math.max(
-      obterLimiteDisponivel(cartao) - valor,
+      subtrairDinheiro(obterLimiteDisponivel(cartao), valor),
       0
     );
     await cartao.save();
 
-    fatura.valorTotal = obterNumeroSeguro(fatura.valorTotal) + valor;
+    fatura.valorTotal = somarDinheiro(fatura.valorTotal, valor);
     atualizarStatusFatura(fatura);
     await fatura.save();
 
@@ -474,7 +476,7 @@ class FaturaService {
     const parcelasCriadas = await Parcela.insertMany(parcelasPayload);
 
     cartao.limiteDisponivel = Math.max(
-      obterLimiteDisponivel(cartao) - valor,
+      subtrairDinheiro(obterLimiteDisponivel(cartao), valor),
       0
     );
     await cartao.save();
@@ -495,7 +497,7 @@ class FaturaService {
     const limiteTotal = obterLimiteTotal(cartao);
     cartao.limiteDisponivel = Math.min(
       limiteTotal,
-      obterLimiteDisponivel(cartao) + valor
+      somarDinheiro(obterLimiteDisponivel(cartao), valor)
     );
     await cartao.save();
 
@@ -515,10 +517,7 @@ class FaturaService {
       });
     }
 
-    fatura.valorTotal = Math.max(
-      obterNumeroSeguro(fatura.valorTotal) - valor,
-      0
-    );
+    fatura.valorTotal = Math.max(subtrairDinheiro(fatura.valorTotal, valor), 0);
     fatura.valorPago = Math.min(
       obterNumeroSeguro(fatura.valorPago),
       obterNumeroSeguro(fatura.valorTotal)
@@ -550,18 +549,16 @@ class FaturaService {
     const limiteTotal = obterLimiteTotal(cartao);
     const valorEmAberto = parcelas.reduce(
       (total, parcela) =>
-        total +
-        Math.max(
-          obterNumeroSeguro(parcela.valor) -
-            obterNumeroSeguro(parcela.valorPago),
-          0
+        somarDinheiro(
+          total,
+          Math.max(subtrairDinheiro(parcela.valor, parcela.valorPago), 0)
         ),
       0
     );
 
     cartao.limiteDisponivel = Math.min(
       limiteTotal,
-      obterLimiteDisponivel(cartao) + valorEmAberto
+      somarDinheiro(obterLimiteDisponivel(cartao), valorEmAberto)
     );
     await cartao.save();
 
@@ -614,7 +611,7 @@ class FaturaService {
       }
 
       const valorEmAberto = Math.max(
-        obterNumeroSeguro(parcela.valor) - obterNumeroSeguro(parcela.valorPago),
+        subtrairDinheiro(parcela.valor, parcela.valorPago),
         0
       );
 
@@ -623,13 +620,12 @@ class FaturaService {
       }
 
       const pagamentoParcela = Math.min(valorRestante, valorEmAberto);
-      parcela.valorPago =
-        obterNumeroSeguro(parcela.valorPago) + pagamentoParcela;
+      parcela.valorPago = somarDinheiro(parcela.valorPago, pagamentoParcela);
       atualizarStatusParcela(parcela);
       await parcela.save();
 
-      valorRestante -= pagamentoParcela;
-      valorAplicado += pagamentoParcela;
+      valorRestante = subtrairDinheiro(valorRestante, pagamentoParcela);
+      valorAplicado = somarDinheiro(valorAplicado, pagamentoParcela);
     }
 
     if (valorAplicado <= 0) {
@@ -640,7 +636,7 @@ class FaturaService {
     const limiteTotal = obterLimiteTotal(cartao);
     cartao.limiteDisponivel = Math.min(
       limiteTotal,
-      obterLimiteDisponivel(cartao) + valorAplicado
+      somarDinheiro(obterLimiteDisponivel(cartao), valorAplicado)
     );
     await cartao.save();
 

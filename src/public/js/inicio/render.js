@@ -110,6 +110,11 @@ export function renderProjecao(dados, els) {
   if (!dados || !els) return;
   if (els.projSaldoAtual)
     els.projSaldoAtual.textContent = formatarValor(dados.saldoAtual);
+  if (els.projEntradasPendentes) {
+    els.projEntradasPendentes.textContent = formatarValor(
+      dados.entradasPendentes
+    );
+  }
   if (els.projSaidasLabel) {
     els.projSaidasLabel.textContent = 'Saídas pendentes:';
   }

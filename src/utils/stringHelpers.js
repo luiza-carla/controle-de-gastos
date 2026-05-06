@@ -1,3 +1,5 @@
+const { normalizarDinheiro } = require('./money');
+
 // Conjuga a ação no gênero gramatical correto da entidade
 function conjugarAcao(acao, entidade) {
   const generoPorEntidade = {
@@ -26,7 +28,7 @@ function formatarMoeda(valor) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(Number(valor || 0));
+  }).format(normalizarDinheiro(valor || 0));
 }
 
 module.exports = {

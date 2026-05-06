@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizarDinheiro } = require('../utils/money');
 
 const TransacaoSchema = new mongoose.Schema(
   {
@@ -34,6 +35,7 @@ const TransacaoSchema = new mongoose.Schema(
     valor: {
       type: Number,
       required: true,
+      set: normalizarDinheiro,
     },
 
     tipo: {

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizarDinheiro } = require('../utils/money');
 
 const ParcelaSchema = new mongoose.Schema(
   {
@@ -51,12 +52,14 @@ const ParcelaSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
+      set: normalizarDinheiro,
     },
 
     valorPago: {
       type: Number,
       default: 0,
       min: 0,
+      set: normalizarDinheiro,
     },
 
     dataCompra: {

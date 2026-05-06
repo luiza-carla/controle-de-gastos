@@ -3,6 +3,11 @@ const Carteira = require('../models/Carteira');
 const { extrairContaId } = require('../utils/salarioHelpers');
 const { contaEhCredito } = require('../utils/contaHelpers');
 const { criarErro } = require('../utils/errorHelpers');
+const {
+  normalizarDinheiro,
+  somarDinheiro,
+  subtrairDinheiro,
+} = require('../utils/money');
 
 const MENSAGEM_SALDO_INSUFICIENTE_CARTEIRA = 'Saldo insuficiente na carteira';
 const MENSAGEM_SALDO_INSUFICIENTE_CONTA = 'Saldo insuficiente na conta';
@@ -16,11 +21,11 @@ const MENSAGEM_LIMITE_CREDITO_INVALIDO =
   'Limite do cartão de crédito deve ser maior que zero';
 
 function obterSaldoNumerico(conta) {
-  return Number(conta?.saldo || 0);
+  return normalizarDinheiro(conta?.saldo || 0);
 }
 
 function obterLimiteNumerico(conta) {
-  return Number(conta?.limite || 0);
+  return normalizarDinheiro(conta?.limite || 0);
 }
 
 function validarSaldoProjetadoConta(conta, saldoProjetado, delta = 0) {
@@ -60,7 +65,7 @@ class SaldoService {
       return 0;
     }
 
-    const valor = Number(transacao.valor || 0);
+    const valor = normalizarDinheiro(transacao.valor || 0);
     if (!valor) {
       return 0;
     }
@@ -138,8 +143,10 @@ class SaldoService {
 
     if (deltaLiquidoCarteira < 0) {
       const carteira = await Carteira.findOne({ usuario: usuarioId });
-      const saldoCarteiraProjetado =
-        Number(carteira?.saldo || 0) + deltaLiquidoCarteira;
+      const saldoCarteiraProjetado = somarDinheiro(
+        carteira?.saldo || 0,
+        deltaLiquidoCarteira
+      );
 
       if (saldoCarteiraProjetado < 0) {
         throw criarErro(400, MENSAGEM_SALDO_INSUFICIENTE_CARTEIRA);
@@ -164,8 +171,10 @@ class SaldoService {
         contaId
       );
       const deltaNovo = this.obterDeltaAplicadoConta(transacaoNova, contaId);
-      const saldoProjetado =
-        obterSaldoNumerico(conta) - deltaAnterior + deltaNovo;
+      const saldoProjetado = somarDinheiro(
+        subtrairDinheiro(obterSaldoNumerico(conta), deltaAnterior),
+        deltaNovo
+      );
 
       validarSaldoProjetadoConta(conta, saldoProjetado, deltaNovo);
     }
@@ -188,9 +197,13 @@ class SaldoService {
         contaIdNormalizada,
         usuarioId
       );
-      const saldoProjetado = obterSaldoNumerico(conta) + Number(delta);
+      const saldoProjetado = somarDinheiro(obterSaldoNumerico(conta), delta);
 
-      validarSaldoProjetadoConta(conta, saldoProjetado, Number(delta));
+      validarSaldoProjetadoConta(
+        conta,
+        saldoProjetado,
+        normalizarDinheiro(delta)
+      );
 
       conta.saldo = saldoProjetado;
       await conta.save();
@@ -207,7 +220,7 @@ class SaldoService {
 
     await Carteira.updateOne(
       { usuario: usuarioId },
-      { $inc: { saldo: Number(delta) } },
+      { $inc: { saldo: normalizarDinheiro(delta) } },
       { upsert: true }
     );
   }
@@ -282,7 +295,7 @@ class SaldoService {
   }) {
     if (fonteSaldo === 'carteira') {
       const carteira = await Carteira.findOne({ usuario: usuarioId });
-      const saldo = Number(carteira?.saldo || 0);
+      const saldo = normalizarDinheiro(carteira?.saldo || 0);
       if (valor > saldo) {
         throw criarErro(400, MENSAGEM_SALDO_INSUFICIENTE_CARTEIRA);
       }
@@ -294,9 +307,13 @@ class SaldoService {
     }
 
     const conta = await this.buscarContaObrigatoria(contaId, usuarioId);
-    const saldoProjetado = obterSaldoNumerico(conta) - Number(valor || 0);
+    const saldoProjetado = subtrairDinheiro(obterSaldoNumerico(conta), valor);
 
-    validarSaldoProjetadoConta(conta, saldoProjetado, -Number(valor || 0));
+    validarSaldoProjetadoConta(
+      conta,
+      saldoProjetado,
+      -normalizarDinheiro(valor || 0)
+    );
   }
 }
 

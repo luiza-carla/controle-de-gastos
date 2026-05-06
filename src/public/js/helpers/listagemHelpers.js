@@ -1,5 +1,6 @@
 import { setTextById, setHTMLById } from './dom.js';
 import { formatarValor, calcularTotalItens } from './format.js';
+import { somarDinheiro } from './money.js';
 
 /**
  * Atualiza o total estimado exibido em uma listagem.
@@ -42,7 +43,7 @@ export function criarColecaoFiltrada({
 
   function getTotalValor() {
     return getFilteredItems().reduce(
-      (acc, item) => acc + Number(calcularValorTotal?.(item) || 0),
+      (acc, item) => somarDinheiro(acc, calcularValorTotal?.(item) || 0),
       0
     );
   }

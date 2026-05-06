@@ -98,8 +98,9 @@ export function extractSalarioDados(event) {
   const button = _getSalarioButton(event);
   if (!button) return {};
   return {
-    valor: Number(button.dataset.valor) || 0,
+    valor: normalizarDinheiro(button.dataset.valor) || 0,
     dia: Number(button.dataset.dia) || 0,
     destino: button.dataset.destino || '',
   };
 }
+import { normalizarDinheiro } from '../helpers/money.js';

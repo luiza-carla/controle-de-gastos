@@ -4,6 +4,7 @@ import {
   formatarItemComTipo,
   contaEhCredito,
 } from '../helpers/index.js';
+import { normalizarDinheiro, subtrairDinheiro } from '../helpers/money.js';
 
 const VALOR_CARTEIRA = 'carteira';
 
@@ -12,9 +13,9 @@ function templateSaldoConta(conta) {
     return `<div class="conta-saldo">R$ ${formatarValor(conta.saldo)}</div>`;
   }
 
-  const limite = Number(conta.limite || 0);
-  const limiteDisponivel = Number(conta.limiteDisponivel ?? limite);
-  const valorEmFatura = Math.max(limite - limiteDisponivel, 0);
+  const limite = normalizarDinheiro(conta.limite || 0);
+  const limiteDisponivel = normalizarDinheiro(conta.limiteDisponivel ?? limite);
+  const valorEmFatura = Math.max(subtrairDinheiro(limite, limiteDisponivel), 0);
 
   return `
     <div class="conta-saldo">Fatura atual: R$ ${formatarValor(valorEmFatura)}</div>

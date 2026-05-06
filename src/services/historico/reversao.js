@@ -5,6 +5,7 @@ const { criarErro } = require('../../utils/errorHelpers');
 const { normalizarSnapshotTransacao } = require('./normalizacao');
 const saldos = require('./saldos');
 const bloqueios = require('./bloqueios');
+const { normalizarDinheiro } = require('../../utils/money');
 
 function garantirDadosAnteriores(dados) {
   if (!dados) throw criarErro(400, 'Dados anteriores não disponíveis');
@@ -207,7 +208,7 @@ async function reverterListaDesejo({
       : null;
 
     if (transacao?.status === 'pago') {
-      const valor = Number(transacao.valor || 0);
+      const valor = normalizarDinheiro(transacao.valor || 0);
 
       if (transacao.fonteSaldo === 'carteira') {
         await saldos.ajustarSaldoCarteira(usuarioId, valor);

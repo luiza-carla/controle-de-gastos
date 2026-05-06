@@ -6,13 +6,14 @@ const {
   validarTransferencia,
   executarTransferencia,
 } = require('./transferenciaHelpers');
+const { somarDinheiro } = require('../../utils/money');
 
 class CarteiraService {
   async adicionarSaldo(usuarioId, valor) {
     if (!valor || valor === 0) throw criarErro(400, 'Valor inválido');
 
     const carteira = await obterOuCriar(usuarioId);
-    const novoSaldo = carteira.saldo + valor;
+    const novoSaldo = somarDinheiro(carteira.saldo, valor);
     if (novoSaldo < 0) throw criarErro(400, 'Saldo insuficiente na carteira');
 
     carteira.saldo = novoSaldo;

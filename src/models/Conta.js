@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizarDinheiro } = require('../utils/money');
 
 const ContaSchema = new mongoose.Schema(
   {
@@ -22,18 +23,21 @@ const ContaSchema = new mongoose.Schema(
     saldo: {
       type: Number,
       default: 0,
+      set: normalizarDinheiro,
     },
 
     limite: {
       type: Number,
       default: 0,
       min: 0,
+      set: normalizarDinheiro,
     },
 
     limiteDisponivel: {
       type: Number,
       default: 0,
       min: 0,
+      set: normalizarDinheiro,
     },
 
     diaFechamento: {

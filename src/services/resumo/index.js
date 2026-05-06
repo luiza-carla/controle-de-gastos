@@ -1,9 +1,9 @@
 const Transacao = require('../../models/Transacao');
+const mongoose = require('mongoose');
 const categoriaHelpers = require('../../utils/categoriaHelpers');
 const { transacao: popularTransacao } = require('../../utils/populateHelpers');
 const {
   totaisTransacoes,
-  somaSaidas,
   normalizarPeriodo,
 } = require('../../utils/resumoHelpers');
 const {
@@ -15,6 +15,7 @@ const {
   carregarSaldosAtuais,
 } = require('./saldoHelpers');
 const { montarDetalhesMovimentos } = require('./movimentoHelpers');
+const { somarDinheiro, subtrairDinheiro } = require('../../utils/money');
 
 class ResumoService {
   // Gera resumo financeiro atual do usuário
@@ -40,7 +41,7 @@ class ResumoService {
 
     let saldoContas = 0;
     let saldoCarteira = 0;
-    let saldoAtual = entradas - saidas;
+    let saldoAtual = subtrairDinheiro(entradas, saidas);
     let detalhesSaldo = calcularDetalhesSaldoDoPeriodo(transacoesPeriodo);
 
     if (!periodo.filtroAtivo) {
@@ -89,19 +90,27 @@ class ResumoService {
       const dataInicio = new Date(periodo.dataInicio);
       const dataFim = new Date(periodo.dataFim);
 
-      filtroPendentes.data = [dataInicio, dataFim];
+      filtroPendentes.data = mongoose.trusted({
+        $gte: dataInicio,
+        $lte: dataFim,
+      });
     }
 
     const pendentes = await Transacao.find(filtroPendentes).setOptions({
       sanitizeFilter: false,
     });
-    const saidasPendentes = somaSaidas(pendentes);
+    const { entradas: entradasPendentes, saidas: saidasPendentes } =
+      totaisTransacoes(pendentes);
 
-    const saldoProjetado = saldoAtual - saidasPendentes;
+    const saldoProjetado = subtrairDinheiro(
+      somarDinheiro(saldoAtual, entradasPendentes),
+      saidasPendentes
+    );
 
     return {
       saldoAtual,
       saldoProjetado,
+      entradasPendentes,
       saidasPendentes,
       saldoCarteira: resumo.saldoCarteira || 0,
       periodo: formatarPeriodoResposta(periodo),

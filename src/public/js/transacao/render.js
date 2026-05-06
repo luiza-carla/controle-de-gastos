@@ -12,6 +12,7 @@ import { templateTransacaoCard } from './templates.js';
 import { mostrarNotificacao, tratarErro } from '../notification.js';
 import { carregarTransacoes as carregarTransacoesService } from './service.js';
 import { initTransacaoFilters } from './filters.js';
+import { normalizarDinheiro } from '../helpers/money.js';
 
 let transacoesClickHandlerBound = false;
 
@@ -61,8 +62,8 @@ const controladorListagemTransacoes = criarControladorListagemFiltrada({
   totalId: 'totalTransacoes',
   fnTotal: (transacao) =>
     transacao.tipo === 'saida'
-      ? -Number(transacao.valor || 0)
-      : Number(transacao.valor || 0),
+      ? -normalizarDinheiro(transacao.valor || 0)
+      : normalizarDinheiro(transacao.valor || 0),
 });
 
 export async function carregarTransacoes(

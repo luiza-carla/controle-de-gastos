@@ -23,6 +23,7 @@ import {
 import { invalidateContas } from './service.js';
 import { templateEditarConta, templateTransferirConta } from './templates.js';
 import { mostrarNotificacao } from '../notification.js';
+import { normalizarDinheiro, somarDinheiro } from '../helpers/money.js';
 
 const VALOR_CARTEIRA = 'carteira';
 const MENSAGEM_TRANSFERENCIA_CREDITO =
@@ -30,10 +31,10 @@ const MENSAGEM_TRANSFERENCIA_CREDITO =
 
 function obterSaldoDisponivelTransferencia(conta) {
   if (contaEhCredito(conta)) {
-    return Number(conta.limite || 0) + Number(conta.saldo || 0);
+    return somarDinheiro(conta.limite || 0, conta.saldo || 0);
   }
 
-  return Number(conta.saldo || 0);
+  return normalizarDinheiro(conta.saldo || 0);
 }
 
 export async function abrirModalEditarConta(

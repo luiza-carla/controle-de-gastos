@@ -1,6 +1,8 @@
+import { normalizarDinheiro, somarCampoDinheiro } from './money.js';
+
 // Formata número para 2 casas decimais com separadores de milhar (pt-BR)
 export function formatarValor(valor) {
-  const num = Number(valor || 0);
+  const num = normalizarDinheiro(valor || 0);
   return num.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -12,15 +14,12 @@ export function formatarMoeda(valor) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(Number(valor || 0));
+  }).format(normalizarDinheiro(valor || 0));
 }
 
 // Soma valores numericos de uma lista usando campo padrao ou funcao de mapeamento
 export function calcularTotalItens(lista = [], valorOuFn = 'valor') {
-  const obterValor =
-    typeof valorOuFn === 'function' ? valorOuFn : (item) => item?.[valorOuFn];
-
-  return lista.reduce((acc, item) => acc + Number(obterValor(item) || 0), 0);
+  return somarCampoDinheiro(lista, valorOuFn);
 }
 
 // Capitaliza primeira letra de um texto
