@@ -7,6 +7,51 @@ const SaldoService = require('./SaldoService');
 const logger = require('../utils/logger');
 const { startOfMonth } = require('date-fns');
 
+async function buscarSalariosParaProcessar(diaAtual, refs) {
+  const filtroBase = {
+    ativa: true,
+    frequencia: 'mensal',
+    diaRecebimento: mongoose.trusted({ $lte: diaAtual }),
+    $or: [
+      { fonteSaldo: 'carteira' },
+      { conta: mongoose.trusted({ $exists: true, $ne: null }) },
+    ],
+  };
+
+  const { filtroCategoria } = categoriaHelpers.obterFiltrosSalario(refs);
+  const filtro = mongoose.trusted({ $and: [filtroBase, filtroCategoria] });
+
+  return Transacao.find(filtro)
+    .setOptions({ sanitizeFilter: false })
+    .populate('usuario')
+    .populate('conta');
+}
+
+async function processarSalario(salario, hoje, inicioMes) {
+  const jaProcessado =
+    salario.dataUltimoProcessamento &&
+    new Date(salario.dataUltimoProcessamento) >= inicioMes;
+
+  if (jaProcessado) {
+    logger.info(
+      `Salario ${salario._id} já processado neste mes`,
+      'SalarioScheduler'
+    );
+    return false;
+  }
+
+  await SaldoService.aplicarMovimento(salario, salario.usuario._id);
+  salario.dataUltimoProcessamento = hoje;
+  salario.status = 'pago';
+  await salario.save();
+
+  logger.info(
+    `Salario processado: ${formatarMoeda(salario.valor)} para usuario ${salario.usuario._id}`,
+    'SalarioScheduler'
+  );
+  return true;
+}
+
 // Serviço responsável por agendar e processar salários automaticamente
 class SalarioScheduler {
   constructor() {
@@ -35,55 +80,28 @@ class SalarioScheduler {
     }
   }
 
-  // Processa salários que devem ser creditados no dia
   async processarSalariosDodia() {
     try {
       const hoje = new Date();
-      const diaAtual = hoje.getDate();
-      const inicioMes = startOfMonth(hoje);
-
-      // Busca a categoria "Salário"
       const refs = await categoriaHelpers.buscarSalario();
 
-      if (!refs || !refs.categoria) {
-        logger.warn('Categoria Salario nao encontrada', 'SalarioScheduler');
+      if (!refs?.categoria) {
+        logger.warn('Categoria Salario não encontrada', 'SalarioScheduler');
         return;
       }
 
-      // Busca transações de salário recorrentes que devem ser processadas hoje
-      // base do filtro. inclui tanto salários em conta quanto em carteira.
-      // Nota: salários com diaRecebimento anterior ao dia atual (atrasados)
-      // também devem ser processados, desde que não tenham sido rodados no mês.
-      const filtroBase = {
-        ativa: true,
-        frequencia: 'mensal',
-        diaRecebimento: mongoose.trusted({ $lte: diaAtual }),
-        $or: [
-          { fonteSaldo: 'carteira' },
-          { conta: mongoose.trusted({ $exists: true, $ne: null }) },
-        ],
-      };
+      const salarios = await buscarSalariosParaProcessar(hoje.getDate(), refs);
 
-      const { filtroCategoria } = categoriaHelpers.obterFiltrosSalario(refs);
-      const filtro = mongoose.trusted({
-        $and: [filtroBase, filtroCategoria],
-      });
-
-      const salarios = await Transacao.find(filtro)
-        .setOptions({ sanitizeFilter: false })
-        .populate('usuario')
-        .populate('conta');
-
-      if (salarios.length === 0) {
+      if (!salarios.length) {
         logger.info(
-          `Nenhum salario para processar no dia ${diaAtual}`,
+          `Nenhum salário para processar no dia ${hoje.getDate()}`,
           'SalarioScheduler'
         );
         return;
       }
 
       logger.info(
-        `Processando ${salarios.length} salario(s)`,
+        `Processando ${salarios.length} salário(s)`,
         'SalarioScheduler'
       );
 
@@ -92,36 +110,16 @@ class SalarioScheduler {
 
       for (const salario of salarios) {
         try {
-          // Verifica se já foi processado este mês
-          const ultimoProcessamento = salario.dataUltimoProcessamento;
-          const jaProcessadoEsteMes =
-            ultimoProcessamento && new Date(ultimoProcessamento) >= inicioMes;
-
-          if (jaProcessadoEsteMes) {
-            logger.info(
-              `Salario ${salario._id} ja processado neste mes`,
-              'SalarioScheduler'
-            );
-            continue;
-          }
-
-          // usar SaldoService para manter o mesmo comportamento que outros
-          await SaldoService.aplicarMovimento(salario, salario.usuario._id);
-
-          // Atualiza a data de último processamento
-          salario.dataUltimoProcessamento = hoje;
-          salario.status = 'pago';
-          await salario.save();
-
-          processados++;
-          logger.info(
-            `Salario processado: ${formatarMoeda(salario.valor)} para usuario ${salario.usuario._id}`,
-            'SalarioScheduler'
+          const sucesso = await processarSalario(
+            salario,
+            hoje,
+            startOfMonth(hoje)
           );
+          if (sucesso) processados++;
         } catch (erro) {
           erros++;
           logger.error(
-            `Erro ao processar salario ${salario._id}`,
+            `Erro ao processar salário ${salario._id}`,
             'SalarioScheduler',
             erro.message
           );
@@ -129,18 +127,17 @@ class SalarioScheduler {
       }
 
       logger.info(
-        `Processamento concluido: ${processados} sucesso, ${erros} erros`,
+        `Processamento concluído: ${processados} sucesso, ${erros} erros`,
         'SalarioScheduler'
       );
     } catch (erro) {
       logger.error(
-        'Erro ao processar salarios do dia',
+        'Erro ao processar salários do dia',
         'SalarioScheduler',
         erro
       );
     }
   }
-
   // Força o processamento manual de salários
   async processarManualmente() {
     logger.info('Processamento manual iniciado', 'SalarioScheduler');
