@@ -1,4 +1,4 @@
-const SaldoService = require('../SaldoService');
+const SaldoService = require('../saldo');
 const { criarErro } = require('../../utils/errorHelpers');
 const { contaEhCredito } = require('../../utils/contaHelpers');
 const {

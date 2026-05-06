@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const Transacao = require('../models/Transacao');
 const categoriaHelpers = require('../utils/categoriaHelpers');
 const { formatarMoeda } = require('../utils/stringHelpers');
-const SaldoService = require('./SaldoService');
+const SaldoService = require('./saldo');
 const logger = require('../utils/logger');
 const { startOfMonth } = require('date-fns');
 

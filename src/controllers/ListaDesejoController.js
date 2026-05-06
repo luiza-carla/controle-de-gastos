@@ -6,7 +6,7 @@ const {
   processarSubcategoriaAoAtualizar,
 } = require('../utils/subcategoriaUtils');
 const HistoricoService = require('../services/historico');
-const SaldoService = require('../services/SaldoService');
+const SaldoService = require('../services/saldo');
 const FaturaService = require('../services/fatura');
 const { formatarMoeda } = require('../utils/stringHelpers');
 const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
