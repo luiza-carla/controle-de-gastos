@@ -44,6 +44,32 @@ class AuthService {
       throw criarErro(401, 'Credenciais inválidas');
     }
 
+    if (usuario.ativa === false) {
+      throw criarErro(403, 'Esta conta está desativada', {
+        codigo: 'CONTA_DESATIVADA',
+      });
+    }
+
+    const token = gerarToken(usuario._id);
+    return montarRespostaAutenticacao(usuario, token);
+  }
+
+  async reativarELogin(dados) {
+    const { email, senha } = dados;
+
+    const usuario = await Usuario.findOne({ email: String(email) });
+    if (!usuario) {
+      throw criarErro(401, 'Credenciais inválidas');
+    }
+
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
+    if (!senhaValida) {
+      throw criarErro(401, 'Credenciais inválidas');
+    }
+
+    usuario.ativa = true;
+    await usuario.save();
+
     const token = gerarToken(usuario._id);
     return montarRespostaAutenticacao(usuario, token);
   }

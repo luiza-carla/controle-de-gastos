@@ -3,7 +3,7 @@ import { abrirModalConfirmacao, fecharModal } from './modalDeletar.js';
 import { $, addClass, getPaginaAtual, setHTMLById } from './helpers/index.js';
 import { mostrarNotificacao, tratarErro } from './notification.js';
 
-const MENU_CACHE_KEY = 'menuHtmlCacheV3';
+const MENU_CACHE_KEY = 'menuHtmlCacheV4';
 const MENU_MAX_TENTATIVAS = 2;
 const MENU_LINKS_OBRIGATORIOS = [
   'inicio.html',
@@ -11,8 +11,9 @@ const MENU_LINKS_OBRIGATORIOS = [
   'transacoes.html',
   'lista-desejos.html',
   'salario.html',
-  // 'faturas.html',
+  'faturas.html',
   'historico.html',
+  'perfil.html',
 ];
 
 function registrarErroInternoMenu(error, mensagemPadrao) {

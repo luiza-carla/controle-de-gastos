@@ -25,6 +25,19 @@ const UsuarioSchema = new mongoose.Schema(
       required: true,
     },
 
+    ativa: {
+      type: Boolean,
+      default: true,
+    },
+
+    preferencias: {
+      formatoData: {
+        type: String,
+        enum: ['DD/MM/AAAA', 'AAAA-MM-DD'],
+        default: 'DD/MM/AAAA',
+      },
+    },
+
     ultimaLimpezaHistorico: {
       type: Date,
       default: null,

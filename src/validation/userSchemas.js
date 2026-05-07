@@ -38,7 +38,39 @@ const loginSchema = z.object({
   senha: senhaLoginSchema,
 });
 
+const formatoDataSchema = z.enum(['DD/MM/AAAA', 'AAAA-MM-DD']);
+
+const alterarSenhaSchema = z
+  .object({
+    senhaAtual: senhaLoginSchema,
+    novaSenha: senhaCadastroSchema,
+    confirmarNovaSenha: senhaLoginSchema,
+  })
+  .superRefine((dados, ctx) => {
+    if (dados.novaSenha !== dados.confirmarNovaSenha) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['confirmarNovaSenha'],
+        message: 'A confirmação da nova senha não confere',
+      });
+    }
+
+    if (dados.senhaAtual === dados.novaSenha) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['novaSenha'],
+        message: 'A nova senha deve ser diferente da senha atual',
+      });
+    }
+  });
+
+const atualizarPreferenciasSchema = z.object({
+  formatoData: formatoDataSchema,
+});
+
 module.exports = {
   registrarSchema,
   loginSchema,
+  alterarSenhaSchema,
+  atualizarPreferenciasSchema,
 };

@@ -27,7 +27,12 @@ function errorHandler(err, req, res, next) {
     mensagem = err.message || 'Requisição inválida';
   }
 
-  return res.status(status).json({ mensagem });
+  const payload = { mensagem };
+  if (err.code) {
+    payload.codigo = err.code;
+  }
+
+  return res.status(status).json(payload);
 }
 
 module.exports = errorHandler;

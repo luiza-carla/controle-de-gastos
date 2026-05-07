@@ -1,4 +1,5 @@
 import { normalizarDinheiro, somarCampoDinheiro } from './money.js';
+import { lerPreferenciasUsuario } from '../config.js';
 
 // Formata número para 2 casas decimais com separadores de milhar (pt-BR)
 export function formatarValor(valor) {
@@ -61,6 +62,15 @@ export function formatarData(data) {
 
   const dataObj = new Date(data);
   if (Number.isNaN(dataObj.getTime())) return '-';
+
+  const { formatoData } = lerPreferenciasUsuario();
+
+  if (formatoData === 'AAAA-MM-DD') {
+    const ano = dataObj.getFullYear();
+    const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+    const dia = String(dataObj.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+  }
 
   return dataObj.toLocaleDateString('pt-BR');
 }

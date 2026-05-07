@@ -6,6 +6,10 @@ function montarRespostaAutenticacao(usuario, token) {
       id: usuario._id,
       nome: usuario.nome,
       email: usuario.email,
+      ativa: usuario.ativa !== false,
+      preferencias: {
+        formatoData: usuario?.preferencias?.formatoData || 'DD/MM/AAAA',
+      },
       salario: usuario.salario,
     },
   };

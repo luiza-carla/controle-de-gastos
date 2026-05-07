@@ -1,4 +1,8 @@
-import { apiFetch, clearLegacyAuthState } from './config.js';
+import {
+  apiFetch,
+  clearLegacyAuthState,
+  salvarPreferenciasUsuario,
+} from './config.js';
 import {
   $,
   configurarToggleSenha,
@@ -57,6 +61,7 @@ if (formRegistrar) {
 
         if (data?.usuario) {
           clearLegacyAuthState();
+          salvarPreferenciasUsuario(data.usuario.preferencias || {});
           window.location.href = '/html/inicio.html';
         }
       } catch (err) {

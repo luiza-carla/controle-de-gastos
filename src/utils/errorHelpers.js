@@ -6,6 +6,7 @@ function criarErro(statusCode, mensagem, opcoes = {}) {
   const erro = new Error(mensagem);
   erro.statusCode = statusCode;
   erro.__mostrarAoUsuario = opcoes.__mostrarAoUsuario;
+  erro.code = opcoes.codigo;
 
   return erro;
 }

@@ -1,4 +1,9 @@
-import { apiFetch, clearLegacyAuthState } from './config.js';
+import {
+  apiFetch,
+  clearLegacyAuthState,
+  salvarPreferenciasUsuario,
+} from './config.js';
+import { abrirModalConfirmacao, fecharModal } from './modalDeletar.js';
 import {
   $,
   configurarToggleSenha,
@@ -21,6 +26,49 @@ const FORM_MSG_ERRO_ID = 'formMensagemErroLogin';
 
 garantirErroInline(formLogin, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
 configurarToggleSenha('loginSenha');
+
+async function executarLogin(email, senha) {
+  const data = await apiFetch(`${baseUrlUsuarios}/login`, {
+    skipAuthRedirect: true,
+    method: 'POST',
+    body: JSON.stringify({ email, senha }),
+  });
+
+  if (data?.usuario) {
+    clearLegacyAuthState();
+    salvarPreferenciasUsuario(data.usuario.preferencias || {});
+    window.location.href = '/html/inicio.html';
+  }
+}
+
+function abrirModalReativacao(email, senha) {
+  abrirModalConfirmacao({
+    titulo: 'Conta desativada',
+    mensagem:
+      'Sua conta está desativada. Deseja reativá-la e entrar novamente?',
+    onConfirmar: async () => {
+      try {
+        const data = await apiFetch(`${baseUrlUsuarios}/reativar-e-login`, {
+          skipAuthRedirect: true,
+          method: 'POST',
+          body: JSON.stringify({ email, senha }),
+        });
+
+        fecharModal();
+
+        if (data?.usuario) {
+          clearLegacyAuthState();
+          salvarPreferenciasUsuario(data.usuario.preferencias || {});
+          window.location.href = '/html/inicio.html';
+        }
+      } catch (error) {
+        fecharModal();
+        const mensagem = tratarErro(error, 'Não foi possível reativar a conta');
+        mostrarErroInline(mensagem, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
+      }
+    },
+  });
+}
 
 // Trata envio do formulário de login
 if (formLogin) {
@@ -45,17 +93,15 @@ if (formLogin) {
           return;
         }
 
-        const data = await apiFetch(`${baseUrlUsuarios}/login`, {
-          skipAuthRedirect: true,
-          method: 'POST',
-          body: JSON.stringify({ email, senha }),
-        });
-
-        if (data?.usuario) {
-          clearLegacyAuthState();
-          window.location.href = '/html/inicio.html';
-        }
+        await executarLogin(email, senha);
       } catch (err) {
+        if (err?.payload?.codigo === 'CONTA_DESATIVADA') {
+          const email = $('loginEmail').value?.trim();
+          const senha = $('loginSenha').value;
+          abrirModalReativacao(email, senha);
+          return;
+        }
+
         tratarErro(err, 'Erro ao fazer login');
         mostrarErroInline(
           'Não foi possível fazer login. Verifique suas credenciais e tente novamente.',

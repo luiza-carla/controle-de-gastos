@@ -7,6 +7,7 @@ import { initDesejos } from './listaDesejo.js';
 import { initFaturas } from './fatura/index.js';
 import { initTransacoes } from './transacao/index.js';
 import { initSalario } from './salario/index.js';
+import { initPerfil } from './perfil.js';
 import { $, bindCurrencyInputs } from './helpers/index.js';
 
 function bindNavigationTargets() {
@@ -73,6 +74,7 @@ async function initApp() {
   }
 
   await initSalario();
+  await initPerfil();
 
   // Aplica máscara de moeda nos inputs marcados com data-moeda.
   await bindCurrencyInputs();

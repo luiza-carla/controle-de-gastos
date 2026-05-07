@@ -6,7 +6,8 @@ import { getPaginaAtual } from './helpers/index.js';
 export async function verificarAutenticacao() {
   const pagina = getPaginaAtual();
   const paginasPublicas = ['login.html', 'registrar.html'];
-  const autenticado = await verificarSessaoAtiva().catch(() => false);
+  const sessao = await verificarSessaoAtiva().catch(() => false);
+  const autenticado = Boolean(sessao?.autenticado);
 
   if (!autenticado && !paginasPublicas.includes(pagina)) {
     window.location.href = '/html/login.html';

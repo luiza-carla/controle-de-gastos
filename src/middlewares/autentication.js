@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const Usuario = require('../models/Usuario');
 const { criarErro } = require('../utils/errorHelpers');
 const { extractAuthToken } = require('../utils/authCookie');
 
@@ -16,7 +17,7 @@ function extrairTokenDoHeader(authHeader) {
 }
 
 // Middleware para verificar autenticação via token JWT
-function autenticacao(req, res, next) {
+async function autenticacao(req, res, next) {
   const token =
     extrairTokenDoHeader(req.headers.authorization) || extractAuthToken(req);
 
@@ -27,6 +28,14 @@ function autenticacao(req, res, next) {
   try {
     // Verifica e decodifica o token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const usuario = await Usuario.findById(decoded.id)
+      .select('_id ativa')
+      .lean();
+
+    if (!usuario || usuario.ativa === false) {
+      return next(criarErro(401, 'Não autenticado'));
+    }
 
     // Armazena ID do usuário na requisição para uso posterior
     req.user = { id: decoded.id };

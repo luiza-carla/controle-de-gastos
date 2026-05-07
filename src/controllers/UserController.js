@@ -17,11 +17,48 @@ class UserController {
     return res.json({ usuario: resultado.usuario });
   }
 
+  async reativarELogin(req, res) {
+    const resultado = await AuthService.reativarELogin(req.body);
+    setAuthCookie(res, resultado.token);
+    return res.json({ usuario: resultado.usuario });
+  }
+
   async sessao(req, res) {
-    return res.json({ autenticado: true });
+    const usuario = await UserService.obterPorId(req.user.id);
+    return res.json({ autenticado: true, usuario });
   }
 
   async logout(req, res) {
+    clearAuthCookie(res);
+    return res.json({ success: true });
+  }
+
+  async perfil(req, res) {
+    const usuario = await UserService.obterPorId(req.user.id);
+    return res.json({ usuario });
+  }
+
+  async alterarSenha(req, res) {
+    await UserService.alterarSenha(req.user.id, req.body);
+    return res.json({ success: true });
+  }
+
+  async atualizarPreferencias(req, res) {
+    const preferencias = await UserService.atualizarPreferencias(
+      req.user.id,
+      req.body
+    );
+    return res.json({ success: true, preferencias });
+  }
+
+  async desativarConta(req, res) {
+    await UserService.desativarConta(req.user.id);
+    clearAuthCookie(res);
+    return res.json({ success: true });
+  }
+
+  async excluirConta(req, res) {
+    await UserService.excluirConta(req.user.id);
     clearAuthCookie(res);
     return res.json({ success: true });
   }

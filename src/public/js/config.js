@@ -1,5 +1,38 @@
 export function clearLegacyAuthState() {
   localStorage.removeItem('token');
+  localStorage.removeItem('userPreferences');
+}
+
+const PREFERENCIAS_STORAGE_KEY = 'userPreferences';
+
+export function salvarPreferenciasUsuario(preferencias = {}) {
+  try {
+    localStorage.setItem(
+      PREFERENCIAS_STORAGE_KEY,
+      JSON.stringify(preferencias)
+    );
+  } catch {
+    // ignora falhas de storage
+  }
+}
+
+export function lerPreferenciasUsuario() {
+  try {
+    const raw = localStorage.getItem(PREFERENCIAS_STORAGE_KEY);
+    if (!raw) {
+      return { formatoData: 'DD/MM/AAAA' };
+    }
+
+    const preferencias = JSON.parse(raw);
+    return {
+      formatoData:
+        preferencias?.formatoData === 'AAAA-MM-DD'
+          ? 'AAAA-MM-DD'
+          : 'DD/MM/AAAA',
+    };
+  } catch {
+    return { formatoData: 'DD/MM/AAAA' };
+  }
 }
 
 export async function apiFetch(url, options = {}) {
@@ -32,6 +65,7 @@ export async function apiFetch(url, options = {}) {
           : 'Erro na resposta do servidor';
       const error = new Error(mensagem);
       error.statusCode = res.status;
+      error.payload = json;
       throw error;
     } catch (e) {
       if (e.message && e.message !== text) {
@@ -49,8 +83,12 @@ export async function apiFetch(url, options = {}) {
 
 export async function verificarSessaoAtiva() {
   try {
-    await apiFetch('/usuarios/sessao', { skipAuthRedirect: true });
-    return true;
+    const data = await apiFetch('/usuarios/sessao', { skipAuthRedirect: true });
+    if (data?.usuario?.preferencias) {
+      salvarPreferenciasUsuario(data.usuario.preferencias);
+    }
+
+    return data;
   } catch (error) {
     if (Number(error?.statusCode) === 401) {
       clearLegacyAuthState();

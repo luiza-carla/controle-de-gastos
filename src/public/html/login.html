@@ -40,6 +40,44 @@
       <p>Não tem conta? <a href="../html/registrar.html">Registrar</a></p>
     </div>
 
+    <div id="modalGlobal" class="modal-overlay is-hidden">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 id="modalTitulo">Editar</h3>
+        </div>
+
+        <div id="modalErroInline" class="modal-erro-inline">
+          <p id="modalMensagemErro" class="modal-mensagem-erro"></p>
+        </div>
+
+        <div id="modalConteudo"></div>
+
+        <div class="modal-footer" id="modalFooterEditar">
+          <button id="modalCancelar">
+            <i class="fa-solid fa-xmark"></i> Cancelar
+          </button>
+          <button id="modalSalvar">
+            <i class="fa-solid fa-check"></i> Salvar
+          </button>
+        </div>
+
+        <div class="modal-footer is-hidden" id="modalFooterConfirmar">
+          <button id="modalCancelar">
+            <i class="fa-solid fa-xmark"></i> Cancelar
+          </button>
+          <button id="modalConfirmar" class="btn btn-danger">
+            <i class="fa-solid fa-check"></i> Confirmar
+          </button>
+        </div>
+
+        <div class="modal-footer is-hidden" id="modalFooterErro">
+          <button id="modalFecharErro" class="btn btn-danger">
+            <i class="fa-solid fa-xmark"></i> Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="../js/init.js"></script>
     <script type="module" src="../js/login.js"></script>
   </body>

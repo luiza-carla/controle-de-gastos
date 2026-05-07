@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Perfil</title>
+
+    <link rel="stylesheet" href="../css/base.css" />
+    <link rel="stylesheet" href="../css/perfil.css" />
+
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+  </head>
+
+  <body>
+    <div id="menu"></div>
+
+    <main>
+      <div class="container" id="paginaPerfil">
+        <h2><i class="fa-solid fa-user"></i> Meu perfil</h2>
+
+        <div class="card perfil-card">
+          <div class="perfil-header">
+            <h3 id="nomeUsuario">Carregando...</h3>
+            <span class="perfil-email" id="emailUsuario">Carregando...</span>
+          </div>
+
+          <div class="perfil-info-grid">
+            <div class="info-linha">
+              <span class="info-label">Membro desde</span>
+              <span class="info-valor" id="membroDesde">-</span>
+            </div>
+
+            <div class="info-linha">
+              <span class="info-label">Status da conta</span>
+              <span class="info-valor" id="statusConta">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fa-solid fa-gear"></i> Preferências</h3>
+
+          <div class="perfil-form">
+            <div class="form-group">
+              <label>Moeda</label>
+              <select disabled>
+                <option>Real (R$)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="selectFormatoData">Formato de data</label>
+              <select id="selectFormatoData">
+                <option value="DD/MM/AAAA">DD/MM/AAAA</option>
+                <option value="AAAA-MM-DD">AAAA-MM-DD</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="perfil-auxiliar" id="exemploFormatoData">
+            Exemplo atual: -
+          </p>
+
+          <button
+            class="btn btn-primary"
+            id="btnSalvarPreferencias"
+            type="button"
+          >
+            <i class="fa-solid fa-floppy-disk"></i> Salvar preferências
+          </button>
+        </div>
+
+        <div class="card">
+          <h3><i class="fa-solid fa-lock"></i> Segurança</h3>
+
+          <button class="btn btn-primary" id="btnAlterarSenha" type="button">
+            <i class="fa-solid fa-key"></i> Alterar senha
+          </button>
+        </div>
+
+        <div class="card danger-zone">
+          <h3>
+            <i class="fa-solid fa-triangle-exclamation"></i> Zona de risco
+          </h3>
+
+          <p class="perfil-auxiliar">
+            Desativar a conta encerra sua sessão e bloqueia novos acessos até
+            reativação manual.
+          </p>
+
+          <p class="perfil-auxiliar">
+            Excluir a conta exclui permanentemente seus dados e bloqueia novos
+            acessos.
+          </p>
+
+          <button class="btn btn-warning" id="btnDesativarConta" type="button">
+            <i class="fa-solid fa-user-xmark"></i> Desativar conta
+          </button>
+
+          <button
+            class="btn btn-danger perfil-btn-secundario"
+            id="btnExcluirConta"
+            type="button"
+          >
+            <i class="fa-solid fa-trash"></i> Excluir conta
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="../js/init.js"></script>
+  </body>
+</html>
