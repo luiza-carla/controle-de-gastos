@@ -105,21 +105,26 @@ export function tratarErro(error, mensagemPadrao = 'Ocorreu um erro') {
  * Mostra uma notificação temporária na tela
  */
 export function mostrarNotificacao(mensagem, tipo = 'sucesso', duracao = 3000) {
+  // Persiste imediatamente caso o usuário navegue antes de terminar
+  sessionStorage.setItem(
+    CHAVE_NOTIFICACAO_PENDENTE,
+    JSON.stringify({
+      mensagem,
+      tipo,
+      expiraEm: Date.now() + duracao,
+    })
+  );
+
   const container = obterContainerNotificacoes();
   const notificacao = document.createElement('div');
   notificacao.className = `notificacao notificacao-${tipo}`;
-
   const icone = ICONES_NOTIFICACAO[tipo] || ICONES_NOTIFICACAO.sucesso;
-
   const iconeEl = document.createElement('i');
   iconeEl.className = `fa-solid ${icone}`;
-
   const textoEl = document.createElement('span');
   textoEl.textContent = mensagem;
-
   notificacao.appendChild(iconeEl);
   notificacao.appendChild(textoEl);
-
   container.prepend(notificacao);
 
   // Animar entrada
@@ -129,13 +134,13 @@ export function mostrarNotificacao(mensagem, tipo = 'sucesso', duracao = 3000) {
 
   // Remover notificação após duração
   setTimeout(() => {
+    // Usuário ficou na página limpa a persistência
+    sessionStorage.removeItem(CHAVE_NOTIFICACAO_PENDENTE);
+
     notificacao.classList.remove('notificacao-visivel');
     setTimeout(() => {
       notificacao.remove();
-
-      if (!container.childElementCount) {
-        container.remove();
-      }
+      if (!container.childElementCount) container.remove();
     }, 300);
   }, duracao);
 }
@@ -153,31 +158,6 @@ export function criarMensagemOperacao({ objeto, acao, genero = 'masculino' }) {
 export function notificarOperacao(opcoes, duracao = 3000) {
   const mensagem = criarMensagemOperacao(opcoes);
   mostrarNotificacao(mensagem, 'sucesso', duracao);
-  return mensagem;
-}
-
-// Persiste uma notificacao para ser exibida apos redirecionamento.
-export function persistirNotificacaoParaProximaTela(
-  mensagem,
-  tipo = 'sucesso',
-  duracao = 3000
-) {
-  try {
-    const payload = {
-      mensagem,
-      tipo,
-      expiraEm: Date.now() + duracao,
-    };
-    sessionStorage.setItem(CHAVE_NOTIFICACAO_PENDENTE, JSON.stringify(payload));
-  } catch {
-    // Ignora falhas de storage e segue sem persistir notificacao
-  }
-}
-
-// Agenda uma notificacao de sucesso para a proxima tela.
-export function agendarNotificacaoOperacao(opcoes, duracao = 3000) {
-  const mensagem = criarMensagemOperacao(opcoes);
-  persistirNotificacaoParaProximaTela(mensagem, 'sucesso', duracao);
   return mensagem;
 }
 

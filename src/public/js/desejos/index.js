@@ -11,7 +11,6 @@ import { initFiltroCategoriaDesejo, initOrdenacaoDesejos } from './filters.js';
 import {
   mostrarNotificacao,
   notificarOperacao,
-  agendarNotificacaoOperacao,
   tratarErro,
 } from '../notification.js';
 import { $ } from '../helpers/index.js';
@@ -82,7 +81,7 @@ export async function initDesejos() {
         };
 
         if (action === 'salvar-redirect') {
-          agendarNotificacaoOperacao(notificacaoDesejo);
+          notificarOperacao(notificacaoDesejo);
           window.location.href = '/html/lista-desejos.html';
           return;
         }

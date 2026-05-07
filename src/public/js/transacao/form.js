@@ -8,7 +8,6 @@ import {
 import {
   mostrarNotificacao,
   notificarOperacao,
-  agendarNotificacaoOperacao,
   tratarErro,
   extrairMensagemErroInline,
 } from '../notification.js';
@@ -247,7 +246,7 @@ export async function initTransacaoForm(formId = 'formTransacao') {
             parcelasContainer
           );
         } else if (window.location.pathname.includes('adicionar-transacao')) {
-          agendarNotificacaoOperacao(notificacaoTransacao);
+          notificarOperacao(notificacaoTransacao);
           window.location.href = '/html/transacoes.html';
         } else {
           notificarOperacao(notificacaoTransacao);

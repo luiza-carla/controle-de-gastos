@@ -6,7 +6,6 @@ import {
 import {
   mostrarNotificacao,
   notificarOperacao,
-  agendarNotificacaoOperacao,
   tratarErro,
 } from '../notification.js';
 import {
@@ -135,7 +134,7 @@ export function criarSalario(formId, callback) {
           notificarOperacao(notificacaoSalario);
           resetarFormularioSalario(form);
         } else if (estaNaTelaDeAdicao) {
-          agendarNotificacaoOperacao(notificacaoSalario);
+          notificarOperacao(notificacaoSalario);
           if (callback) await callback();
           window.location.href = '/html/salario.html';
         } else {

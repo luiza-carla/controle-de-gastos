@@ -6,7 +6,6 @@ import {
 import {
   mostrarNotificacao,
   notificarOperacao,
-  agendarNotificacaoOperacao,
   tratarErro,
 } from '../notification.js';
 import {
@@ -128,7 +127,7 @@ export async function criarConta(formId, callback) {
           resetFormWithMasks(form);
           sincronizarCamposContaCredito(form);
         } else if (window.location.pathname.includes('adicionar-conta')) {
-          agendarNotificacaoOperacao(notificacaoConta);
+          notificarOperacao(notificacaoConta);
           window.location.href = '/html/contas.html';
         } else {
           notificarOperacao(notificacaoConta);
